@@ -6,7 +6,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()
   return [
     {
-      url: SITE_URL,
+      // Trailing slash matches Google's canonical (Next.js redirects bare → slashed).
+      // Without it, GSC reports homepage as a non-sitemap URL and the sitemap
+      // entry shows 0 impressions even though traffic is landing fine.
+      url: `${SITE_URL}/`,
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 1.0,
