@@ -5,12 +5,13 @@ import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
 import { requireAdmin } from '@/lib/require-admin'
 import { sendTeamInviteEmail } from '@/lib/email'
+import { ROLES, ROLE_OFFICE_ADMIN } from '@/lib/permissions'
 import { randomBytes } from 'crypto'
 import { z } from 'zod'
 
 const inviteSchema = z.object({
   email: z.string().email('Invalid email'),
-  role: z.enum(['owner', 'member']),
+  role: z.enum(ROLES),
 })
 
 type InviteResult = { success: true } | { success: false; error: string }
@@ -23,7 +24,7 @@ export async function inviteTeamMember(formData: FormData): Promise<InviteResult
 
   const parsed = inviteSchema.safeParse({
     email: formData.get('email'),
-    role: formData.get('role') || 'member',
+    role: formData.get('role') || ROLE_OFFICE_ADMIN,
   })
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message }
 

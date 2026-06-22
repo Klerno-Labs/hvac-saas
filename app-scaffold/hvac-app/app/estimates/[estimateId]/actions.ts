@@ -1,11 +1,12 @@
 'use server'
 
-import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { updateEstimateSchema, updateEstimateStatusSchema } from '@/lib/validations/estimate'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendEstimateEmail } from '@/lib/email'
+import { requireCapability } from '@/lib/require-capability'
+import { canEditPricing } from '@/lib/permissions'
 
 type ActionResult =
   | { success: true }
@@ -21,21 +22,11 @@ export async function updateEstimate(
     lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number }[]
   },
 ): Promise<ActionResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
+  // Editing estimate line items / tax / totals is a pricing change.
+  const result = await requireCapability('canEditPricing')
+  if (!result.authorized) return { success: false, error: result.error }
 
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
+  const { userId, organizationId } = result.context
 
   const estimate = await db.estimate.findFirst({
     where: { id: estimateId, organizationId },
@@ -99,21 +90,10 @@ export async function updateEstimateStatus(
   estimateId: string,
   formData: FormData,
 ): Promise<ActionResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
+  const result = await requireCapability('canEditPricing')
+  if (!result.authorized) return { success: false, error: result.error }
 
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
+  const { userId, organizationId } = result.context
 
   const estimate = await db.estimate.findFirst({
     where: { id: estimateId, organizationId },
@@ -169,3 +149,6 @@ export async function updateEstimateStatus(
 
   return { success: true }
 }
+
+// Re-exported for client components that need to hide pricing UI.
+export { canEditPricing }

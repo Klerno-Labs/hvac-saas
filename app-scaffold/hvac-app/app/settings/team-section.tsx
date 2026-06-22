@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { ROLES, ROLE_LABELS, ROLE_OFFICE_ADMIN, ROLE_OWNER, normalizeRole } from '@/lib/permissions'
 
 type Member = {
   id: string
@@ -78,8 +79,10 @@ export function TeamSection({ members, invites, currentUserId }: {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant={m.role === 'owner' ? 'default' : 'secondary'}>{m.role}</Badge>
-                {m.user.email !== members.find((mm) => mm.id === m.id)?.user.email || m.role !== 'owner' ? (
+                <Badge variant={normalizeRole(m.role) === ROLE_OWNER ? 'default' : 'secondary'}>
+                  {ROLE_LABELS[normalizeRole(m.role)]}
+                </Badge>
+                {m.user.email !== members.find((mm) => mm.id === m.id)?.user.email || normalizeRole(m.role) !== ROLE_OWNER ? (
                   <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => handleRemove(m.id)}>
                     Remove
                   </Button>
@@ -97,7 +100,7 @@ export function TeamSection({ members, invites, currentUserId }: {
           {pendingInvites.map((inv) => (
             <div key={inv.id} className="flex items-center justify-between py-2 border-b text-sm">
               <span className="text-muted-foreground">{inv.email}</span>
-              <Badge variant="outline">{inv.role} — pending</Badge>
+              <Badge variant="outline">{ROLE_LABELS[normalizeRole(inv.role)]} — pending</Badge>
             </div>
           ))}
         </div>
@@ -114,9 +117,10 @@ export function TeamSection({ members, invites, currentUserId }: {
             <Label htmlFor="invite-email" className="sr-only">Email</Label>
             <Input id="invite-email" name="email" type="email" required placeholder="team@example.com" />
           </div>
-          <select name="role" className="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-            <option value="member">Member</option>
-            <option value="owner">Owner</option>
+          <select name="role" defaultValue={ROLE_OFFICE_ADMIN} className="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
+            {ROLES.map((r) => (
+              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+            ))}
           </select>
           <Button type="submit" disabled={loading}>
             {loading ? 'Sending...' : 'Invite'}
