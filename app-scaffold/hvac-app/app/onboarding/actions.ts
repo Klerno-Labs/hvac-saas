@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createOrganizationSchema } from '@/lib/validations/onboarding'
+import { ROLE_OWNER } from '@/lib/permissions'
 import { cookies } from 'next/headers'
 import { randomBytes } from 'crypto'
 
@@ -81,7 +82,7 @@ export async function createOrganization(formData: FormData): Promise<Onboarding
       data: {
         organizationId: org.id,
         userId,
-        role: 'owner',
+        role: ROLE_OWNER,
         acceptedAt: new Date(),
       },
     })

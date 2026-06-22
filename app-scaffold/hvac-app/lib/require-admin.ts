@@ -1,11 +1,12 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ROLE_OWNER, normalizeRole, type Role } from '@/lib/permissions'
 
 type AdminContext = {
   userId: string
   userEmail: string | null
   organizationId: string
-  role: string
+  role: Role
 }
 
 type AdminResult =
@@ -13,12 +14,12 @@ type AdminResult =
   | { authorized: false; error: string }
 
 /**
- * Verify the current user is authenticated AND has an admin-level role (owner)
- * in their organization. Use this for sensitive actions like:
- * - changing organization settings
- * - managing integrations (Stripe, accounting)
- * - revoking portal tokens
- * - changing collections policy
+ * Verify the current user is authenticated AND is the organization owner.
+ * Use this for owner-only actions: managing the team, billing/subscription,
+ * Stripe Connect, accounting/collections integrations, and the audit log.
+ *
+ * The role string + capability truth live in `lib/permissions.ts`; this
+ * helper resolves the session + membership and checks against ROLE_OWNER.
  */
 export async function requireAdmin(): Promise<AdminResult> {
   const session = await auth()
@@ -36,7 +37,8 @@ export async function requireAdmin(): Promise<AdminResult> {
     return { authorized: false, error: 'You must belong to an organization' }
   }
 
-  if (membership.role !== 'owner') {
+  const role = normalizeRole(membership.role)
+  if (role !== ROLE_OWNER) {
     return { authorized: false, error: 'Only organization owners can perform this action' }
   }
 
@@ -46,7 +48,7 @@ export async function requireAdmin(): Promise<AdminResult> {
       userId,
       userEmail,
       organizationId: membership.organizationId,
-      role: membership.role,
+      role,
     },
   }
 }

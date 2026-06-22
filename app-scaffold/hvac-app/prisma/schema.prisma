@@ -17,6 +17,7 @@ model User {
   accounts       Account[]
   sessions       Session[]
   memberships    OrganizationMember[]
+  assignedJobs   Job[]                @relation("JobAssignment")
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 }
@@ -125,6 +126,8 @@ model OrganizationMember {
   id             String       @id @default(cuid())
   organizationId String
   userId         String
+  // See lib/permissions.ts for the role taxonomy + capability mapping.
+  // owner | office_admin | dispatcher | technician | csr
   role           String       @default("owner")
   invitedAt      DateTime?
   acceptedAt     DateTime?
@@ -138,7 +141,8 @@ model TeamInvite {
   id             String       @id @default(cuid())
   organizationId String
   email          String
-  role           String       @default("member")
+  // owner | office_admin | dispatcher | technician | csr (see lib/permissions.ts)
+  role           String       @default("office_admin")
   token          String       @unique
   invitedBy      String
   acceptedAt     DateTime?
@@ -202,6 +206,12 @@ model Job {
   status          String       @default("draft")
   scheduledFor    DateTime?
   completedAt     DateTime?
+  // User the job is dispatched to (dispatcher assignment). Drives technician
+  // job scoping (see lib/permissions.ts jobScopeWhere). Nullable: legacy and
+  // unassigned jobs have no assignee. Distinct from `technicianName`, which is
+  // the free-text "performed by" recorded at proof-of-work completion.
+  assignedToUserId String?
+  assignedTo       User?        @relation("JobAssignment", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   technicianName  String?
   notes           String?
   workSummary     String?
@@ -222,6 +232,7 @@ model Job {
 
   @@index([organizationId])
   @@index([customerId])
+  @@index([assignedToUserId])
 }
 
 model Estimate {
