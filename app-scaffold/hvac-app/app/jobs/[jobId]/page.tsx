@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { JobStatusForm } from './status-form'
+import { TechnicianAssignForm } from './technician-form'
 import { PartsUsedSection } from './parts-used'
 import { ReviewSection } from './review-section'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,11 +15,12 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
   const { organizationId } = await requireActiveSubscription()
   const { jobId } = await params
 
-  const [job, inventoryItems, existingReview] = await Promise.all([
+  const [job, inventoryItems, existingReview, technicians] = await Promise.all([
     db.job.findFirst({
       where: { id: jobId, organizationId },
       include: {
         customer: true,
+        technician: true,
         estimates: { orderBy: { createdAt: 'desc' } },
         invoices: { orderBy: { createdAt: 'desc' } },
         assets: { orderBy: { createdAt: 'asc' } },
@@ -36,6 +38,11 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
     db.customerReview.findUnique({
       where: { jobId },
       select: { rating: true, comment: true, submittedAt: true, token: true },
+    }),
+    db.technician.findMany({
+      where: { organizationId, active: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
     }),
   ])
 
@@ -81,10 +88,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
             </div>
           )}
 
-          {job.technicianName && (
+          {(job.technician?.name || job.technicianName) && (
             <div>
               <p className="text-xs text-muted-foreground">Technician</p>
-              <p className="text-sm">{job.technicianName}</p>
+              <p className="text-sm">{job.technician?.name ?? job.technicianName}</p>
             </div>
           )}
         </CardContent>
@@ -246,6 +253,19 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
             : null
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Technician</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TechnicianAssignForm
+            jobId={job.id}
+            technicians={technicians}
+            currentTechnicianId={job.technicianId}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

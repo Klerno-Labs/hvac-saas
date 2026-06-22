@@ -17,6 +17,7 @@ model User {
   accounts       Account[]
   sessions       Session[]
   memberships    OrganizationMember[]
+  technicians    Technician[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 }
@@ -110,9 +111,10 @@ model Organization {
   teamInvites              TeamInvite[]
   assets                   ProofOfWorkAsset[]
   signatures               JobSignature[]
-  events                   ActivityEvent[]
-  recurringJobs            RecurringJob[]
-  reviews                  CustomerReview[]
+  events                 ActivityEvent[]
+  recurringJobs          RecurringJob[]
+  technicians            Technician[]
+  reviews                CustomerReview[]
   inventoryItems           InventoryItem[]
   inventoryUsages          InventoryUsage[]
   equipment                Equipment[]
@@ -203,12 +205,14 @@ model Job {
   scheduledFor    DateTime?
   completedAt     DateTime?
   technicianName  String?
+  technicianId    String?
   notes           String?
   workSummary     String?
   materialsUsed   String?
   completionNotes String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  technician      Technician?  @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   estimates       Estimate[]
   invoices        Invoice[]
   reminders       Reminder[]
@@ -222,6 +226,28 @@ model Job {
 
   @@index([organizationId])
   @@index([customerId])
+  @@index([technicianId])
+}
+
+model Technician {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  role           String       @default("technician")
+  skills         String[]     @default([])
+  active         Boolean      @default(true)
+  userId         String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  jobs           Job[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, active])
+  @@index([userId])
 }
 
 model Estimate {

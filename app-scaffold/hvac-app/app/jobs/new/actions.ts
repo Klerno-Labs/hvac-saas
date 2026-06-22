@@ -31,6 +31,7 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
     title: formData.get('title'),
     notes: formData.get('notes') || undefined,
     scheduledFor: formData.get('scheduledFor') || undefined,
+    technicianId: formData.get('technicianId') || undefined,
   }
 
   const parsed = createJobSchema.safeParse(raw)
@@ -48,6 +49,18 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
     return { success: false, error: 'Customer not found in your organization' }
   }
 
+  // Verify technician (if provided) belongs to the same organization
+  let technicianId: string | null = null
+  if (data.technicianId) {
+    const technician = await db.technician.findFirst({
+      where: { id: data.technicianId, organizationId },
+    })
+    if (!technician) {
+      return { success: false, error: 'Technician not found in your organization' }
+    }
+    technicianId = technician.id
+  }
+
   const job = await db.job.create({
     data: {
       organizationId,
@@ -55,6 +68,7 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
       title: data.title,
       notes: data.notes || null,
       scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
+      technicianId,
       status: 'draft',
     },
   })
