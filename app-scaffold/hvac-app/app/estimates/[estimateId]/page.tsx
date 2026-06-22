@@ -10,7 +10,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function EstimateDetailPage({ params }: { params: Promise<{ estimateId: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId, organization } = await requireActiveSubscription()
   const { estimateId } = await params
 
   const estimate = await db.estimate.findFirst({
@@ -69,6 +69,9 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
             <div>
               <p className="text-xs text-muted-foreground">Tax</p>
               <p>{formatCents(estimate.taxCents)}</p>
+              {estimate.job.customer.taxExempt && (
+                <p className="text-[11px] text-muted-foreground">Customer tax-exempt</p>
+              )}
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total</p>
@@ -152,16 +155,19 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
           <CardContent>
             <EstimateEditForm
               estimateId={estimate.id}
+              defaultTaxRateBps={organization.defaultTaxRateBps}
+              customerTaxExempt={estimate.job.customer.taxExempt}
               initialData={{
                 scopeOfWork: estimate.scopeOfWork || '',
                 terms: estimate.terms || '',
                 notes: estimate.notes || '',
-                taxCents: estimate.taxCents,
                 lineItems: estimate.lineItems.map((li) => ({
                   name: li.name,
                   description: li.description || '',
                   quantity: li.quantity,
                   unitPriceCents: li.unitPriceCents,
+                  taxable: li.taxable,
+                  taxRateBps: li.taxRateBps,
                 })),
               }}
             />

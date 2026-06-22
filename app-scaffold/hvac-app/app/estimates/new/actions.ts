@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createEstimateSchema } from '@/lib/validations/estimate'
 import { generateEstimateDraft } from '@/lib/ai'
+import { computeTaxCents } from '@/lib/tax'
 
 type CreateEstimateResult =
   | { success: true; estimateId: string }
@@ -15,8 +16,7 @@ export async function createEstimate(input: {
   scopeOfWork: string
   terms?: string
   notes?: string
-  taxCents: number
-  lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number }[]
+  lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number; taxable?: boolean; taxRateBps?: number | null }[]
   aiDraftUsed: boolean
 }): Promise<CreateEstimateResult> {
   const session = await auth()
@@ -42,26 +42,45 @@ export async function createEstimate(input: {
 
   const data = parsed.data
 
-  // Verify job belongs to the same organization
+  // Verify job belongs to the same organization and load customer (for exemption)
   const job = await db.job.findFirst({
     where: { id: data.jobId, organizationId },
+    include: { customer: { select: { taxExempt: true } } },
   })
   if (!job) {
     return { success: false, error: 'Job not found in your organization' }
   }
 
-  // Calculate totals server-side
-  const lineItemsWithTotals = data.lineItems.map((item, index) => ({
-    name: item.name,
-    description: item.description || null,
-    quantity: item.quantity,
-    unitPriceCents: item.unitPriceCents,
-    lineTotalCents: item.quantity * item.unitPriceCents,
-    sortOrder: index,
-  }))
+  const [org] = await Promise.all([
+    db.organization.findUniqueOrThrow({
+      where: { id: organizationId },
+      select: { defaultTaxRateBps: true },
+    }),
+  ])
+
+  const customerTaxExempt = job.customer.taxExempt
+
+  // Calculate totals server-side (line totals + computed tax)
+  const lineItemsWithTotals = data.lineItems.map((item, index) => {
+    const lineTotalCents = item.quantity * item.unitPriceCents
+    return {
+      name: item.name,
+      description: item.description || null,
+      quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+      lineTotalCents,
+      taxable: item.taxable,
+      taxRateBps: item.taxRateBps ?? null,
+      sortOrder: index,
+    }
+  })
 
   const subtotalCents = lineItemsWithTotals.reduce((sum, li) => sum + li.lineTotalCents, 0)
-  const taxCents = data.taxCents
+  const { taxCents } = computeTaxCents(
+    lineItemsWithTotals.map((li) => ({ lineTotalCents: li.lineTotalCents, taxable: li.taxable, taxRateBps: li.taxRateBps })),
+    org.defaultTaxRateBps,
+    customerTaxExempt,
+  )
   const totalCents = subtotalCents + taxCents
 
   // Generate estimate number

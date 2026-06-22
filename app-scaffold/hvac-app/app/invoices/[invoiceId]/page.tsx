@@ -64,6 +64,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <div>
               <p className="text-xs text-muted-foreground">Tax</p>
               <p className="text-sm font-medium">{formatCents(invoice.taxCents)}</p>
+              {invoice.customer.taxExempt && (
+                <p className="text-[11px] text-muted-foreground">Customer tax-exempt</p>
+              )}
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total</p>
@@ -195,16 +198,19 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <CardContent>
             <InvoiceEditForm
               invoiceId={invoice.id}
+              defaultTaxRateBps={organization.defaultTaxRateBps}
+              customerTaxExempt={invoice.customer.taxExempt}
               initialData={{
                 descriptionOfWork: invoice.descriptionOfWork || '',
                 notes: invoice.notes || '',
-                taxCents: invoice.taxCents,
                 dueDate: invoice.dueDate ? invoice.dueDate.toISOString().split('T')[0] : '',
                 lineItems: invoice.lineItems.map((li) => ({
                   name: li.name,
                   description: li.description || '',
                   quantity: li.quantity,
                   unitPriceCents: li.unitPriceCents,
+                  taxable: li.taxable,
+                  taxRateBps: li.taxRateBps,
                 })),
               }}
             />

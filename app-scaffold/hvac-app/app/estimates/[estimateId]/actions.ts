@@ -6,6 +6,7 @@ import { trackEvent } from '@/lib/events'
 import { updateEstimateSchema, updateEstimateStatusSchema } from '@/lib/validations/estimate'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendEstimateEmail } from '@/lib/email'
+import { computeTaxCents } from '@/lib/tax'
 
 type ActionResult =
   | { success: true }
@@ -17,8 +18,7 @@ export async function updateEstimate(
     scopeOfWork: string
     terms?: string
     notes?: string
-    taxCents: number
-    lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number }[]
+    lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number; taxable?: boolean; taxRateBps?: number | null }[]
   },
 ): Promise<ActionResult> {
   const session = await auth()
@@ -39,6 +39,7 @@ export async function updateEstimate(
 
   const estimate = await db.estimate.findFirst({
     where: { id: estimateId, organizationId },
+    include: { job: { include: { customer: { select: { taxExempt: true } } } } },
   })
   if (!estimate) {
     return { success: false, error: 'Estimate not found in your organization' }
@@ -55,17 +56,35 @@ export async function updateEstimate(
 
   const data = parsed.data
 
-  const lineItemsWithTotals = data.lineItems.map((item, index) => ({
-    name: item.name,
-    description: item.description || null,
-    quantity: item.quantity,
-    unitPriceCents: item.unitPriceCents,
-    lineTotalCents: item.quantity * item.unitPriceCents,
-    sortOrder: index,
-  }))
+  const [org] = await Promise.all([
+    db.organization.findUniqueOrThrow({
+      where: { id: organizationId },
+      select: { defaultTaxRateBps: true },
+    }),
+  ])
+
+  const customerTaxExempt = estimate.job.customer.taxExempt
+
+  const lineItemsWithTotals = data.lineItems.map((item, index) => {
+    const lineTotalCents = item.quantity * item.unitPriceCents
+    return {
+      name: item.name,
+      description: item.description || null,
+      quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+      lineTotalCents,
+      taxable: item.taxable,
+      taxRateBps: item.taxRateBps ?? null,
+      sortOrder: index,
+    }
+  })
 
   const subtotalCents = lineItemsWithTotals.reduce((sum, li) => sum + li.lineTotalCents, 0)
-  const taxCents = data.taxCents
+  const { taxCents } = computeTaxCents(
+    lineItemsWithTotals.map((li) => ({ lineTotalCents: li.lineTotalCents, taxable: li.taxable, taxRateBps: li.taxRateBps })),
+    org.defaultTaxRateBps,
+    customerTaxExempt,
+  )
   const totalCents = subtotalCents + taxCents
 
   await db.$transaction(async (tx) => {

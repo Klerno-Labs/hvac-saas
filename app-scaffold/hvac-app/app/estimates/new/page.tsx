@@ -5,7 +5,7 @@ import { EstimateForm } from './form'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
 export default async function NewEstimatePage({ searchParams }: { searchParams: Promise<{ jobId?: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId, organization } = await requireActiveSubscription()
   const { jobId } = await searchParams
 
   if (!jobId) {
@@ -14,7 +14,7 @@ export default async function NewEstimatePage({ searchParams }: { searchParams: 
 
   const job = await db.job.findFirst({
     where: { id: jobId, organizationId },
-    include: { customer: true },
+    include: { customer: { select: { taxExempt: true, firstName: true, lastName: true } } },
   })
 
   if (!job) {
@@ -34,6 +34,8 @@ export default async function NewEstimatePage({ searchParams }: { searchParams: 
           <EstimateForm
             jobId={job.id}
             jobTitle={job.title}
+            defaultTaxRateBps={organization.defaultTaxRateBps}
+            customerTaxExempt={job.customer.taxExempt}
           />
         </CardContent>
       </Card>

@@ -23,6 +23,7 @@ type Customer = {
   state: string | null
   postalCode: string | null
   notes: string | null
+  taxExempt: boolean
 }
 
 export function EditCustomerForm({ customer }: { customer: Customer }) {
@@ -108,6 +109,19 @@ export function EditCustomerForm({ customer }: { customer: Customer }) {
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" name="notes" rows={3} defaultValue={customer.notes || ''} />
           </div>
+          <Separator />
+          <Label className="cursor-pointer flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="taxExempt"
+              defaultChecked={customer.taxExempt}
+              className="size-4"
+            />
+            <span className="text-sm font-medium">This customer is tax-exempt</span>
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Exempt customers (resale certificate, government, non-profit) have no sales tax applied to invoices.
+          </p>
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</Button>
             <Button variant="ghost" type="button" onClick={() => router.push(`/customers/${customer.id}`)}>Cancel</Button>
