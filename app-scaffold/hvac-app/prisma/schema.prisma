@@ -83,6 +83,7 @@ model Organization {
   collectionsOverdue2Days  Int                  @default(14)
   collectionsFinalDays     Int                  @default(30)
   smsEnabled               Boolean              @default(false)
+  defaultTaxRateBps        Int                  @default(0)
   platformFeePercent       Float                @default(2.9)
   subscriptionStatus       String               @default("trialing")
   subscriptionPlan         String               @default("starter")
@@ -264,6 +265,8 @@ model EstimateLineItem {
   quantity       Int      @default(1)
   unitPriceCents Int      @default(0)
   lineTotalCents Int      @default(0)
+  taxable        Boolean  @default(true)
+  taxRateBps     Int?
   sortOrder      Int      @default(0)
   estimate       Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
 
@@ -310,6 +313,8 @@ model InvoiceLineItem {
   quantity       Int     @default(1)
   unitPriceCents Int     @default(0)
   lineTotalCents Int     @default(0)
+  taxable        Boolean @default(true)
+  taxRateBps     Int?
   sortOrder      Int     @default(0)
   invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
@@ -538,8 +543,9 @@ model Equipment {
   lastServicedAt      DateTime?
   nextServiceDueAt    DateTime?
   status              String                   @default("active") // active|retired
-  notes               String?
-  organization        Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  notes          String?
+  taxExempt      Boolean   @default(false)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer            Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
   serviceRecords      EquipmentServiceRecord[]
   createdAt           DateTime                 @default(now())

@@ -38,6 +38,7 @@ export async function createCustomer(formData: FormData): Promise<CreateCustomer
     state: formData.get('state') || undefined,
     postalCode: formData.get('postalCode') || undefined,
     notes: formData.get('notes') || undefined,
+    taxExempt: formData.get('taxExempt') === 'on',
   }
 
   const parsed = createCustomerSchema.safeParse(raw)
@@ -46,7 +47,6 @@ export async function createCustomer(formData: FormData): Promise<CreateCustomer
   }
 
   const data = parsed.data
-
   const customer = await db.customer.create({
     data: {
       organizationId,
@@ -61,6 +61,7 @@ export async function createCustomer(formData: FormData): Promise<CreateCustomer
       state: data.state || null,
       postalCode: data.postalCode || null,
       notes: data.notes || null,
+      taxExempt: data.taxExempt,
     },
   })
 

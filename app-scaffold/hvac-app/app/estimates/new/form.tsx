@@ -8,15 +8,32 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { computeTaxCents, formatBpsAsPercent } from '@/lib/tax'
 
 type LineItem = {
   name: string
   description: string
   quantity: number
   unitPriceCents: number
+  taxable: boolean
+  taxRateBps: number | null
 }
 
-export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: string }) {
+function newLineItem(): LineItem {
+  return { name: '', description: '', quantity: 1, unitPriceCents: 0, taxable: true, taxRateBps: null }
+}
+
+export function EstimateForm({
+  jobId,
+  jobTitle,
+  defaultTaxRateBps,
+  customerTaxExempt,
+}: {
+  jobId: string
+  jobTitle: string
+  defaultTaxRateBps: number
+  customerTaxExempt: boolean
+}) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -26,12 +43,14 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
   const [scopeOfWork, setScopeOfWork] = useState('')
   const [terms, setTerms] = useState('')
   const [notes, setNotes] = useState('')
-  const [taxCents, setTaxCents] = useState(0)
-  const [lineItems, setLineItems] = useState<LineItem[]>([
-    { name: '', description: '', quantity: 1, unitPriceCents: 0 },
-  ])
+  const [lineItems, setLineItems] = useState<LineItem[]>([newLineItem()])
 
   const subtotalCents = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPriceCents, 0)
+  const { taxCents } = computeTaxCents(
+    lineItems.map((li) => ({ lineTotalCents: li.quantity * li.unitPriceCents, taxable: li.taxable, taxRateBps: li.taxRateBps })),
+    defaultTaxRateBps,
+    customerTaxExempt,
+  )
   const totalCents = subtotalCents + taxCents
 
   async function handleAiDraft() {
@@ -48,6 +67,8 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
         description: li.description,
         quantity: li.quantity,
         unitPriceCents: li.unitPriceCents,
+        taxable: true,
+        taxRateBps: null,
       })))
       setAiUsed(true)
     } else {
@@ -58,7 +79,7 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
   }
 
   function addLineItem() {
-    setLineItems([...lineItems, { name: '', description: '', quantity: 1, unitPriceCents: 0 }])
+    setLineItems([...lineItems, newLineItem()])
   }
 
   function removeLineItem(index: number) {
@@ -66,7 +87,7 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
     setLineItems(lineItems.filter((_, i) => i !== index))
   }
 
-  function updateLineItem(index: number, field: keyof LineItem, value: string | number) {
+  function updateLineItem(index: number, field: keyof LineItem, value: string | number | boolean | null) {
     const updated = [...lineItems]
     updated[index] = { ...updated[index], [field]: value }
     setLineItems(updated)
@@ -82,12 +103,13 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
       scopeOfWork,
       terms: terms || undefined,
       notes: notes || undefined,
-      taxCents,
       lineItems: lineItems.map((li) => ({
         name: li.name,
         description: li.description || undefined,
         quantity: li.quantity,
         unitPriceCents: li.unitPriceCents,
+        taxable: li.taxable,
+        taxRateBps: li.taxRateBps,
       })),
       aiDraftUsed: aiUsed,
     })
@@ -198,6 +220,34 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
                       />
                     </div>
                   </div>
+                  <div className="flex items-center gap-4 mt-1">
+                    <Label className="cursor-pointer flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={li.taxable}
+                        onChange={(e) => updateLineItem(i, 'taxable', e.target.checked)}
+                        className="size-4"
+                      />
+                      <span className="text-xs text-muted-foreground">Taxable</span>
+                    </Label>
+                    {li.taxable && (
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-xs text-muted-foreground">Tax rate %</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          placeholder={li.taxRateBps === null ? `default ${formatBpsAsPercent(defaultTaxRateBps)}` : ''}
+                          value={li.taxRateBps === null ? '' : (li.taxRateBps / 100).toString()}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            updateLineItem(i, 'taxRateBps', v === '' ? null : Math.round(parseFloat(v) * 100))
+                          }}
+                          className="h-8 w-28"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {lineItems.length > 1 && (
                   <button
@@ -216,15 +266,12 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label className="text-sm font-medium">Tax ($)</Label>
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={(taxCents / 100).toFixed(2)}
-              onChange={(e) => setTaxCents(Math.round(parseFloat(e.target.value || '0') * 100))}
-              className="mt-1"
-            />
+            <Label className="text-sm font-medium">
+              Tax{!customerTaxExempt && defaultTaxRateBps > 0 ? ` (${formatBpsAsPercent(defaultTaxRateBps)})` : ''}
+            </Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              {customerTaxExempt ? 'Customer is tax-exempt' : formatCents(taxCents)}
+            </p>
           </div>
           <div>
             <Label className="text-sm font-medium">Total</Label>

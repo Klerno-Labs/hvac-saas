@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import Link from 'next/link'
 import { StripeConnectSection } from './stripe-connect'
 import { CollectionsSettingsSection } from './collections-settings'
+import { TaxSettingsSection } from './tax-settings'
 import { isTwilioConfigured } from '@/lib/sms'
 import { AccountingSettingsSection } from './accounting-settings'
 import { TeamSection } from './team-section'
@@ -55,6 +56,10 @@ export default async function SettingsPage() {
         initialFinalDays={organization.collectionsFinalDays}
         initialSmsEnabled={organization.smsEnabled}
         twilioConfigured={isTwilioConfigured()}
+      />
+
+      <TaxSettingsSection
+        initialDefaultTaxRateBps={organization.defaultTaxRateBps}
       />
 
       <AccountingSettingsSection

@@ -102,6 +102,20 @@ export default function NewCustomerPage() {
               <Textarea id="notes" name="notes" rows={3} />
             </div>
 
+            <Separator />
+
+            <Label className="cursor-pointer flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="taxExempt"
+                className="size-4"
+              />
+              <span className="text-sm font-medium">This customer is tax-exempt</span>
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Exempt customers (resale certificate, government, non-profit) have no sales tax applied to invoices.
+            </p>
+
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={loading}>
                 {loading ? 'Saving...' : 'Add customer'}

@@ -31,6 +31,7 @@ export async function updateCustomer(customerId: string, formData: FormData): Pr
     state: formData.get('state') || undefined,
     postalCode: formData.get('postalCode') || undefined,
     notes: formData.get('notes') || undefined,
+    taxExempt: formData.get('taxExempt') === 'on',
   }
 
   const parsed = createCustomerSchema.safeParse(raw)
@@ -51,6 +52,7 @@ export async function updateCustomer(customerId: string, formData: FormData): Pr
       state: data.state || null,
       postalCode: data.postalCode || null,
       notes: data.notes || null,
+      taxExempt: data.taxExempt,
     },
   })
 

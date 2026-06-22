@@ -5,7 +5,7 @@ import { InvoiceForm } from './form'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export default async function NewInvoicePage({ searchParams }: { searchParams: Promise<{ jobId?: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId, organization } = await requireActiveSubscription()
   const { jobId } = await searchParams
 
   if (!jobId) {
@@ -39,8 +39,9 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
     description: li.description || '',
     quantity: li.quantity,
     unitPriceCents: li.unitPriceCents,
-  })) || [{ name: job.title, description: 'Service as described', quantity: 1, unitPriceCents: 0 }]
-  const seedTaxCents = acceptedEstimate?.taxCents || 0
+    taxable: li.taxable,
+    taxRateBps: li.taxRateBps,
+  })) || [{ name: job.title, description: 'Service as described', quantity: 1, unitPriceCents: 0, taxable: true, taxRateBps: null }]
 
   return (
     <main>
@@ -64,10 +65,11 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
         <CardContent>
           <InvoiceForm
             jobId={job.id}
+            defaultTaxRateBps={organization.defaultTaxRateBps}
+            customerTaxExempt={job.customer.taxExempt}
             initialData={{
               descriptionOfWork: seedDescription,
               notes: '',
-              taxCents: seedTaxCents,
               dueDate: '',
               lineItems: seedLineItems,
             }}

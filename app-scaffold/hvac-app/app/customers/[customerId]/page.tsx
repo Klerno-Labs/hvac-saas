@@ -71,6 +71,13 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               <p className="text-sm">{customer.notes}</p>
             </div>
           )}
+
+          <div>
+            <p className="text-xs text-muted-foreground">Sales tax</p>
+            <p className="text-sm font-medium">
+              {customer.taxExempt ? 'Exempt — no tax applied to invoices' : 'Standard (taxed per line item settings)'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 

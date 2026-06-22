@@ -12,6 +12,7 @@ export const createCustomerSchema = z.object({
   state: z.string().max(50).optional().or(z.literal('')),
   postalCode: z.string().max(20).optional().or(z.literal('')),
   notes: z.string().max(2000).optional().or(z.literal('')),
+  taxExempt: z.boolean().optional().default(false),
 })
 
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>
