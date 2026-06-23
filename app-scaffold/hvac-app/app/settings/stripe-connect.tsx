@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { startStripeOnboarding, refreshStripeStatus } from './stripe/actions'
+import { startStripeOnboarding, refreshStripeStatus, setTerminalEnabled } from './stripe/actions'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -10,16 +10,20 @@ export function StripeConnectSection({
   accountId,
   chargesEnabled,
   payoutsEnabled,
+  terminalEnabled,
 }: {
   accountId: string | null
   chargesEnabled: boolean
   payoutsEnabled: boolean
+  terminalEnabled: boolean
 }) {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [togglingTerminal, setTogglingTerminal] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [localCharges, setLocalCharges] = useState(chargesEnabled)
   const [localPayouts, setLocalPayouts] = useState(payoutsEnabled)
+  const [localTerminal, setLocalTerminal] = useState(terminalEnabled)
 
   async function handleConnect() {
     setError(null)
@@ -48,6 +52,20 @@ export function StripeConnectSection({
       setError(result.error)
     }
     setRefreshing(false)
+  }
+
+  async function handleToggleTerminal(next: boolean) {
+    setError(null)
+    setTogglingTerminal(true)
+
+    const result = await setTerminalEnabled(next)
+
+    if (result.success) {
+      setLocalTerminal(result.enabled)
+    } else {
+      setError(result.error)
+    }
+    setTogglingTerminal(false)
   }
 
   const isConnected = accountId && localCharges
@@ -109,6 +127,41 @@ export function StripeConnectSection({
             >
               {refreshing ? 'Checking...' : 'Refresh status'}
             </Button>
+          )}
+        </div>
+
+        <div className="rounded-lg border p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">Stripe Terminal (in-field card payments)</p>
+              <p className="text-xs text-muted-foreground">
+                Allow technicians to collect tap-to-pay card payments on a Terminal reader from the job page.
+              </p>
+            </div>
+            <span className={cn('text-sm font-semibold', localTerminal ? 'text-emerald-600' : 'text-gray-500')}>
+              {localTerminal ? 'Enabled' : 'Disabled'}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={localTerminal ? 'outline' : 'default'}
+              disabled={!isConnected || togglingTerminal || localTerminal}
+              onClick={() => handleToggleTerminal(true)}
+            >
+              {togglingTerminal ? 'Saving…' : 'Enable'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!localTerminal || togglingTerminal}
+              onClick={() => handleToggleTerminal(false)}
+            >
+              Disable
+            </Button>
+          </div>
+          {!isConnected && (
+            <p className="text-xs text-muted-foreground">Connect Stripe and enable charges to use Terminal.</p>
           )}
         </div>
       </CardContent>

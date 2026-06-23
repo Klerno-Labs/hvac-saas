@@ -78,6 +78,7 @@ model Organization {
   stripeConnectedAccountId String?
   stripeChargesEnabled     Boolean              @default(false)
   stripePayoutsEnabled     Boolean              @default(false)
+  stripeTerminalEnabled    Boolean              @default(false)
   collectionsEnabled       Boolean              @default(false)
   collectionsOverdue1Days  Int                  @default(7)
   collectionsOverdue2Days  Int                  @default(14)
@@ -323,6 +324,7 @@ model Payment {
   stripePaymentIntent String?      @unique
   amountCents         Int
   currency            String       @default("usd")
+  method              String       @default("checkout")
   status              String       @default("pending")
   paidAt              DateTime?
   organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

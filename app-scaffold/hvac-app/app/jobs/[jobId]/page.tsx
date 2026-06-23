@@ -5,13 +5,15 @@ import Link from 'next/link'
 import { JobStatusForm } from './status-form'
 import { PartsUsedSection } from './parts-used'
 import { ReviewSection } from './review-section'
+import { TerminalCollectSection } from './terminal-collect-section'
+import { getTerminalEligibility } from '@/lib/terminal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId, organization } = await requireActiveSubscription()
   const { jobId } = await params
 
   const [job, inventoryItems, existingReview] = await Promise.all([
@@ -42,6 +44,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
   if (!job) {
     notFound()
   }
+
+  const terminalEligibility = getTerminalEligibility(organization)
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
@@ -230,6 +234,19 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
           ))}
         </div>
       )}
+
+      {/* In-field card payment (Stripe Terminal) */}
+      <TerminalCollectSection
+        eligible={terminalEligibility.eligible}
+        ineligibleReason={terminalEligibility.reason}
+        invoices={job.invoices.map((inv) => ({
+          id: inv.id,
+          invoiceNumber: inv.invoiceNumber,
+          totalCents: inv.totalCents,
+          outstandingCents: inv.outstandingCents,
+          status: inv.status,
+        }))}
+      />
 
       {/* Customer review section */}
       <ReviewSection

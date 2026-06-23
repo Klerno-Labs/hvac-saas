@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { TERMINAL_PAYMENT_METHOD } from '@/lib/terminal'
 import Stripe from 'stripe'
 
 export async function POST(req: Request) {
@@ -35,6 +36,10 @@ export async function POST(req: Request) {
 
       case 'payment_intent.payment_failed':
         await handlePaymentFailed(event.data.object as Stripe.PaymentIntent)
+        break
+
+      case 'payment_intent.succeeded':
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent)
         break
 
       case 'customer.subscription.created':
@@ -259,6 +264,79 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     entityType: 'invoice',
     entityId: invoiceId,
     metadataJson: { reason: 'payment_intent_failed', paymentIntentId: paymentIntent.id },
+  })
+}
+
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+  // Only reconcile Terminal-collected payments here. Checkout-session payments
+  // are confirmed by handleCheckoutCompleted; leaving those untouched avoids
+  // changing the existing checkout flow.
+  if (paymentIntent.metadata?.method !== TERMINAL_PAYMENT_METHOD) return
+
+  const invoiceId = paymentIntent.metadata?.invoiceId
+  if (!invoiceId) {
+    console.error('payment_intent.succeeded: terminal PI missing invoiceId metadata')
+    return
+  }
+
+  const invoice = await db.invoice.findUnique({ where: { id: invoiceId } })
+  if (!invoice) return
+
+  // Idempotency: the capture server action may have already marked the invoice paid.
+  if (invoice.status === 'paid') return
+
+  await db.$transaction(async (tx) => {
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        status: 'paid',
+        paidAt: new Date(),
+        outstandingCents: 0,
+      },
+    })
+
+    await tx.collectionAttempt.updateMany({
+      where: { invoiceId, status: 'created' },
+      data: { status: 'skipped' },
+    })
+
+    const existingPayment = await tx.payment.findUnique({
+      where: { stripePaymentIntent: paymentIntent.id },
+    })
+
+    if (existingPayment) {
+      await tx.payment.update({
+        where: { id: existingPayment.id },
+        data: { status: 'succeeded', paidAt: new Date() },
+      })
+    } else {
+      await tx.payment.create({
+        data: {
+          organizationId: invoice.organizationId,
+          invoiceId: invoice.id,
+          stripePaymentIntent: paymentIntent.id,
+          amountCents: paymentIntent.amount_received || invoice.totalCents,
+          method: TERMINAL_PAYMENT_METHOD,
+          status: 'succeeded',
+          paidAt: new Date(),
+        },
+      })
+    }
+  })
+
+  await trackEvent({
+    organizationId: invoice.organizationId,
+    eventName: 'invoice_payment_confirmed',
+    entityType: 'invoice',
+    entityId: invoiceId,
+    metadataJson: { paymentIntentId: paymentIntent.id, source: 'terminal_webhook' },
+  })
+
+  await trackEvent({
+    organizationId: invoice.organizationId,
+    eventName: 'collections_stopped_due_to_payment',
+    entityType: 'invoice',
+    entityId: invoiceId,
   })
 }
 
