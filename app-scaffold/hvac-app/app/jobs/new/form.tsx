@@ -15,11 +15,19 @@ type CustomerOption = {
   companyName: string | null
 }
 
+type MemberOption = {
+  id: string
+  name: string
+  role: string
+}
+
 export function NewJobForm({
   customers,
+  members,
   preselectedCustomerId,
 }: {
   customers: CustomerOption[]
+  members: MemberOption[]
   preselectedCustomerId?: string
 }) {
   const router = useRouter()
@@ -73,6 +81,25 @@ export function NewJobForm({
         <div className="space-y-2">
           <Label htmlFor="scheduledFor">Scheduled date</Label>
           <Input id="scheduledFor" name="scheduledFor" type="date" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="technicianMemberId">Assigned technician</Label>
+          <select
+            id="technicianMemberId"
+            name="technicianMemberId"
+            defaultValue=""
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">Unassigned</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} ({m.role})
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Technicians only see jobs assigned to them in the field hub.
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="notes">Notes</Label>

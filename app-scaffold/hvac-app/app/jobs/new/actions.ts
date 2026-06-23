@@ -31,6 +31,7 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
     title: formData.get('title'),
     notes: formData.get('notes') || undefined,
     scheduledFor: formData.get('scheduledFor') || undefined,
+    technicianMemberId: formData.get('technicianMemberId') || undefined,
   }
 
   const parsed = createJobSchema.safeParse(raw)
@@ -48,6 +49,21 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
     return { success: false, error: 'Customer not found in your organization' }
   }
 
+  // Resolve the assigned technician (must be a member of this org)
+  let technicianUserId: string | null = null
+  let technicianName: string | null = null
+  if (data.technicianMemberId) {
+    const member = await db.organizationMember.findFirst({
+      where: { id: data.technicianMemberId, organizationId },
+      include: { user: { select: { name: true, email: true } } },
+    })
+    if (!member) {
+      return { success: false, error: 'Selected technician is not a member of your organization' }
+    }
+    technicianUserId = member.userId
+    technicianName = member.user.name || member.user.email || null
+  }
+
   const job = await db.job.create({
     data: {
       organizationId,
@@ -55,7 +71,9 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
       title: data.title,
       notes: data.notes || null,
       scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
-      status: 'draft',
+      status: data.scheduledFor ? 'scheduled' : 'draft',
+      technicianUserId,
+      technicianName,
     },
   })
 

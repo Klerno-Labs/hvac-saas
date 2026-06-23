@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { assetKindSchema } from '@/lib/validations/field'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
@@ -82,6 +83,10 @@ export async function POST(request: NextRequest) {
 
   const fileUrl = `/uploads/${uniqueName}`
 
+  const rawKind = formData.get('kind')
+  const kindParsed = assetKindSchema.safeParse(typeof rawKind === 'string' ? rawKind : 'general')
+  const kind = kindParsed.success ? kindParsed.data : 'general'
+
   const asset = await db.proofOfWorkAsset.create({
     data: {
       organizationId,
@@ -89,6 +94,7 @@ export async function POST(request: NextRequest) {
       fileUrl,
       fileType: file.type,
       fileSize: file.size,
+      kind,
     },
   })
 
@@ -98,8 +104,8 @@ export async function POST(request: NextRequest) {
     eventName: 'proof_of_work_photo_uploaded',
     entityType: 'job',
     entityId: jobId,
-    metadataJson: { assetId: asset.id, fileType: file.type },
+    metadataJson: { assetId: asset.id, fileType: file.type, kind },
   })
 
-  return NextResponse.json({ id: asset.id, fileUrl })
+  return NextResponse.json({ id: asset.id, fileUrl, kind })
 }
