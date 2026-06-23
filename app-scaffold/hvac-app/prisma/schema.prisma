@@ -117,8 +117,23 @@ model Organization {
   inventoryUsages          InventoryUsage[]
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
+  technicians              Technician[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
+}
+
+model Technician {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  color          String       @default("#3b82f6")
+  active         Boolean      @default(true)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobs           Job[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
 }
 
 model OrganizationMember {
@@ -203,12 +218,14 @@ model Job {
   scheduledFor    DateTime?
   completedAt     DateTime?
   technicianName  String?
+  technicianId    String?
   notes           String?
   workSummary     String?
   materialsUsed   String?
   completionNotes String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  technician      Technician?  @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   estimates       Estimate[]
   invoices        Invoice[]
   reminders       Reminder[]
@@ -222,6 +239,7 @@ model Job {
 
   @@index([organizationId])
   @@index([customerId])
+  @@index([technicianId])
 }
 
 model Estimate {
