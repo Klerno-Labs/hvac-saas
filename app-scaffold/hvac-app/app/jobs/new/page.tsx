@@ -14,6 +14,16 @@ export default async function NewJobPage({ searchParams }: { searchParams: Promi
     select: { id: true, firstName: true, lastName: true, companyName: true },
   })
 
+  const members = await db.organizationMember.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      role: true,
+      user: { select: { name: true, email: true } },
+    },
+  })
+
   return (
     <main className="max-w-xl mx-auto px-4 py-8">
       <Card>
@@ -27,7 +37,15 @@ export default async function NewJobPage({ searchParams }: { searchParams: Promi
               You need to <Link href="/customers/new" className="text-primary hover:underline">add a customer</Link> first.
             </p>
           ) : (
-            <NewJobForm customers={customers} preselectedCustomerId={customerId} />
+            <NewJobForm
+              customers={customers}
+              members={members.map((m) => ({
+                id: m.id,
+                name: m.user.name || m.user.email || 'Unknown',
+                role: m.role,
+              }))}
+              preselectedCustomerId={customerId}
+            />
           )}
         </CardContent>
       </Card>

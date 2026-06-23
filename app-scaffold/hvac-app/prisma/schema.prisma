@@ -17,6 +17,7 @@ model User {
   accounts       Account[]
   sessions       Session[]
   memberships    OrganizationMember[]
+  assignedJobs   Job[]                @relation("JobTechnician")
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 }
@@ -203,12 +204,16 @@ model Job {
   scheduledFor    DateTime?
   completedAt     DateTime?
   technicianName  String?
+  technicianUserId String?
+  fieldStatus     String       @default("pending") // pending | en_route | on_site | done
+  technicianNotes String?
   notes           String?
   workSummary     String?
   materialsUsed   String?
   completionNotes String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  technician      User?        @relation("JobTechnician", fields: [technicianUserId], references: [id])
   estimates       Estimate[]
   invoices        Invoice[]
   reminders       Reminder[]
@@ -222,6 +227,8 @@ model Job {
 
   @@index([organizationId])
   @@index([customerId])
+  @@index([technicianUserId])
+  @@index([organizationId, technicianUserId, fieldStatus])
 }
 
 model Estimate {
@@ -361,6 +368,7 @@ model ProofOfWorkAsset {
   fileUrl        String
   fileType       String
   fileSize       Int?
+  kind           String       @default("general") // general | before | after
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   job            Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())

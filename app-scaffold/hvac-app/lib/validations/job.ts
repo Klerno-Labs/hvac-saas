@@ -8,6 +8,7 @@ export const createJobSchema = z.object({
   title: z.string().min(1, 'Job title is required').max(200),
   notes: z.string().max(2000).optional().or(z.literal('')),
   scheduledFor: z.string().optional().or(z.literal('')),
+  technicianMemberId: z.string().optional().or(z.literal('')),
 })
 
 export const updateJobStatusSchema = z.object({
