@@ -566,3 +566,30 @@ model EquipmentServiceRecord {
   @@index([equipmentId])
   @@index([jobId])
 }
+
+/// Platform-level (not organization-scoped) record of every verified inbound
+/// Stripe webhook event. Drives idempotent delivery, bounded-backoff retry,
+/// and the dead-letter queue. Keyed by Stripe's event id so redeliveries
+/// collapse onto a single row.
+///
+/// NOTE: This model intentionally stores NO raw event payload (only a hash) to
+/// keep PII / payment data out of the replay table. Replay re-fetches the
+/// event from the Stripe API by id.
+model StripeWebhookEvent {
+  // Stripe event id (e.g. "evt_1P..."), used as the idempotency key.
+  eventId        String   @id
+  eventType      String
+  payloadHash    String   // sha256 of the raw webhook body — integrity / dedup aid only
+  status         String   @default("pending") // pending|succeeded|retry_scheduled|dead_lettered
+  attempts       Int      @default(0)         // number of handler dispatches
+  lastError      String?                       // sanitized error from the most recent failure
+  nextRetryAt    DateTime?                     // when the scheduler may re-attempt (retry_scheduled only)
+  lastAttemptAt  DateTime?
+  receivedAt     DateTime @default(now())     // first verified delivery
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([status])
+  @@index([receivedAt])
+}
