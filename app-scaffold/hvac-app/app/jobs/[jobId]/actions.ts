@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { updateJobStatusSchema } from '@/lib/validations/job'
 
 type UpdateStatusResult =
@@ -56,6 +57,16 @@ export async function updateJobStatus(jobId: string, formData: FormData): Promis
     entityType: 'job',
     entityId: jobId,
     metadataJson: { from: job.status, to: status },
+  })
+
+  await logAudit({
+    organizationId,
+    actorId: userId,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'job_status_updated',
+    targetType: 'job',
+    targetId: jobId,
+    metadata: { from: job.status, to: status, title: job.title },
   })
 
   return { success: true }
