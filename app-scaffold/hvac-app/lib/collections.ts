@@ -4,6 +4,7 @@ import { sendCollectionEmail } from '@/lib/email'
 import { sendCollectionSms } from '@/lib/sms'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { COLLECTION_STAGES, type CollectionStage } from '@/lib/validations/collections'
+import { isSubscriptionActive, hasRequiredPlan } from '@/lib/billing'
 
 type RunResult = {
   organizationsProcessed: number
@@ -32,10 +33,20 @@ export async function runCollectionsAutomation(): Promise<RunResult> {
       collectionsOverdue1Days: true,
       collectionsOverdue2Days: true,
       collectionsFinalDays: true,
+      subscriptionStatus: true,
+      subscriptionPlan: true,
+      trialEndsAt: true,
     },
   })
 
   for (const org of organizations) {
+    if (!isSubscriptionActive(org)) {
+      continue
+    }
+    
+    if (!hasRequiredPlan(org, 'pro')) {
+      continue
+    }
     result.organizationsProcessed++
 
     // Find eligible invoices: sent or overdue, not paid/void/draft, not paused, with a due date

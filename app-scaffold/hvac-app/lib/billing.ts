@@ -1,5 +1,6 @@
 import { getStripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
+import { redirect } from 'next/navigation'
 
 export const PLANS = {
   starter: {
@@ -70,12 +71,44 @@ export async function createSubscriptionCheckout(params: {
 
 /**
  * Check if an organization has an active subscription or is in trial.
+ * An org with no trialEndsAt and no active Stripe subscription is NOT active.
  */
 export function isSubscriptionActive(org: { subscriptionStatus: string; trialEndsAt: Date | null }): boolean {
   if (org.subscriptionStatus === 'active') return true
   if (org.subscriptionStatus === 'trialing') {
-    if (!org.trialEndsAt) return true // no trial end set = unlimited trial (beta)
+    if (!org.trialEndsAt) return false
     return org.trialEndsAt > new Date()
   }
   return false
+}
+
+/**
+ * Check if an organization's subscription plan meets or exceeds the required plan.
+ * Returns true if org's plan is at least the required plan (e.g., 'pro' >= 'starter').
+ */
+export function hasRequiredPlan(org: { subscriptionPlan: string }, requiredPlan: PlanId): boolean {
+  const orgPlan = org.subscriptionPlan as PlanId
+  
+  if (orgPlan === requiredPlan) return true
+  
+  if (requiredPlan === 'starter') return true
+  
+  if (requiredPlan === 'pro' && orgPlan === 'starter') return false
+  
+  return true
+}
+
+/**
+ * Server-only helper to enforce Pro plan requirements.
+ * Redirects to /settings/billing if the org is on Starter plan.
+ * Use this on Pro-only features: collections automation, accounting sync, team invites beyond Starter cap.
+ *
+ * @param org - Organization object with subscriptionPlan field
+ * @param requiredPlan - Plan ID required (typically 'pro')
+ * @throws Redirect to /settings/billing if plan requirement not met
+ */
+export function requirePlan(org: { subscriptionPlan: string }, requiredPlan: PlanId): void {
+  if (!hasRequiredPlan(org, requiredPlan)) {
+    redirect('/settings/billing')
+  }
 }

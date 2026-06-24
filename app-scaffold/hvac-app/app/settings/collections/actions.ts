@@ -5,6 +5,7 @@ import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
 import { requireAdmin } from '@/lib/require-admin'
 import { updateCollectionsPolicySchema } from '@/lib/validations/collections'
+import { requirePlan } from '@/lib/billing'
 
 type ActionResult =
   | { success: true }
@@ -23,6 +24,13 @@ export async function updateCollectionsPolicy(input: {
   }
 
   const { userId, organizationId } = adminResult.context
+
+  const org = await db.organization.findUnique({ where: { id: organizationId } })
+  if (!org) {
+    return { success: false, error: 'Organization not found' }
+  }
+  
+  requirePlan(org, 'pro')
 
   const parsed = updateCollectionsPolicySchema.safeParse(input)
   if (!parsed.success) {
