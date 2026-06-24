@@ -8,7 +8,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const EXT_MAP: Record<string, string> = {
   'image/jpeg': '.jpg',
@@ -74,13 +74,58 @@ export async function POST(request: NextRequest) {
   const ext = EXT_MAP[file.type] || '.jpg'
   const uniqueName = `${crypto.randomUUID()}${ext}`
 
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-  await mkdir(uploadsDir, { recursive: true })
+  const hasR2Config = !!(
+    process.env.R2_ACCOUNT_ID &&
+    process.env.R2_ACCESS_KEY_ID &&
+    process.env.R2_SECRET_ACCESS_KEY &&
+    process.env.R2_BUCKET &&
+    process.env.R2_PUBLIC_BASE_URL
+  )
 
-  const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(path.join(uploadsDir, uniqueName), buffer)
+  let fileUrl: string
 
-  const fileUrl = `/uploads/${uniqueName}`
+  if (hasR2Config) {
+    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
+    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
+
+    const r2Client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    })
+
+    const key = `uploads/${uniqueName}`
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: key,
+      ContentType: file.type,
+      ContentLength: file.size,
+    })
+
+    const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 })
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    await fetch(presignedUrl, {
+      method: 'PUT',
+      body: buffer,
+      headers: { 'Content-Type': file.type },
+    })
+
+    fileUrl = `${process.env.R2_PUBLIC_BASE_URL}/${key}`
+  } else {
+    console.warn('R2 env vars not configured, falling back to local filesystem')
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+    await mkdir(uploadsDir, { recursive: true })
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    await writeFile(path.join(uploadsDir, uniqueName), buffer)
+
+    fileUrl = `/uploads/${uniqueName}`
+  }
 
   const asset = await db.proofOfWorkAsset.create({
     data: {
