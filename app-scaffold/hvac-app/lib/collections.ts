@@ -34,7 +34,7 @@ export async function runCollectionsAutomation(): Promise<RunResult> {
       collectionsOverdue2Days: true,
       collectionsFinalDays: true,
       subscriptionStatus: true,
-      subscriptionPlan: true,
+      plan: true,
       trialEndsAt: true,
     },
   })

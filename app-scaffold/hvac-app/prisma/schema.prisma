@@ -7,6 +7,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Plan {
+  FREE
+  STARTER
+  PRO
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+}
+
+model PlanLimit {
+  id                  String   @id @default(cuid())
+  plan                Plan     @unique
+  maxUsers            Int
+  maxJobsPerMonth     Int
+  maxActiveCustomers  Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model WebhookEvent {
+  id            String        @id @default(cuid())
+  stripeEventId String        @unique
+  type          String
+  orgId         String?
+  receivedAt    DateTime      @default(now())
+  processedAt   DateTime?
+  metadata      Json?
+}
+
 model User {
   id             String               @id @default(cuid())
   name           String?
@@ -86,10 +121,13 @@ model Organization {
   collectionsFinalDays     Int                  @default(30)
   smsEnabled               Boolean              @default(false)
   platformFeePercent       Float                @default(2.9)
-  subscriptionStatus       String               @default("trialing")
-  subscriptionPlan         String               @default("starter")
-  subscriptionStripeId     String?
+  stripeCustomerId         String?              @unique
+  stripeSubscriptionId     String?              @unique
+  subscriptionStatus       SubscriptionStatus   @default(TRIALING)
+  plan                     Plan                 @default(STARTER)
   trialEndsAt              DateTime?
+  currentPeriodEnd         DateTime?
+  readOnlyAt               DateTime?
   accountingProvider       String?
   accountingConnected      Boolean              @default(false)
   accountingLastSyncAt     DateTime?

@@ -26,17 +26,17 @@ export default async function BillingPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold capitalize">{organization.subscriptionPlan}</span>
+            <span className="text-lg font-bold capitalize">{organization.plan.toLowerCase()}</span>
             <Badge variant={isActive ? 'default' : 'destructive'}>
-              {organization.subscriptionStatus === 'trialing' ? 'Trial' : organization.subscriptionStatus}
+              {organization.subscriptionStatus === 'TRIALING' ? 'Trial' : organization.subscriptionStatus.toLowerCase()}
             </Badge>
           </div>
-          {organization.trialEndsAt && organization.subscriptionStatus === 'trialing' && (
+          {organization.trialEndsAt && organization.subscriptionStatus === 'TRIALING' && (
             <p className="text-sm text-muted-foreground mt-2">
               Trial ends {new Date(organization.trialEndsAt).toLocaleDateString()}
             </p>
           )}
-          {!organization.trialEndsAt && organization.subscriptionStatus === 'trialing' && (
+          {!organization.trialEndsAt && organization.subscriptionStatus === 'TRIALING' && (
             <p className="text-sm text-muted-foreground mt-2">
               Free beta — no trial expiration set
             </p>
@@ -46,7 +46,7 @@ export default async function BillingPage() {
 
       <div className="grid md:grid-cols-2 gap-6">
         {(Object.entries(PLANS) as [string, typeof PLANS[keyof typeof PLANS]][]).map(([planId, plan]) => (
-          <Card key={planId} className={organization.subscriptionPlan === planId ? 'border-primary border-2' : ''}>
+          <Card key={planId} className={organization.plan.toLowerCase() === planId ? 'border-primary border-2' : ''}>
             <CardHeader>
               <CardTitle>{plan.name}</CardTitle>
               <CardDescription>
@@ -62,7 +62,7 @@ export default async function BillingPage() {
                   </li>
                 ))}
               </ul>
-              {organization.subscriptionPlan === planId && isActive ? (
+              {organization.plan.toLowerCase() === planId && isActive ? (
                 <Badge variant="outline" className="w-full justify-center py-2">Current plan</Badge>
               ) : (
                 <SubscribeButton planId={planId} userEmail={user.email || ''} />

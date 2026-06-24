@@ -40,9 +40,9 @@ export async function createSubscriptionCheckout(params: {
   if (!org) return { error: 'Organization not found' }
 
   // If org already has a subscription, redirect to billing portal
-  if (org.subscriptionStripeId) {
+  if (org.stripeCustomerId) {
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: org.subscriptionStripeId,
+      customer: org.stripeCustomerId,
       return_url: `${appUrl}/settings`,
     })
     return { url: portalSession.url }
@@ -73,9 +73,9 @@ export async function createSubscriptionCheckout(params: {
  * Check if an organization has an active subscription or is in trial.
  * An org with no trialEndsAt and no active Stripe subscription is NOT active.
  */
-export function isSubscriptionActive(org: { subscriptionStatus: string; trialEndsAt: Date | null }): boolean {
-  if (org.subscriptionStatus === 'active') return true
-  if (org.subscriptionStatus === 'trialing') {
+export function isSubscriptionActive(org: { subscriptionStatus: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE'; trialEndsAt: Date | null }): boolean {
+  if (org.subscriptionStatus === 'ACTIVE') return true
+  if (org.subscriptionStatus === 'TRIALING') {
     if (!org.trialEndsAt) return false
     return org.trialEndsAt > new Date()
   }
@@ -86,8 +86,8 @@ export function isSubscriptionActive(org: { subscriptionStatus: string; trialEnd
  * Check if an organization's subscription plan meets or exceeds the required plan.
  * Returns true if org's plan is at least the required plan (e.g., 'pro' >= 'starter').
  */
-export function hasRequiredPlan(org: { subscriptionPlan: string }, requiredPlan: PlanId): boolean {
-  const orgPlan = org.subscriptionPlan as PlanId
+export function hasRequiredPlan(org: { plan: 'FREE' | 'STARTER' | 'PRO' }, requiredPlan: PlanId): boolean {
+  const orgPlan = org.plan.toLowerCase() as PlanId
   
   if (orgPlan === requiredPlan) return true
   
@@ -103,11 +103,11 @@ export function hasRequiredPlan(org: { subscriptionPlan: string }, requiredPlan:
  * Redirects to /settings/billing if the org is on Starter plan.
  * Use this on Pro-only features: collections automation, accounting sync, team invites beyond Starter cap.
  *
- * @param org - Organization object with subscriptionPlan field
+ * @param org - Organization object with plan field
  * @param requiredPlan - Plan ID required (typically 'pro')
  * @throws Redirect to /settings/billing if plan requirement not met
  */
-export function requirePlan(org: { subscriptionPlan: string }, requiredPlan: PlanId): void {
+export function requirePlan(org: { plan: 'FREE' | 'STARTER' | 'PRO' }, requiredPlan: PlanId): void {
   if (!hasRequiredPlan(org, requiredPlan)) {
     redirect('/settings/billing')
   }

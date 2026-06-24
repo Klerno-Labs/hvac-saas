@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { POST as collectionsRun } from '@/app/api/collections/run/route'
 import { POST as recurringGenerate } from '@/app/api/recurring/generate/route'
 
 describe('cron route authentication', () => {
-  const originalEnv = process.env
-
   beforeEach(() => {
-    process.env = { ...originalEnv }
     process.env.COLLECTIONS_CRON_SECRET = 'test-secret'
-    process.env.NODE_ENV = 'production'
+  })
+
+  afterEach(() => {
+    delete process.env.COLLECTIONS_CRON_SECRET
   })
 
   describe('/api/collections/run', () => {
@@ -51,17 +51,20 @@ describe('cron route authentication', () => {
       expect(data).toHaveProperty('error', 'Unauthorized')
     })
 
-    it('returns 500 when COLLECTIONS_CRON_SECRET not configured in production', async () => {
-      delete process.env.COLLECTIONS_CRON_SECRET
-      const request = new Request('http://localhost:3000/api/collections/run', {
-        method: 'POST'
-      })
-      const response = await collectionsRun(request)
-      
-      expect(response.status).toBe(500)
-      const data = await response.json()
-      expect(data).toHaveProperty('error', 'COLLECTIONS_CRON_SECRET not configured')
+  it('returns 500 when COLLECTIONS_CRON_SECRET not configured in production', async () => {
+    delete process.env.COLLECTIONS_CRON_SECRET
+    const request = new Request('http://localhost:3000/api/collections/run', {
+      method: 'POST',
+      headers: {
+        'x-vercel-env': 'production',
+      },
     })
+    const response = await collectionsRun(request)
+    
+    expect(response.status).toBe(500)
+    const data = await response.json()
+    expect(data).toHaveProperty('error', 'COLLECTIONS_CRON_SECRET not configured')
+  })
   })
 
   describe('/api/recurring/generate', () => {
@@ -107,7 +110,10 @@ describe('cron route authentication', () => {
     it('returns 500 when COLLECTIONS_CRON_SECRET not configured in production', async () => {
       delete process.env.COLLECTIONS_CRON_SECRET
       const request = new Request('http://localhost:3000/api/recurring/generate', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'x-vercel-env': 'production',
+        },
       })
       const response = await recurringGenerate(request)
       

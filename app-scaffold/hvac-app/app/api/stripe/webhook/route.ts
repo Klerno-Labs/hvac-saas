@@ -347,26 +347,27 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const org = await db.organization.findUnique({ where: { id: organizationId } })
   if (!org) return
 
-  const statusMap: Record<string, string> = {
-    active: 'active',
-    trialing: 'trialing',
-    past_due: 'past_due',
-    canceled: 'canceled',
-    unpaid: 'unpaid',
-    incomplete: 'incomplete',
+  const statusMap: Record<string, 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE'> = {
+    active: 'ACTIVE',
+    trialing: 'TRIALING',
+    past_due: 'PAST_DUE',
+    canceled: 'CANCELED',
+    unpaid: 'UNPAID',
+    incomplete: 'INCOMPLETE',
   }
 
-  const newStatus = statusMap[subscription.status] || subscription.status
-  const planId = subscription.metadata?.planId || org.subscriptionPlan
+  const newStatus = statusMap[subscription.status] || 'ACTIVE'
+  const planId = (subscription.metadata?.planId as 'FREE' | 'STARTER' | 'PRO') || org.plan
 
   await db.organization.update({
     where: { id: organizationId },
     data: {
       subscriptionStatus: newStatus,
-      subscriptionPlan: planId,
-      subscriptionStripeId: typeof subscription.customer === 'string'
-        ? subscription.customer
-        : subscription.customer?.id || org.subscriptionStripeId,
+      plan: planId,
+      stripeSubscriptionId: subscription.id,
+      currentPeriodEnd: subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000)
+        : null,
     },
   })
 
