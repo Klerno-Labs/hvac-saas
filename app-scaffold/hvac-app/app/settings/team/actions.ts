@@ -62,7 +62,7 @@ export async function inviteTeamMember(formData: FormData): Promise<InviteResult
   
   const totalSeats = currentMemberCount + pendingInviteCount
   
-  if (org.subscriptionPlan === 'starter' && totalSeats >= 1) {
+  if (org.plan === 'STARTER' && totalSeats >= 1) {
     return { success: false, error: 'Starter plan is limited to 1 team member. Upgrade to Pro to add more team members.' }
   }
 

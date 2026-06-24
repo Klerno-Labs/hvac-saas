@@ -82,7 +82,7 @@ export default async function ReferralsPage() {
                       Joined {new Date(ref.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <Badge variant={ref.subscriptionStatus === 'active' ? 'default' : 'secondary'}>
+                  <Badge variant={ref.subscriptionStatus === 'ACTIVE' ? 'default' : 'secondary'}>
                     {ref.subscriptionStatus}
                   </Badge>
                 </div>

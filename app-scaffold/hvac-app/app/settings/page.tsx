@@ -69,7 +69,7 @@ export default async function SettingsPage() {
           <div>
             <CardTitle>Billing</CardTitle>
             <CardDescription>
-              {organization.subscriptionPlan} plan — {organization.subscriptionStatus}
+              {organization.plan.toLowerCase()} plan — {organization.subscriptionStatus.toLowerCase()}
             </CardDescription>
           </div>
           <Link href="/settings/billing" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>
