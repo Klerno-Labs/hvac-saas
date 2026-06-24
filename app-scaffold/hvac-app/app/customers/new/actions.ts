@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { createCustomerSchema } from '@/lib/validations/customer'
 
 type CreateCustomerResult =
@@ -70,6 +71,21 @@ export async function createCustomer(formData: FormData): Promise<CreateCustomer
     eventName: 'customer_created',
     entityType: 'customer',
     entityId: customer.id,
+  })
+
+  await logAudit({
+    organizationId,
+    actorId: userId,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'customer_created',
+    targetType: 'customer',
+    targetId: customer.id,
+    metadata: {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      phone: customer.phone,
+    },
   })
 
   return { success: true, customerId: customer.id }

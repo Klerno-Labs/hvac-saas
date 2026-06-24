@@ -3,7 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
-import { logAudit } from '@/lib/audit'
+import { logAudit, summarizeChanges } from '@/lib/audit'
 import { updateInvoiceSchema, updateInvoiceStatusSchema } from '@/lib/validations/invoice'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendInvoiceEmail } from '@/lib/email'
@@ -86,12 +86,35 @@ export async function updateInvoice(
     })
   })
 
+  const priceDiff = summarizeChanges(
+    {
+      subtotalCents: invoice.subtotalCents,
+      taxCents: invoice.taxCents,
+      totalCents: invoice.totalCents,
+    },
+    { subtotalCents, taxCents, totalCents },
+  )
+
   await trackEvent({
     organizationId,
     userId,
     eventName: 'invoice_updated',
     entityType: 'invoice',
     entityId: invoiceId,
+  })
+
+  await logAudit({
+    organizationId,
+    actorId: userId,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'invoice_updated',
+    targetType: 'invoice',
+    targetId: invoiceId,
+    metadata: {
+      invoiceNumber: invoice.invoiceNumber,
+      diff: priceDiff,
+      lineItemCount: data.lineItems.length,
+    },
   })
 
   return { success: true }

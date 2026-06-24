@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { getStripe } from '@/lib/stripe'
 
 type CreateCheckoutResult =
@@ -147,6 +148,20 @@ export async function createCheckoutSession(invoiceId: string): Promise<CreateCh
     entityType: 'invoice',
     entityId: invoice.id,
     metadataJson: { checkoutSessionId: checkoutSession.id },
+  })
+
+  await logAudit({
+    organizationId,
+    actorId: userId,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'payment_initiated',
+    targetType: 'invoice',
+    targetId: invoice.id,
+    metadata: {
+      invoiceNumber: invoice.invoiceNumber,
+      amountCents: invoice.totalCents,
+      checkoutSessionId: checkoutSession.id,
+    },
   })
 
   return { success: true, checkoutUrl: checkoutSession.url! }

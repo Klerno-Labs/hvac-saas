@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { createInvoiceSchema } from '@/lib/validations/invoice'
 
 type CreateInvoiceResult =
@@ -92,6 +93,21 @@ export async function createInvoice(input: {
     eventName: 'invoice_created',
     entityType: 'invoice',
     entityId: invoice.id,
+  })
+
+  await logAudit({
+    organizationId,
+    actorId: userId,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'invoice_created',
+    targetType: 'invoice',
+    targetId: invoice.id,
+    metadata: {
+      invoiceNumber: invoice.invoiceNumber,
+      jobId: invoice.jobId,
+      customerId: invoice.customerId,
+      totalCents: invoice.totalCents,
+    },
   })
 
   return { success: true, invoiceId: invoice.id }

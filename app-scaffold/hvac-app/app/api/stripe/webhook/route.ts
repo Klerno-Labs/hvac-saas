@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import Stripe from 'stripe'
 
 export async function POST(req: Request) {
@@ -137,6 +138,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     metadataJson: { paymentIntentId, sessionId: session.id },
   })
 
+  await logAudit({
+    organizationId: invoice.organizationId,
+    actorEmail: 'stripe-webhook',
+    eventType: 'payment_confirmed',
+    targetType: 'invoice',
+    targetId: invoiceId,
+    metadata: {
+      invoiceNumber: invoice.invoiceNumber,
+      amountCents: session.amount_total ?? invoice.totalCents,
+      paymentIntentId,
+      sessionId: session.id,
+    },
+  })
+
   await trackEvent({
     organizationId: invoice.organizationId,
     eventName: 'collections_stopped_due_to_payment',
@@ -205,6 +220,20 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
     entityId: invoiceId,
     metadataJson: { reason: 'checkout_expired', sessionId: session.id },
   })
+
+  await logAudit({
+    organizationId: invoice.organizationId,
+    actorEmail: 'stripe-webhook',
+    eventType: 'payment_failed',
+    targetType: 'invoice',
+    targetId: invoiceId,
+    metadata: {
+      invoiceNumber: invoice.invoiceNumber,
+      amountCents: invoice.totalCents,
+      reason: 'checkout_expired',
+      sessionId: session.id,
+    },
+  })
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {
@@ -259,6 +288,20 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     entityType: 'invoice',
     entityId: invoiceId,
     metadataJson: { reason: 'payment_intent_failed', paymentIntentId: paymentIntent.id },
+  })
+
+  await logAudit({
+    organizationId: invoice.organizationId,
+    actorEmail: 'stripe-webhook',
+    eventType: 'payment_failed',
+    targetType: 'invoice',
+    targetId: invoiceId,
+    metadata: {
+      invoiceNumber: invoice.invoiceNumber,
+      amountCents: invoice.totalCents,
+      reason: 'payment_intent_failed',
+      paymentIntentId: paymentIntent.id,
+    },
   })
 }
 

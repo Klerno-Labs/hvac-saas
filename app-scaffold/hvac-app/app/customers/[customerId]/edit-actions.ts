@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit, summarizeChanges } from '@/lib/audit'
 import { createCustomerSchema } from '@/lib/validations/customer'
 
 type ActionResult = { success: true } | { success: false; error: string }
@@ -54,12 +55,36 @@ export async function updateCustomer(customerId: string, formData: FormData): Pr
     },
   })
 
+  const diff = summarizeChanges(customer, {
+    firstName: data.firstName,
+    lastName: data.lastName || null,
+    companyName: data.companyName || null,
+    email: data.email || null,
+    phone: data.phone,
+    addressLine1: data.addressLine1 || null,
+    addressLine2: data.addressLine2 || null,
+    city: data.city || null,
+    state: data.state || null,
+    postalCode: data.postalCode || null,
+    notes: data.notes || null,
+  })
+
   await trackEvent({
     organizationId: membership.organizationId,
     userId: session.user.id,
     eventName: 'customer_updated',
     entityType: 'customer',
     entityId: customerId,
+  })
+
+  await logAudit({
+    organizationId: membership.organizationId,
+    actorId: session.user.id,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'customer_updated',
+    targetType: 'customer',
+    targetId: customerId,
+    metadata: { diff },
   })
 
   return { success: true }
@@ -88,6 +113,20 @@ export async function deleteCustomer(customerId: string): Promise<ActionResult> 
     eventName: 'customer_deleted',
     entityType: 'customer',
     entityId: customerId,
+  })
+
+  await logAudit({
+    organizationId: membership.organizationId,
+    actorId: session.user.id,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'customer_deleted',
+    targetType: 'customer',
+    targetId: customerId,
+    metadata: {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+    },
   })
 
   return { success: true }

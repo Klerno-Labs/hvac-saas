@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { createJobSchema } from '@/lib/validations/job'
 
 type CreateJobResult =
@@ -65,6 +66,20 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
     eventName: 'job_created',
     entityType: 'job',
     entityId: job.id,
+  })
+
+  await logAudit({
+    organizationId,
+    actorId: userId,
+    actorEmail: session.user.email ?? undefined,
+    eventType: 'job_created',
+    targetType: 'job',
+    targetId: job.id,
+    metadata: {
+      customerId: job.customerId,
+      title: job.title,
+      status: job.status,
+    },
   })
 
   return { success: true, jobId: job.id }
