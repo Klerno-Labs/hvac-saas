@@ -117,6 +117,9 @@ model Organization {
   inventoryUsages          InventoryUsage[]
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
+  membershipPlans          MembershipPlan[]
+  membershipEnrollments    MembershipEnrollment[]
+  membershipCoverage       MembershipEquipment[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -172,6 +175,7 @@ model Customer {
   recurringJobs  RecurringJob[]
   reviews        CustomerReview[]
   equipment      Equipment[]
+  memberships    MembershipEnrollment[]
   deletedAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -452,13 +456,16 @@ model RecurringJob {
   nextDueDate     DateTime
   lastGeneratedAt DateTime?
   isActive        Boolean      @default(true)
+  membershipId    String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id])
+  membership      MembershipEnrollment? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   @@index([organizationId])
   @@index([customerId])
+  @@index([membershipId])
 }
 
 model CustomerReview {
@@ -542,6 +549,7 @@ model Equipment {
   organization        Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer            Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
   serviceRecords      EquipmentServiceRecord[]
+  membershipCoverage  MembershipEquipment[]
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
 
@@ -565,4 +573,81 @@ model EquipmentServiceRecord {
   @@index([organizationId])
   @@index([equipmentId])
   @@index([jobId])
+}
+
+// ---------------------------------------------------------------------------
+// Memberships / service-agreement engine
+//
+// A MembershipPlan is an organization-scoped reusable template (e.g.
+// "Comfort Club — annual maintenance, 2 included visits").  A
+// MembershipEnrollment binds a Customer to a Plan, schedules the covered
+// visits via RecurringJob(s), and tracks which Equipment is covered.
+//
+// Visit scheduling reuses the existing RecurringJob machinery: enrolling
+// creates active RecurringJob rows that the existing
+// /api/recurring/generate cron turns into Jobs.  No changes to that cron.
+//
+// NOTE: customer-dues recurring *billing* is intentionally out of scope for
+// this iteration (see docs/known-issues.md). priceCents is a plan attribute
+// only — nothing charges the customer yet.
+// ---------------------------------------------------------------------------
+
+model MembershipPlan {
+  id                    String                @id @default(cuid())
+  organizationId        String
+  name                  String
+  description           String?
+  termMonths            Int                   @default(12)
+  visitFrequency        String                // monthly|quarterly|biannual|annual
+  includedVisitsPerTerm Int                   @default(1)
+  // Informational price for the plan term. Charging dues is a follow-on
+  // (see docs/known-issues.md); this field is display-only for now.
+  priceCents            Int                   @default(0)
+  isActive              Boolean               @default(true)
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  enrollments           MembershipEnrollment[]
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@index([organizationId])
+}
+
+model MembershipEnrollment {
+  id              String                @id @default(cuid())
+  organizationId  String
+  customerId      String
+  planId          String
+  status          String                @default("active") // active|paused|cancelled|expired
+  // When the current membership term began. Term boundaries are *derived*
+  // from this + plan.termMonths (see lib/memberships.ts) — never stored
+  // twice, so utilization can never drift.
+  effectiveDate   DateTime
+  notes           String?
+  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer        Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan            MembershipPlan        @relation(fields: [planId], references: [id])
+  schedules       RecurringJob[]
+  coveredEquipment MembershipEquipment[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([planId])
+}
+
+model MembershipEquipment {
+  id                    String              @id @default(cuid())
+  organizationId        String
+  membershipEnrollmentId String
+  equipmentId           String
+  organization          Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  membershipEnrollment  MembershipEnrollment @relation(fields: [membershipEnrollmentId], references: [id], onDelete: Cascade)
+  equipment             Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  createdAt             DateTime            @default(now())
+
+  @@unique([membershipEnrollmentId, equipmentId])
+  @@index([organizationId])
+  @@index([membershipEnrollmentId])
+  @@index([equipmentId])
 }
