@@ -24,6 +24,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
         estimates: { orderBy: { createdAt: 'desc' } },
         invoices: { orderBy: { createdAt: 'desc' } },
         assets: { orderBy: { createdAt: 'asc' } },
+        signatures: { orderBy: { signedAt: 'desc' } },
         inventoryUsages: {
           orderBy: { createdAt: 'desc' },
           include: { inventoryItem: true },
@@ -151,6 +152,34 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
                     className="object-cover w-full h-full hover:opacity-90 transition-opacity"
                   />
                 </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Signatures */}
+      {job.signatures.length > 0 && (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground mb-2">
+              Customer signature{job.signatures.length > 1 ? 's' : ''} ({job.signatures.length})
+            </p>
+            <div className="space-y-3">
+              {job.signatures.map((signature) => (
+                <div key={signature.id} className="border rounded-lg p-3 bg-muted/30">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-sm font-medium">{signature.signerName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(signature.signedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <img
+                    src={signature.signatureImageUrl}
+                    alt={`Signature by ${signature.signerName}`}
+                    className="max-h-20 bg-white rounded border p-1"
+                  />
+                </div>
               ))}
             </div>
           </CardContent>

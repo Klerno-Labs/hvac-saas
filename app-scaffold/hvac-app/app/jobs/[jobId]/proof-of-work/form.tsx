@@ -3,10 +3,12 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { recordProofOfWork } from './actions'
+import { saveJobSignature } from './signature-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { SignaturePad } from '@/components/signature-pad'
 
 type InitialData = {
   workSummary: string
@@ -44,6 +46,9 @@ export function ProofOfWorkForm({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [signatureDataUrl, setSignatureDataUrl] = useState('')
+  const [signerName, setSignerName] = useState('')
+  const [useTypedSignature, setUseTypedSignature] = useState(false)
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
@@ -110,12 +115,55 @@ export function ProofOfWorkForm({
     const formData = new FormData(e.currentTarget)
     const result = await recordProofOfWork(jobId, formData)
 
-    if (result.success) {
-      router.push(`/jobs/${jobId}`)
-    } else {
+    if (!result.success) {
       setError(result.error)
       setLoading(false)
+      return
     }
+
+    let finalSignatureDataUrl = signatureDataUrl
+    if (useTypedSignature && signerName) {
+      finalSignatureDataUrl = generateTypedSignatureUrl(signerName)
+    }
+
+    if (finalSignatureDataUrl && signerName) {
+      const signatureFormData = new FormData()
+      signatureFormData.append('signerName', signerName)
+      signatureFormData.append('signatureDataUrl', finalSignatureDataUrl)
+
+      const signatureResult = await saveJobSignature(jobId, signatureFormData)
+      if (!signatureResult.success) {
+        setError(`Proof of work saved, but signature failed: ${signatureResult.error}`)
+        setLoading(false)
+        return
+      }
+    }
+
+    router.push(`/jobs/${jobId}`)
+  }
+
+  function handleSignatureCapture(dataUrl: string) {
+    setSignatureDataUrl(dataUrl)
+  }
+
+  function generateTypedSignatureUrl(name: string): string {
+    if (!name) return ''
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return ''
+
+    canvas.width = 400
+    canvas.height = 100
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.font = 'italic 24px cursive, "Brush Script MT", "Comic Sans MS"'
+    ctx.fillStyle = '#000000'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(name, canvas.width / 2, canvas.height / 2)
+
+    return canvas.toDataURL('image/png')
   }
 
   return (
@@ -214,6 +262,66 @@ export function ProofOfWorkForm({
           {loading ? 'Saving...' : 'Record completion'}
         </Button>
       </form>
+
+      <div className="mt-6 pt-6 border-t space-y-4">
+        <h3 className="font-medium">Customer signature (optional)</h3>
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="useTypedSignature"
+              checked={useTypedSignature}
+              onChange={(e) => setUseTypedSignature(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="useTypedSignature" className="text-sm">
+              Use typed name instead of drawing
+            </Label>
+          </div>
+
+          {useTypedSignature ? (
+            <div className="space-y-2">
+              <Label htmlFor="signerNameTyped">Type customer name</Label>
+              <Input
+                id="signerNameTyped"
+                type="text"
+                value={signerName}
+                onChange={(e) => setSignerName(e.target.value)}
+                placeholder="Customer name"
+                disabled={loading}
+              />
+              {signerName && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Preview:</p>
+                  <p className="text-xl italic font-handwriting" style={{ fontFamily: 'cursive, Brush Script MT, Comic Sans MS' }}>{signerName}</p>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Typed names will be saved as a signature with timestamp
+              </p>
+            </div>
+          ) : (
+            <SignaturePad
+              onSignatureCapture={handleSignatureCapture}
+              disabled={loading || uploading}
+            />
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="signerName">Signer name *</Label>
+            <Input
+              id="signerName"
+              type="text"
+              value={signerName}
+              onChange={(e) => setSignerName(e.target.value)}
+              placeholder="Full name of person signing"
+              disabled={loading}
+              required={!!signatureDataUrl || useTypedSignature}
+            />
+          </div>
+        </div>
+      </div>
     </>
   )
 }
