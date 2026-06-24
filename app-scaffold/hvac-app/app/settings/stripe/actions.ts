@@ -124,3 +124,51 @@ export async function refreshStripeStatus(): Promise<RefreshResult> {
 
   return { success: true, chargesEnabled, payoutsEnabled }
 }
+
+type TerminalResult =
+  | { success: true; enabled: boolean }
+  | { success: false; error: string }
+
+export async function setTerminalEnabled(enabled: boolean): Promise<TerminalResult> {
+  const adminResult = await requireAdmin()
+  if (!adminResult.authorized) {
+    return { success: false, error: adminResult.error }
+  }
+
+  const { userId, organizationId } = adminResult.context
+
+  const org = await db.organization.findUnique({ where: { id: organizationId } })
+  if (!org) {
+    return { success: false, error: 'Organization not found' }
+  }
+
+  if (enabled && (!org.stripeConnectedAccountId || !org.stripeChargesEnabled)) {
+    return {
+      success: false,
+      error: 'Connect Stripe and complete onboarding (charges enabled) before enabling Terminal.',
+    }
+  }
+
+  await db.organization.update({
+    where: { id: organizationId },
+    data: { stripeTerminalEnabled: enabled },
+  })
+
+  await trackEvent({
+    organizationId,
+    userId,
+    eventName: enabled ? 'stripe_terminal_enabled' : 'stripe_terminal_disabled',
+    entityType: 'organization',
+    entityId: organizationId,
+  })
+
+  await logAudit({
+    organizationId,
+    actorId: userId,
+    eventType: enabled ? 'stripe_terminal_enabled' : 'stripe_terminal_disabled',
+    targetType: 'organization',
+    targetId: organizationId,
+  })
+
+  return { success: true, enabled }
+}

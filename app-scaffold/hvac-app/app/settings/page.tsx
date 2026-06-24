@@ -46,6 +46,7 @@ export default async function SettingsPage() {
         accountId={organization.stripeConnectedAccountId}
         chargesEnabled={organization.stripeChargesEnabled}
         payoutsEnabled={organization.stripePayoutsEnabled}
+        terminalEnabled={organization.stripeTerminalEnabled}
       />
 
       <CollectionsSettingsSection
