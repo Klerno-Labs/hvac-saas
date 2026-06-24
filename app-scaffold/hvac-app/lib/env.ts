@@ -61,6 +61,14 @@ export function validateEnv(): EnvCheckResult {
     if (!process.env.COLLECTIONS_CRON_SECRET) {
       warnings.push('COLLECTIONS_CRON_SECRET not set — collections API endpoint is unprotected')
     }
+    if (!process.env.PLATFORM_ADMIN_EMAILS) {
+      warnings.push('PLATFORM_ADMIN_EMAILS not set — Stripe dead-letter admin view (/admin/stripe-dead-letter) will be inaccessible')
+    }
+  }
+
+  // Stripe webhook retry queue — recommended for the dead-letter/replay feature.
+  if (!process.env.PLATFORM_ADMIN_EMAILS) {
+    warnings.push('PLATFORM_ADMIN_EMAILS not set — platform-admin tools (Stripe dead-letter queue) have no authorized operators')
   }
 
   return {
