@@ -96,6 +96,9 @@ model Organization {
   referredByOrgId          String?
   referredByOrg            Organization?        @relation("ReferredBy", fields: [referredByOrgId], references: [id])
   referrals                Organization[]       @relation("ReferredBy")
+  // Public online-booking widget
+  publicSlug               String?              @unique
+  bookingEnabled           Boolean              @default(false)
   members                  OrganizationMember[]
   customers                Customer[]
   jobs                     Job[]
@@ -117,6 +120,7 @@ model Organization {
   inventoryUsages          InventoryUsage[]
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
+  bookingRequests          BookingRequest[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -164,6 +168,7 @@ model Customer {
   state          String?
   postalCode     String?
   notes          String?
+  leadSource     String?
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   jobs           Job[]
   invoices       Invoice[]
@@ -172,6 +177,7 @@ model Customer {
   recurringJobs  RecurringJob[]
   reviews        CustomerReview[]
   equipment      Equipment[]
+  convertedBookings BookingRequest[] @relation("ConvertedBookings")
   deletedAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -207,6 +213,7 @@ model Job {
   workSummary     String?
   materialsUsed   String?
   completionNotes String?
+  leadSource      String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   estimates       Estimate[]
@@ -217,6 +224,7 @@ model Job {
   reviews         CustomerReview[]
   inventoryUsages InventoryUsage[]
   equipmentServiceRecords EquipmentServiceRecord[]
+  convertedBooking BookingRequest? @relation("ConvertedBookingJobs")
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -565,4 +573,39 @@ model EquipmentServiceRecord {
   @@index([organizationId])
   @@index([equipmentId])
   @@index([jobId])
+}
+
+model BookingRequest {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  status              String       @default("new") // new | confirmed | rejected
+  customerFirstName   String
+  customerLastName    String?
+  companyName         String?
+  email               String?
+  phone               String
+  addressLine1        String?
+  city                String?
+  state               String?
+  postalCode          String?
+  serviceType         String
+  preferredDate       DateTime?
+  preferredWindow     String       @default("anytime") // morning | afternoon | evening | anytime
+  description         String?
+  leadSource          String       @default("web_booking")
+  sourceIp            String?
+  convertedCustomerId String?
+  convertedJobId      String?      @unique
+  handledById         String?
+  handledAt           DateTime?
+  rejectionReason     String?
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  convertedCustomer   Customer?    @relation("ConvertedBookings", fields: [convertedCustomerId], references: [id])
+  convertedJob        Job?         @relation("ConvertedBookingJobs", fields: [convertedJobId], references: [id])
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([sourceIp])
 }

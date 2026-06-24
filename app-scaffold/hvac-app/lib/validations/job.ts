@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MANUAL_LEAD_SOURCES } from '@/lib/lead-source'
 
 export const JOB_STATUSES = ['draft', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const
 export type JobStatus = (typeof JOB_STATUSES)[number]
@@ -8,6 +9,7 @@ export const createJobSchema = z.object({
   title: z.string().min(1, 'Job title is required').max(200),
   notes: z.string().max(2000).optional().or(z.literal('')),
   scheduledFor: z.string().optional().or(z.literal('')),
+  leadSource: z.enum(MANUAL_LEAD_SOURCES as [string, ...string[]]).optional().or(z.literal('')),
 })
 
 export const updateJobStatusSchema = z.object({
