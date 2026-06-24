@@ -3,10 +3,11 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { sendJobCompletionNotice, type SendCompletionNoticeResult } from '@/lib/job-notifications'
 import { updateJobStatusSchema } from '@/lib/validations/job'
 
 type UpdateStatusResult =
-  | { success: true }
+  | { success: true; notice?: SendCompletionNoticeResult }
   | { success: false; error: string }
 
 export async function updateJobStatus(jobId: string, formData: FormData): Promise<UpdateStatusResult> {
@@ -57,6 +58,18 @@ export async function updateJobStatus(jobId: string, formData: FormData): Promis
     entityId: jobId,
     metadataJson: { from: job.status, to: status },
   })
+
+  // Fire the completion notice only on a transition INTO `completed`.
+  // The notice is idempotent (guarded by Job.completionNoticeSentAt) and
+  // best-effort, so a notification failure never blocks the status update.
+  if (status === 'completed' && job.status !== 'completed') {
+    try {
+      const notice = await sendJobCompletionNotice({ organizationId, jobId, actorId: userId })
+      return { success: true, notice }
+    } catch (error) {
+      console.error('[job-completion-notice]', error)
+    }
+  }
 
   return { success: true }
 }
