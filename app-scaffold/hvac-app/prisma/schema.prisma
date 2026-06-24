@@ -83,6 +83,10 @@ model Organization {
   collectionsOverdue2Days  Int                  @default(14)
   collectionsFinalDays     Int                  @default(30)
   smsEnabled               Boolean              @default(false)
+  // A2P 10DLC registration gate. Outbound SMS is blocked until the org's
+  // sending number is legally registered (external Twilio/brand step).
+  // Named tenDlcRegistered because identifiers cannot start with a digit.
+  tenDlcRegistered         Boolean              @default(false)
   platformFeePercent       Float                @default(2.9)
   subscriptionStatus       String               @default("trialing")
   subscriptionPlan         String               @default("starter")
@@ -117,6 +121,8 @@ model Organization {
   inventoryUsages          InventoryUsage[]
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
+  smsMessages              SmsMessage[]
+  smsOptOuts               SmsOptOut[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -172,6 +178,7 @@ model Customer {
   recurringJobs  RecurringJob[]
   reviews        CustomerReview[]
   equipment      Equipment[]
+  smsMessages    SmsMessage[]
   deletedAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -217,6 +224,7 @@ model Job {
   reviews         CustomerReview[]
   inventoryUsages InventoryUsage[]
   equipmentServiceRecords EquipmentServiceRecord[]
+  smsMessages      SmsMessage[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -565,4 +573,53 @@ model EquipmentServiceRecord {
   @@index([organizationId])
   @@index([equipmentId])
   @@index([jobId])
+}
+
+/// Two-way SMS conversation thread. Each row is org-scoped (tenant isolation).
+/// A single inbound Twilio message addressed to the shared org number may be
+/// threaded into multiple orgs when the same phone matches customers in more
+/// than one org; each such row carries the same providerMessageSid but a
+/// different organizationId, so uniqueness is enforced on that pair.
+model SmsMessage {
+  id                String       @id @default(cuid())
+  organizationId    String
+  customerId        String?
+  jobId             String?
+  direction         String // inbound | outbound
+  fromNumber        String // E.164 sender
+  toNumber          String // E.164 recipient
+  body              String
+  // queued | sent | delivered | failed (outbound) | received (inbound)
+  status            String       @default("queued")
+  providerMessageSid String?
+  // Slug of the template used for an outbound message (e.g. appointment_reminder)
+  templateSlug      String?
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer          Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  job               Job?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  createdAt         DateTime     @default(now())
+
+  @@unique([organizationId, providerMessageSid])
+  @@index([organizationId])
+  @@index([organizationId, customerId])
+  @@index([organizationId, toNumber])
+  @@index([customerId])
+}
+
+/// Per-org, per-phone SMS opt-out state for STOP/START keyword compliance.
+/// Tracked at the phone grain so opt-out survives customer-record edits and
+/// applies regardless of which customer record the number is attached to.
+model SmsOptOut {
+  id              String       @id @default(cuid())
+  organizationId  String
+  phone           String // E.164, normalized
+  // stop = carrier keyword opt-out; manual = admin-applied
+  optOutType      String       @default("stop")
+  reason          String?
+  liftedAt        DateTime?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+
+  @@unique([organizationId, phone])
+  @@index([organizationId, phone])
 }
