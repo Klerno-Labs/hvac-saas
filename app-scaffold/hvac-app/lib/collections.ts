@@ -105,9 +105,14 @@ export async function runCollectionsAutomation(): Promise<RunResult> {
               })
             }
 
-            // Send SMS if enabled and customer has a phone number
-            if (org.smsEnabled && invoice.customer.phone) {
+            // Send SMS if the customer has a phone. Send gating (smsEnabled +
+            // A2P 10DLC registration) and opt-out are enforced inside
+            // sendCollectionSms / sendCustomerSms so a STOP always stops
+            // collections too.
+            if (invoice.customer.phone) {
               await sendCollectionSms({
+                organizationId: org.id,
+                customerId: invoice.customer.id,
                 to: invoice.customer.phone,
                 customerName,
                 invoiceNumber: invoice.invoiceNumber,
