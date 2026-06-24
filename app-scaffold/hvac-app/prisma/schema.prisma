@@ -202,6 +202,7 @@ model Job {
   status          String       @default("draft")
   scheduledFor    DateTime?
   completedAt     DateTime?
+  completionNoticeSentAt DateTime?
   technicianName  String?
   notes           String?
   workSummary     String?

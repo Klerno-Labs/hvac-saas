@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { sendJobCompletionNotice } from '@/lib/job-notifications'
 import { recordProofOfWorkSchema } from '@/lib/validations/proof-of-work'
 
 type RecordResult =
@@ -66,6 +67,17 @@ export async function recordProofOfWork(jobId: string, formData: FormData): Prom
     entityType: 'job',
     entityId: jobId,
   })
+
+  // Proof-of-work forces status to `completed`, so it is also a completion
+  // trigger. Only fire the notice when the job was not already completed,
+  // and rely on the idempotent guard inside the helper as a backstop.
+  if (job.status !== 'completed') {
+    try {
+      await sendJobCompletionNotice({ organizationId, jobId, actorId: userId })
+    } catch (error) {
+      console.error('[job-completion-notice]', error)
+    }
+  }
 
   return { success: true }
 }
