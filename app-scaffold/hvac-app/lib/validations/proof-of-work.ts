@@ -7,4 +7,10 @@ export const recordProofOfWorkSchema = z.object({
   technicianName: z.string().max(100).optional().or(z.literal('')),
 })
 
+export const saveJobSignatureSchema = z.object({
+  signerName: z.string().min(1, 'Signer name is required').max(100),
+  signatureDataUrl: z.string().min(1, 'Signature image data is required'),
+})
+
 export type RecordProofOfWorkInput = z.infer<typeof recordProofOfWorkSchema>
+export type SaveJobSignatureInput = z.infer<typeof saveJobSignatureSchema>

@@ -405,6 +405,9 @@ model JobSignature {
   signedAt          DateTime     @default(now())
   organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   job               Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([jobId])
 }
 
 model CollectionAttempt {
