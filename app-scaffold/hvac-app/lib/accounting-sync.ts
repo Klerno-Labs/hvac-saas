@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { requirePlan } from '@/lib/billing'
 
 type SyncResult = {
   customersProcessed: number
@@ -30,6 +31,8 @@ export async function runAccountingSync(organizationId: string, userId?: string)
   if (!org || !org.accountingConnected || !org.accountingProvider) {
     return result
   }
+  
+  requirePlan(org, 'pro')
 
   await trackEvent({
     organizationId,
