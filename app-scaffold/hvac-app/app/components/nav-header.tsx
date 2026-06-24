@@ -18,6 +18,7 @@ import { MenuIcon } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard' },
+  { href: '/analytics', label: 'Analytics' },
   { href: '/customers', label: 'Customers' },
   { href: '/jobs', label: 'Jobs' },
   { href: '/calendar', label: 'Calendar' },
