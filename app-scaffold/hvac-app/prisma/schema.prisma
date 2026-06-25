@@ -243,8 +243,9 @@ model Job {
   customerId      String
   title           String
   status          String       @default("draft")
-  scheduledFor    DateTime?
-  completedAt     DateTime?
+  scheduledFor                DateTime?
+  completedAt                 DateTime?
+  appointmentReminderSentAt   DateTime?
   technicianName  String?
   notes           String?
   workSummary     String?

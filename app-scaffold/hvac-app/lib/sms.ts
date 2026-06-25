@@ -50,6 +50,19 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
   }
 }
 
+export async function sendAppointmentReminderSms(params: {
+  to: string
+  customerName: string
+  jobTitle: string
+  orgName: string
+  scheduledFor: Date
+}): Promise<SmsResult> {
+  const dateStr = params.scheduledFor.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const timeStr = params.scheduledFor.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const body = `Hi ${params.customerName}, reminder from ${params.orgName}: your appointment (${params.jobTitle}) is scheduled for ${dateStr} at ${timeStr}. Reply STOP to opt out.`
+  return sendSms(params.to, body)
+}
+
 /**
  * Send a collection reminder SMS for overdue invoices.
  */
