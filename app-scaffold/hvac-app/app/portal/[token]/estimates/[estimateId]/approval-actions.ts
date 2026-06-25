@@ -7,7 +7,7 @@ import { sendEmail } from '@/lib/email'
 import { renderEmail } from '@/lib/email-template'
 import { headers } from 'next/headers'
 
-type Result = { success: true; jobId?: string } | { success: false; error: string }
+type Result = { success: true; jobId?: string; depositRequired?: boolean; depositAmountCents?: number } | { success: false; error: string }
 
 async function getClientIp(): Promise<string | null> {
   const h = await headers()
@@ -88,7 +88,12 @@ export async function approveEstimate(
     }).catch((e) => console.error('approval notify failed', e))
   }
 
-  return { success: true, jobId: estimate.jobId }
+  return {
+    success: true,
+    jobId: estimate.jobId,
+    depositRequired: estimate.depositRequired,
+    depositAmountCents: estimate.depositAmountCents ?? undefined,
+  }
 }
 
 export async function declineEstimate(

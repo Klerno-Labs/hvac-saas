@@ -169,3 +169,59 @@ export async function updateEstimateStatus(
 
   return { success: true }
 }
+
+export async function setEstimateDeposit(
+  estimateId: string,
+  input: {
+    required: boolean
+    type?: 'percent' | 'fixed'
+    percent?: number
+    amountCents?: number
+  },
+): Promise<ActionResult> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: 'You must be logged in' }
+
+  const membership = await db.organizationMember.findFirst({ where: { userId: session.user.id } })
+  if (!membership) return { success: false, error: 'You must belong to an organization' }
+
+  const estimate = await db.estimate.findFirst({
+    where: { id: estimateId, organizationId: membership.organizationId },
+  })
+  if (!estimate) return { success: false, error: 'Estimate not found' }
+  if (estimate.status !== 'draft') return { success: false, error: 'Deposit can only be configured on draft estimates' }
+
+  if (!input.required) {
+    await db.estimate.update({
+      where: { id: estimateId },
+      data: { depositRequired: false, depositType: null, depositPercent: null, depositAmountCents: null, depositStatus: 'none' },
+    })
+    return { success: true }
+  }
+
+  let computedAmountCents: number
+  if (input.type === 'percent') {
+    if (input.percent === undefined || input.percent < 0 || input.percent > 100) {
+      return { success: false, error: 'Percent must be between 0 and 100' }
+    }
+    computedAmountCents = Math.round(estimate.totalCents * input.percent / 100)
+  } else {
+    if (input.amountCents === undefined || input.amountCents < 0) {
+      return { success: false, error: 'Amount must be a positive number' }
+    }
+    computedAmountCents = input.amountCents
+  }
+
+  await db.estimate.update({
+    where: { id: estimateId },
+    data: {
+      depositRequired: true,
+      depositType: input.type ?? 'fixed',
+      depositPercent: input.type === 'percent' ? (input.percent ?? null) : null,
+      depositAmountCents: computedAmountCents,
+      depositStatus: 'required',
+    },
+  })
+
+  return { success: true }
+}
