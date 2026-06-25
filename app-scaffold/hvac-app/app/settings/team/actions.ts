@@ -7,7 +7,6 @@ import { requireAdmin } from '@/lib/require-admin'
 import { sendTeamInviteEmail } from '@/lib/email'
 import { randomBytes } from 'crypto'
 import { z } from 'zod'
-import { requirePlan } from '@/lib/billing'
 
 const inviteSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -62,8 +61,8 @@ export async function inviteTeamMember(formData: FormData): Promise<InviteResult
   
   const totalSeats = currentMemberCount + pendingInviteCount
   
-  if (org.plan === 'STARTER' && totalSeats >= 1) {
-    return { success: false, error: 'Starter plan is limited to 1 team member. Upgrade to Pro to add more team members.' }
+  if (org.plan !== 'PRO' && totalSeats >= 1) {
+    return { success: false, error: 'Your plan is limited to 1 team member. Upgrade to Pro to add more team members.' }
   }
 
   await db.teamInvite.create({
