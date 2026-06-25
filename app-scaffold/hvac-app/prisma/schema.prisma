@@ -128,6 +128,12 @@ model Organization {
   trialEndsAt              DateTime?
   currentPeriodEnd         DateTime?
   readOnlyAt               DateTime?
+  // Dunning tracking for platform-subscription payment failures.
+  // Idempotency: dunningLastSentInvoiceId gates one email per failed invoice,
+  // so a redelivered webhook never double-sends. Cleared on payment_succeeded.
+  dunningLastSentInvoiceId String?
+  dunningAttempt           Int                  @default(0)
+  dunningLastSentAt        DateTime?
   accountingProvider       String?
   accountingConnected      Boolean              @default(false)
   accountingLastSyncAt     DateTime?
