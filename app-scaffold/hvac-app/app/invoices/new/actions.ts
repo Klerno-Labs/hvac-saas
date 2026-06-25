@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createInvoiceSchema } from '@/lib/validations/invoice'
+import { assertCanWrite, handleGuardError } from '@/lib/billing-guard'
 
 type CreateInvoiceResult =
   | { success: true; invoiceId: string }
@@ -32,6 +33,14 @@ export async function createInvoice(input: {
   }
 
   const organizationId = membership.organizationId
+
+  try {
+    await assertCanWrite(organizationId)
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   const parsed = createInvoiceSchema.safeParse(input)
   if (!parsed.success) {

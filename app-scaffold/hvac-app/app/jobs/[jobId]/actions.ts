@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { updateJobStatusSchema } from '@/lib/validations/job'
+import { assertCanWrite, handleGuardError } from '@/lib/billing-guard'
 
 type UpdateStatusResult =
   | { success: true }
@@ -25,6 +26,14 @@ export async function updateJobStatus(jobId: string, formData: FormData): Promis
   }
 
   const organizationId = membership.organizationId
+
+  try {
+    await assertCanWrite(organizationId)
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   // Verify job belongs to the user's organization
   const job = await db.job.findFirst({

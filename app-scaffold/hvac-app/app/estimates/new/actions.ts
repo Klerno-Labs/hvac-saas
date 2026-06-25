@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createEstimateSchema } from '@/lib/validations/estimate'
 import { generateEstimateDraft } from '@/lib/ai'
+import { assertCanWrite, handleGuardError } from '@/lib/billing-guard'
 
 type CreateEstimateResult =
   | { success: true; estimateId: string }
@@ -34,6 +35,14 @@ export async function createEstimate(input: {
   }
 
   const organizationId = membership.organizationId
+
+  try {
+    await assertCanWrite(organizationId)
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   const parsed = createEstimateSchema.safeParse(input)
   if (!parsed.success) {

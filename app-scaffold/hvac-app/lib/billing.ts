@@ -1,6 +1,7 @@
 import { getStripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { redirect } from 'next/navigation'
+import { isOrgActive } from '@/lib/entitlements-claims'
 
 export const PLANS = {
   starter: {
@@ -72,14 +73,12 @@ export async function createSubscriptionCheckout(params: {
 /**
  * Check if an organization has an active subscription or is in trial.
  * An org with no trialEndsAt and no active Stripe subscription is NOT active.
+ *
+ * Delegates to the canonical `isOrgActive` in `@/lib/entitlements-claims` so the
+ * entitlements engine and the legacy billing helper share one implementation.
  */
 export function isSubscriptionActive(org: { subscriptionStatus: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE'; trialEndsAt: Date | null }): boolean {
-  if (org.subscriptionStatus === 'ACTIVE') return true
-  if (org.subscriptionStatus === 'TRIALING') {
-    if (!org.trialEndsAt) return false
-    return org.trialEndsAt > new Date()
-  }
-  return false
+  return isOrgActive(org)
 }
 
 /**
