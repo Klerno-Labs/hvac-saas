@@ -3,6 +3,7 @@
   "short_name": "FieldClose",
   "description": "Quote-to-payment for HVAC professionals",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f766e",
