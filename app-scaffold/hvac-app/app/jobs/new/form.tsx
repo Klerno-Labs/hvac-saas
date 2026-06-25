@@ -15,11 +15,18 @@ type CustomerOption = {
   companyName: string | null
 }
 
+type TechnicianOption = {
+  id: string
+  name: string
+}
+
 export function NewJobForm({
   customers,
+  technicians,
   preselectedCustomerId,
 }: {
   customers: CustomerOption[]
+  technicians: TechnicianOption[]
   preselectedCustomerId?: string
 }) {
   const router = useRouter()
@@ -74,6 +81,22 @@ export function NewJobForm({
           <Label htmlFor="scheduledFor">Scheduled date</Label>
           <Input id="scheduledFor" name="scheduledFor" type="date" />
         </div>
+        {technicians.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="technicianId">Technician</Label>
+            <select
+              id="technicianId"
+              name="technicianId"
+              defaultValue=""
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">No technician assigned</option>
+              {technicians.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="notes">Notes</Label>
           <Textarea id="notes" name="notes" rows={3} />

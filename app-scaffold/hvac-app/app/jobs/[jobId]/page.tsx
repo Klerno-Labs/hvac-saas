@@ -21,6 +21,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
       where: { id: jobId, organizationId },
       include: {
         customer: true,
+        technician: true,
         estimates: { orderBy: { createdAt: 'desc' } },
         invoices: { orderBy: { createdAt: 'desc' } },
         assets: { orderBy: { createdAt: 'asc' } },
@@ -86,10 +87,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
             </div>
           )}
 
-          {job.technicianName && (
+          {(job.technician || job.technicianName) && (
             <div>
               <p className="text-xs text-muted-foreground">Technician</p>
-              <p className="text-sm">{job.technicianName}</p>
+              <p className="text-sm">{job.technician?.name ?? job.technicianName}</p>
             </div>
           )}
         </CardContent>
