@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createJobSchema } from '@/lib/validations/job'
+import { canDo } from '@/lib/permissions'
 
 type CreateJobResult =
   | { success: true; jobId: string }
@@ -22,6 +23,9 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
   })
   if (!membership) {
     return { success: false, error: 'You must belong to an organization' }
+  }
+  if (!canDo(membership.role, 'manageJobs')) {
+    return { success: false, error: 'You do not have permission to create jobs' }
   }
 
   const organizationId = membership.organizationId
