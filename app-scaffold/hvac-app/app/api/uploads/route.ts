@@ -82,8 +82,6 @@ export async function POST(request: NextRequest) {
     process.env.R2_PUBLIC_BASE_URL
   )
 
-  let fileUrl: string
-
   if (hasR2Config) {
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
     const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
@@ -106,26 +104,39 @@ export async function POST(request: NextRequest) {
       ContentLength: file.size,
     })
 
-    const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 })
+    const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 300 })
+    const fileUrl = `${process.env.R2_PUBLIC_BASE_URL}/${key}`
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    await fetch(presignedUrl, {
-      method: 'PUT',
-      body: buffer,
-      headers: { 'Content-Type': file.type },
+    const asset = await db.proofOfWorkAsset.create({
+      data: {
+        organizationId,
+        jobId,
+        fileUrl,
+        fileType: file.type,
+        fileSize: file.size,
+      },
     })
 
-    fileUrl = `${process.env.R2_PUBLIC_BASE_URL}/${key}`
-  } else {
-    console.warn('R2 env vars not configured, falling back to local filesystem')
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-    await mkdir(uploadsDir, { recursive: true })
+    await trackEvent({
+      organizationId,
+      userId,
+      eventName: 'proof_of_work_photo_uploaded',
+      entityType: 'job',
+      entityId: jobId,
+      metadataJson: { assetId: asset.id, fileType: file.type },
+    })
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    await writeFile(path.join(uploadsDir, uniqueName), buffer)
-
-    fileUrl = `/uploads/${uniqueName}`
+    return NextResponse.json({ presignedUrl, fileUrl, id: asset.id })
   }
+
+  console.warn('R2 env vars not configured, falling back to local filesystem')
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+  await mkdir(uploadsDir, { recursive: true })
+
+  const buffer = Buffer.from(await file.arrayBuffer())
+  await writeFile(path.join(uploadsDir, uniqueName), buffer)
+
+  const fileUrl = `/uploads/${uniqueName}`
 
   const asset = await db.proofOfWorkAsset.create({
     data: {
