@@ -57,6 +57,7 @@ describe('Plan Limits Seed', () => {
       data: {
         stripeEventId,
         type: 'customer.subscription.created',
+        payloadHash: 'hash_a',
       },
     })
 
@@ -65,6 +66,7 @@ describe('Plan Limits Seed', () => {
         data: {
           stripeEventId,
           type: 'customer.subscription.updated',
+          payloadHash: 'hash_b',
         },
       })
     ).rejects.toThrow()
