@@ -90,12 +90,12 @@ export function hasRequiredPlan(org: { plan: 'FREE' | 'STARTER' | 'PRO' }, requi
   const orgPlan = org.plan.toLowerCase() as PlanId
   
   if (orgPlan === requiredPlan) return true
-  
-  if (requiredPlan === 'starter') return true
-  
-  if (requiredPlan === 'pro' && orgPlan === 'starter') return false
-  
-  return true
+
+  if (requiredPlan === 'starter') return orgPlan === 'pro'
+
+  if (requiredPlan === 'pro') return false
+
+  return false
 }
 
 /**
