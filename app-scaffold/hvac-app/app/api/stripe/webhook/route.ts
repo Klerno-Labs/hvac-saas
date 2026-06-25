@@ -25,37 +25,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
-        break
-
-      case 'checkout.session.expired':
-        await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session)
-        break
-
-      case 'payment_intent.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.PaymentIntent)
-        break
-
-      case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent)
-        break
-
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await handleSubscriptionChange(event.data.object as Stripe.Subscription)
-        break
-
-      case 'account.updated':
-        await handleAccountUpdated(event.data.object as Stripe.Account)
-        break
-
-      default:
-        // Unhandled event type — log but don't fail
-        console.log(`Unhandled webhook event type: ${event.type}`)
-    }
+    await dispatchEvent(event)
 
     await trackEvent({
       eventName: 'webhook_processed',
@@ -66,6 +36,40 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error(`Webhook processing error for ${event.type}:`, error)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+  }
+}
+
+export async function dispatchEvent(event: Stripe.Event): Promise<void> {
+  switch (event.type) {
+    case 'checkout.session.completed':
+      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
+      break
+
+    case 'checkout.session.expired':
+      await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session)
+      break
+
+    case 'payment_intent.payment_failed':
+      await handlePaymentFailed(event.data.object as Stripe.PaymentIntent)
+      break
+
+    case 'payment_intent.succeeded':
+      await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent)
+      break
+
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+      await handleSubscriptionChange(event.data.object as Stripe.Subscription)
+      break
+
+    case 'account.updated':
+      await handleAccountUpdated(event.data.object as Stripe.Account)
+      break
+
+    default:
+      // Unhandled event type — log but don't fail
+      console.log(`Unhandled webhook event type: ${event.type}`)
   }
 }
 
