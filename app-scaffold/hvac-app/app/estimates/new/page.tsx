@@ -21,6 +21,12 @@ export default async function NewEstimatePage({ searchParams }: { searchParams: 
     notFound()
   }
 
+  const priceBookItems = await db.inventoryItem.findMany({
+    where: { organizationId },
+    select: { id: true, name: true, description: true, category: true, sellPriceCents: true },
+    orderBy: { name: 'asc' },
+  })
+
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
       <Card className="max-w-175 mx-auto">
@@ -34,6 +40,7 @@ export default async function NewEstimatePage({ searchParams }: { searchParams: 
           <EstimateForm
             jobId={job.id}
             jobTitle={job.title}
+            priceBookItems={priceBookItems}
           />
         </CardContent>
       </Card>

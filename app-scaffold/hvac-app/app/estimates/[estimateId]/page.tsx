@@ -13,13 +13,20 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
   const { organizationId } = await requireActiveSubscription()
   const { estimateId } = await params
 
-  const estimate = await db.estimate.findFirst({
-    where: { id: estimateId, organizationId },
-    include: {
-      job: { include: { customer: true } },
-      lineItems: { orderBy: { sortOrder: 'asc' } },
-    },
-  })
+  const [estimate, priceBookItems] = await Promise.all([
+    db.estimate.findFirst({
+      where: { id: estimateId, organizationId },
+      include: {
+        job: { include: { customer: true } },
+        lineItems: { orderBy: { sortOrder: 'asc' } },
+      },
+    }),
+    db.inventoryItem.findMany({
+      where: { organizationId },
+      select: { id: true, name: true, description: true, category: true, sellPriceCents: true },
+      orderBy: { name: 'asc' },
+    }),
+  ])
 
   if (!estimate) {
     notFound()
@@ -152,6 +159,7 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
           <CardContent>
             <EstimateEditForm
               estimateId={estimate.id}
+              priceBookItems={priceBookItems}
               initialData={{
                 scopeOfWork: estimate.scopeOfWork || '',
                 terms: estimate.terms || '',
