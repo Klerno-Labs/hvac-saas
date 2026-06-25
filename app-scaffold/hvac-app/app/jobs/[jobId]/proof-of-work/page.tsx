@@ -9,10 +9,17 @@ export default async function ProofOfWorkPage({ params }: { params: Promise<{ jo
   const { organizationId } = await requireActiveSubscription()
   const { jobId } = await params
 
-  const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
-    include: { customer: true, assets: { orderBy: { createdAt: 'asc' } } },
-  })
+  const [job, technicians] = await Promise.all([
+    db.job.findFirst({
+      where: { id: jobId, organizationId },
+      include: { customer: true, assets: { orderBy: { createdAt: 'asc' } } },
+    }),
+    db.technician.findMany({
+      where: { organizationId, active: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
+    }),
+  ])
 
   if (!job) {
     notFound()
@@ -41,11 +48,12 @@ export default async function ProofOfWorkPage({ params }: { params: Promise<{ jo
 
           <ProofOfWorkForm
             jobId={job.id}
+            technicians={technicians}
             initialData={{
               workSummary: job.workSummary || '',
               materialsUsed: job.materialsUsed || '',
               completionNotes: job.completionNotes || '',
-              technicianName: job.technicianName || '',
+              technicianId: job.technicianId || null,
             }}
             existingAssets={job.assets.map((a) => ({
               id: a.id,

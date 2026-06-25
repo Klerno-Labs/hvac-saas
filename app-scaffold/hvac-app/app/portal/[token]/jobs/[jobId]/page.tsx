@@ -20,6 +20,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ toke
       customer: { id: ctx.customerId },
     },
     include: {
+      technician: true,
       signatures: { orderBy: { signedAt: 'desc' } },
       assets: { orderBy: { createdAt: 'asc' } },
     },
@@ -69,10 +70,10 @@ export default async function PortalJobPage({ params }: { params: Promise<{ toke
               </div>
             )}
 
-            {job.technicianName && (
+            {(job.technician || job.technicianName) && (
               <div>
                 <p className="text-xs text-muted-foreground">Technician</p>
-                <p className="text-sm">{job.technicianName}</p>
+                <p className="text-sm">{job.technician?.name ?? job.technicianName}</p>
               </div>
             )}
           </CardContent>

@@ -43,18 +43,19 @@ model WebhookEvent {
 }
 
 model User {
-  id             String               @id @default(cuid())
-  name           String?
-  email          String?              @unique
-  emailVerified  DateTime?
-  image          String?
-  hashedPassword String?
-  accounts       Account[]
-  sessions       Session[]
-  memberships    OrganizationMember[]
-  jobNotes       JobNote[]
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id                  String               @id @default(cuid())
+  name                String?
+  email               String?              @unique
+  emailVerified       DateTime?
+  image               String?
+  hashedPassword      String?
+  accounts            Account[]
+  sessions            Session[]
+  memberships         OrganizationMember[]
+  jobNotes            JobNote[]
+  technicianProfiles  Technician[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model Account {
@@ -160,6 +161,7 @@ model Organization {
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
   jobNotes                 JobNote[]
+  technicians              Technician[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -237,6 +239,26 @@ model PortalToken {
   @@index([customerId])
 }
 
+model Technician {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  role           String       @default("technician")
+  skills         String[]
+  active         Boolean      @default(true)
+  userId         String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  jobs           Job[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([userId])
+}
+
 model Job {
   id              String       @id @default(cuid())
   organizationId  String
@@ -246,12 +268,14 @@ model Job {
   scheduledFor    DateTime?
   completedAt     DateTime?
   technicianName  String?
+  technicianId    String?
   notes           String?
   workSummary     String?
   materialsUsed   String?
   completionNotes String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  technician      Technician?  @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   estimates       Estimate[]
   invoices        Invoice[]
   reminders       Reminder[]
@@ -266,6 +290,7 @@ model Job {
 
   @@index([organizationId])
   @@index([customerId])
+  @@index([technicianId])
 }
 
 // Appendable, idempotent field notes authored from the offline-first field PWA.

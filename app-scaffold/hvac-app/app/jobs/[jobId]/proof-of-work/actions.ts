@@ -37,7 +37,7 @@ export async function recordProofOfWork(jobId: string, formData: FormData): Prom
     workSummary: formData.get('workSummary'),
     materialsUsed: formData.get('materialsUsed') || undefined,
     completionNotes: formData.get('completionNotes') || undefined,
-    technicianName: formData.get('technicianName') || undefined,
+    technicianId: formData.get('technicianId') || undefined,
   }
 
   const parsed = recordProofOfWorkSchema.safeParse(raw)
@@ -47,13 +47,22 @@ export async function recordProofOfWork(jobId: string, formData: FormData): Prom
 
   const data = parsed.data
 
+  if (data.technicianId) {
+    const tech = await db.technician.findFirst({
+      where: { id: data.technicianId, organizationId },
+    })
+    if (!tech) {
+      return { success: false, error: 'Technician not found in your organization' }
+    }
+  }
+
   await db.job.update({
     where: { id: jobId },
     data: {
       workSummary: data.workSummary,
       materialsUsed: data.materialsUsed || null,
       completionNotes: data.completionNotes || null,
-      technicianName: data.technicianName || job.technicianName,
+      ...(data.technicianId ? { technicianId: data.technicianId } : {}),
       status: 'completed',
       completedAt: job.completedAt || new Date(),
     },
