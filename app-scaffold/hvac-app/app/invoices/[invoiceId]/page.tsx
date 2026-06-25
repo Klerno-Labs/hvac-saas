@@ -15,16 +15,22 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const { organizationId, organization } = await requireActiveSubscription()
   const { invoiceId } = await params
 
-  const invoice = await db.invoice.findFirst({
-    where: { id: invoiceId, organizationId },
-    include: {
-      job: true,
-      customer: true,
-      lineItems: { orderBy: { sortOrder: 'asc' } },
-      payments: { orderBy: { createdAt: 'desc' }, take: 5 },
-      collectionAttempts: { orderBy: { createdAt: 'asc' } },
-    },
-  })
+  const [invoice, org] = await Promise.all([
+    db.invoice.findFirst({
+      where: { id: invoiceId, organizationId },
+      include: {
+        job: true,
+        customer: true,
+        lineItems: { orderBy: { sortOrder: 'asc' } },
+        payments: { orderBy: { createdAt: 'desc' }, take: 5 },
+        collectionAttempts: { orderBy: { createdAt: 'asc' } },
+      },
+    }),
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: { defaultTaxRateBps: true },
+    }),
+  ])
 
   if (!invoice) {
     notFound()
@@ -198,13 +204,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               initialData={{
                 descriptionOfWork: invoice.descriptionOfWork || '',
                 notes: invoice.notes || '',
-                taxCents: invoice.taxCents,
+                defaultTaxRateBps: org?.defaultTaxRateBps ?? 0,
+                customerTaxExempt: invoice.customer.taxExempt,
                 dueDate: invoice.dueDate ? invoice.dueDate.toISOString().split('T')[0] : '',
                 lineItems: invoice.lineItems.map((li) => ({
                   name: li.name,
                   description: li.description || '',
                   quantity: li.quantity,
                   unitPriceCents: li.unitPriceCents,
+                  taxable: li.taxable,
+                  taxRateBps: li.taxRateBps,
                 })),
               }}
             />

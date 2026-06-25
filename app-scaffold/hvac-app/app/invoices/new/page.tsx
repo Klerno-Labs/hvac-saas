@@ -12,35 +12,44 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
     redirect('/jobs')
   }
 
-  const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
-    include: {
-      customer: true,
-      estimates: {
-        where: { status: 'accepted' },
-        include: { lineItems: { orderBy: { sortOrder: 'asc' } } },
-        orderBy: { createdAt: 'desc' },
-        take: 1,
+  const [job, org] = await Promise.all([
+    db.job.findFirst({
+      where: { id: jobId, organizationId },
+      include: {
+        customer: true,
+        estimates: {
+          where: { status: 'accepted' },
+          include: { lineItems: { orderBy: { sortOrder: 'asc' } } },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
-    },
-  })
+    }),
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: { defaultTaxRateBps: true },
+    }),
+  ])
 
   if (!job) {
     notFound()
   }
 
-  // Seed from accepted estimate if available
+  const defaultTaxRateBps = org?.defaultTaxRateBps ?? 0
   const acceptedEstimate = job.estimates[0] || null
   const seedDescription = job.workSummary
     || acceptedEstimate?.scopeOfWork
     || `Work performed for ${job.title}`
+
   const seedLineItems = acceptedEstimate?.lineItems.map((li) => ({
     name: li.name,
     description: li.description || '',
     quantity: li.quantity,
     unitPriceCents: li.unitPriceCents,
-  })) || [{ name: job.title, description: 'Service as described', quantity: 1, unitPriceCents: 0 }]
-  const seedTaxCents = acceptedEstimate?.taxCents || 0
+    taxable: li.taxable,
+  })) || [{ name: job.title, description: 'Service as described', quantity: 1, unitPriceCents: 0, taxable: true }]
+
+  const seedTaxRateBps = acceptedEstimate?.lineItems.find((li) => li.taxRateBps > 0)?.taxRateBps ?? defaultTaxRateBps
 
   return (
     <main>
@@ -67,7 +76,8 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
             initialData={{
               descriptionOfWork: seedDescription,
               notes: '',
-              taxCents: seedTaxCents,
+              defaultTaxRateBps: seedTaxRateBps,
+              customerTaxExempt: job.customer.taxExempt,
               dueDate: '',
               lineItems: seedLineItems,
             }}

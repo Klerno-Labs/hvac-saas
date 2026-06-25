@@ -8,13 +8,14 @@ const invoiceLineItemSchema = z.object({
   description: z.string().max(500).optional().or(z.literal('')),
   quantity: z.number().int().min(1, 'Quantity must be at least 1'),
   unitPriceCents: z.number().int().min(0, 'Price must be non-negative'),
+  taxable: z.boolean().default(true),
+  taxRateBps: z.number().int().min(0).default(0),
 })
 
 export const createInvoiceSchema = z.object({
   jobId: z.string().min(1, 'Job is required'),
   descriptionOfWork: z.string().min(1, 'Description of work is required').max(5000),
   notes: z.string().max(2000).optional().or(z.literal('')),
-  taxCents: z.number().int().min(0).default(0),
   dueDate: z.string().optional().or(z.literal('')),
   lineItems: z.array(invoiceLineItemSchema).min(1, 'At least one line item is required'),
 })
@@ -22,7 +23,6 @@ export const createInvoiceSchema = z.object({
 export const updateInvoiceSchema = z.object({
   descriptionOfWork: z.string().min(1, 'Description of work is required').max(5000),
   notes: z.string().max(2000).optional().or(z.literal('')),
-  taxCents: z.number().int().min(0).default(0),
   dueDate: z.string().optional().or(z.literal('')),
   lineItems: z.array(invoiceLineItemSchema).min(1, 'At least one line item is required'),
 })

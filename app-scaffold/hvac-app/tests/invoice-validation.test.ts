@@ -30,11 +30,23 @@ describe('createInvoiceSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('defaults tax to 0', () => {
+  it('line items default taxable to true and taxRateBps to 0', () => {
     const result = createInvoiceSchema.safeParse(validInput)
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.taxCents).toBe(0)
+      expect(result.data.lineItems[0].taxable).toBe(true)
+      expect(result.data.lineItems[0].taxRateBps).toBe(0)
+    }
+  })
+
+  it('accepts taxable=false on a line item', () => {
+    const result = createInvoiceSchema.safeParse({
+      ...validInput,
+      lineItems: [{ name: 'Labor', quantity: 1, unitPriceCents: 15000, taxable: false, taxRateBps: 0 }],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.lineItems[0].taxable).toBe(false)
     }
   })
 })

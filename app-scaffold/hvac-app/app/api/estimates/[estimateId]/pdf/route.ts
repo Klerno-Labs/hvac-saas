@@ -65,6 +65,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
       lineItems: estimate.lineItems,
       subtotalCents: estimate.subtotalCents,
       taxCents: estimate.taxCents,
+      taxRateBps: estimate.lineItems.find((li) => li.taxable && li.taxRateBps > 0)?.taxRateBps,
       totalCents: estimate.totalCents,
     }),
   )

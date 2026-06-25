@@ -36,6 +36,7 @@ type InvoicePdfProps = {
   lineItems: { name: string; description: string | null; quantity: number; unitPriceCents: number; lineTotalCents: number }[]
   subtotalCents: number
   taxCents: number
+  taxRateBps?: number
   totalCents: number
   outstandingCents: number
   notes: string | null
@@ -107,7 +108,7 @@ export function InvoicePdf(p: InvoicePdfProps) {
             <Text>{fmt(p.subtotalCents)}</Text>
           </View>
           <View style={s.totalRow}>
-            <Text>Tax</Text>
+            <Text>Tax{p.taxRateBps ? ` (${(p.taxRateBps / 100).toFixed(2)}%)` : ''}</Text>
             <Text>{fmt(p.taxCents)}</Text>
           </View>
           <View style={[s.totalRow, s.grandTotal]}>

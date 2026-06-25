@@ -13,13 +13,19 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
   const { organizationId } = await requireActiveSubscription()
   const { estimateId } = await params
 
-  const estimate = await db.estimate.findFirst({
-    where: { id: estimateId, organizationId },
-    include: {
-      job: { include: { customer: true } },
-      lineItems: { orderBy: { sortOrder: 'asc' } },
-    },
-  })
+  const [estimate, org] = await Promise.all([
+    db.estimate.findFirst({
+      where: { id: estimateId, organizationId },
+      include: {
+        job: { include: { customer: true } },
+        lineItems: { orderBy: { sortOrder: 'asc' } },
+      },
+    }),
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: { defaultTaxRateBps: true },
+    }),
+  ])
 
   if (!estimate) {
     notFound()
@@ -156,12 +162,15 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
                 scopeOfWork: estimate.scopeOfWork || '',
                 terms: estimate.terms || '',
                 notes: estimate.notes || '',
-                taxCents: estimate.taxCents,
+                defaultTaxRateBps: org?.defaultTaxRateBps ?? 0,
+                customerTaxExempt: estimate.job.customer.taxExempt,
                 lineItems: estimate.lineItems.map((li) => ({
                   name: li.name,
                   description: li.description || '',
                   quantity: li.quantity,
                   unitPriceCents: li.unitPriceCents,
+                  taxable: li.taxable,
+                  taxRateBps: li.taxRateBps,
                 })),
               }}
             />

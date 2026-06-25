@@ -131,6 +131,7 @@ model Organization {
   accountingProvider       String?
   accountingConnected      Boolean              @default(false)
   accountingLastSyncAt     DateTime?
+  defaultTaxRateBps        Int                  @default(0)
   referralCode             String?              @unique
   referralCredits          Int                  @default(0)
   referredByOrgId          String?
@@ -207,6 +208,7 @@ model Customer {
   state          String?
   postalCode     String?
   notes          String?
+  taxExempt      Boolean      @default(false)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   jobs           Job[]
   invoices       Invoice[]
@@ -332,6 +334,8 @@ model EstimateLineItem {
   unitPriceCents Int      @default(0)
   lineTotalCents Int      @default(0)
   sortOrder      Int      @default(0)
+  taxable        Boolean  @default(true)
+  taxRateBps     Int      @default(0)
   estimate       Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
 
   @@index([estimateId])
@@ -378,6 +382,8 @@ model InvoiceLineItem {
   unitPriceCents Int     @default(0)
   lineTotalCents Int     @default(0)
   sortOrder      Int     @default(0)
+  taxable        Boolean @default(true)
+  taxRateBps     Int     @default(0)
   invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
