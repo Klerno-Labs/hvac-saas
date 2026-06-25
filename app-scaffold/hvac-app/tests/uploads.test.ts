@@ -1,55 +1,130 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-describe('/api/uploads presign behavior', () => {
-  it('generates unique filename with crypto.randomUUID and correct extension mapping', async () => {
-    const EXT_MAP: Record<string, string> = {
-      'image/jpeg': '.jpg',
-      'image/png': '.png',
-      'image/webp': '.webp',
-    }
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn(),
+}))
 
-    expect(EXT_MAP['image/jpeg']).toBe('.jpg')
-    expect(EXT_MAP['image/png']).toBe('.png')
-    expect(EXT_MAP['image/webp']).toBe('.webp')
+vi.mock('@/lib/db', () => ({
+  db: {
+    organizationMember: { findFirst: vi.fn() },
+    job: { findFirst: vi.fn() },
+    proofOfWorkAsset: { create: vi.fn() },
+  },
+}))
+
+vi.mock('@/lib/events', () => ({
+  trackEvent: vi.fn(),
+}))
+
+const mockGetSignedUrl = vi.fn()
+
+vi.mock('@aws-sdk/client-s3', () => ({
+  S3Client: vi.fn(() => ({})),
+  PutObjectCommand: vi.fn((p) => p),
+}))
+
+vi.mock('@aws-sdk/s3-request-presigner', () => ({
+  getSignedUrl: mockGetSignedUrl,
+}))
+
+vi.mock('fs/promises', () => ({
+  writeFile: vi.fn().mockResolvedValue(undefined),
+  mkdir: vi.fn().mockResolvedValue(undefined),
+}))
+
+const R2_ENV = {
+  R2_ACCOUNT_ID: 'acct',
+  R2_ACCESS_KEY_ID: 'key',
+  R2_SECRET_ACCESS_KEY: 'secret',
+  R2_BUCKET: 'bucket',
+  R2_PUBLIC_BASE_URL: 'https://pub.r2.dev',
+}
+
+describe('POST /api/uploads', () => {
+  beforeEach(async () => {
+    Object.assign(process.env, R2_ENV)
+
+    const { auth } = await import('@/lib/auth')
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'u1' } } as never)
+
+    const { db } = await import('@/lib/db')
+    vi.mocked(db.organizationMember.findFirst).mockResolvedValue({ organizationId: 'org1' } as never)
+    vi.mocked(db.job.findFirst).mockResolvedValue({ id: 'j1' } as never)
+    vi.mocked(db.proofOfWorkAsset.create).mockResolvedValue({ id: 'asset1', fileUrl: '' } as never)
+
+    const { trackEvent } = await import('@/lib/events')
+    vi.mocked(trackEvent).mockResolvedValue(undefined)
+
+    mockGetSignedUrl.mockResolvedValue('https://presigned.r2.example.com/put?sig=abc')
   })
 
-  it('has correct file size and type constraints', async () => {
-    const MAX_FILE_SIZE = 10 * 1024 * 1024
-    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-
-    expect(MAX_FILE_SIZE).toBe(10485760)
-    expect(ALLOWED_TYPES).toContain('image/jpeg')
-    expect(ALLOWED_TYPES).toContain('image/png')
-    expect(ALLOWED_TYPES).toContain('image/webp')
-    expect(ALLOWED_TYPES).not.toContain('application/pdf')
+  afterEach(() => {
+    for (const k of Object.keys(R2_ENV)) delete process.env[k]
+    vi.clearAllMocks()
   })
 
-  it('checks R2 config presence correctly', () => {
-    const hasR2Config = !!(
-      process.env.R2_ACCOUNT_ID &&
-      process.env.R2_ACCESS_KEY_ID &&
-      process.env.R2_SECRET_ACCESS_KEY &&
-      process.env.R2_BUCKET &&
-      process.env.R2_PUBLIC_BASE_URL
+  it('with R2 configured: returns presignedUrl for client PUT without server-side upload', async () => {
+    const { POST } = await import('@/app/api/uploads/route')
+
+    const formData = new FormData()
+    formData.append('jobId', 'j1')
+    formData.append('file', new File(['photo'], 'test.jpg', { type: 'image/jpeg' }))
+
+    const req = new Request('http://localhost/api/uploads', { method: 'POST', body: formData })
+    const res = await POST(req as never)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.presignedUrl).toBe('https://presigned.r2.example.com/put?sig=abc')
+    expect(body.fileUrl).toMatch(/^https:\/\/pub\.r2\.dev\/uploads\/[a-f0-9-]+\.jpg$/)
+    expect(body.id).toBe('asset1')
+    expect(mockGetSignedUrl).toHaveBeenCalledOnce()
+    expect(mockGetSignedUrl).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { expiresIn: 300 },
     )
-
-    expect(hasR2Config).toBe(false)
   })
 
-  it('falls back to local filesystem when R2 env vars are absent', () => {
-    const hasR2Config = !!(
-      process.env.R2_ACCOUNT_ID &&
-      process.env.R2_ACCESS_KEY_ID &&
-      process.env.R2_SECRET_ACCESS_KEY &&
-      process.env.R2_BUCKET &&
-      process.env.R2_PUBLIC_BASE_URL
+  it('with R2 configured: persists asset record with R2 public URL before client PUT', async () => {
+    const { POST } = await import('@/app/api/uploads/route')
+    const { db } = await import('@/lib/db')
+
+    const formData = new FormData()
+    formData.append('jobId', 'j1')
+    formData.append('file', new File(['photo'], 'test.jpg', { type: 'image/jpeg' }))
+
+    const req = new Request('http://localhost/api/uploads', { method: 'POST', body: formData })
+    await POST(req as never)
+
+    expect(vi.mocked(db.proofOfWorkAsset.create)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          organizationId: 'org1',
+          jobId: 'j1',
+          fileType: 'image/jpeg',
+          fileUrl: expect.stringMatching(/^https:\/\/pub\.r2\.dev\/uploads\//),
+        }),
+      }),
     )
+  })
 
-    if (hasR2Config) {
-      throw new Error('R2 env vars should not be present in test environment')
-    }
+  it('without R2: falls back to local filesystem, no presignedUrl in response', async () => {
+    for (const k of Object.keys(R2_ENV)) delete process.env[k]
 
-    const fileUrl = '/uploads/test-file.jpg'
-    expect(fileUrl).toMatch(/^\/uploads\/.+\.(jpg|png|webp)$/)
+    const { POST } = await import('@/app/api/uploads/route')
+
+    const formData = new FormData()
+    formData.append('jobId', 'j1')
+    formData.append('file', new File(['photo'], 'test.jpg', { type: 'image/jpeg' }))
+
+    const req = new Request('http://localhost/api/uploads', { method: 'POST', body: formData })
+    const res = await POST(req as never)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.presignedUrl).toBeUndefined()
+    expect(body.fileUrl).toMatch(/^\/uploads\/[a-f0-9-]+\.jpg$/)
+    expect(mockGetSignedUrl).not.toHaveBeenCalled()
   })
 })

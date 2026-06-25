@@ -89,6 +89,19 @@ export function ProofOfWorkForm({
         }
 
         const data = await res.json()
+
+        if (data.presignedUrl) {
+          const putRes = await fetch(data.presignedUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+          })
+          if (!putRes.ok) {
+            setUploadError(`Failed to upload "${file.name}" to storage`)
+            continue
+          }
+        }
+
         newPhotos.push({ id: data.id, fileUrl: data.fileUrl })
       } catch {
         setUploadError(`Network error uploading "${file.name}"`)
