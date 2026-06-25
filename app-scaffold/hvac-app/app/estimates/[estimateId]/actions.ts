@@ -6,6 +6,7 @@ import { trackEvent } from '@/lib/events'
 import { updateEstimateSchema, updateEstimateStatusSchema } from '@/lib/validations/estimate'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendEstimateEmail } from '@/lib/email'
+import { canDo } from '@/lib/permissions'
 
 type ActionResult =
   | { success: true }
@@ -33,6 +34,9 @@ export async function updateEstimate(
   })
   if (!membership) {
     return { success: false, error: 'You must belong to an organization' }
+  }
+  if (!canDo(membership.role, 'editPricing')) {
+    return { success: false, error: 'You do not have permission to edit estimates' }
   }
 
   const organizationId = membership.organizationId

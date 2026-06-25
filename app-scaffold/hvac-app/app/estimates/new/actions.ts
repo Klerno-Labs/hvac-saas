@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createEstimateSchema } from '@/lib/validations/estimate'
 import { generateEstimateDraft } from '@/lib/ai'
+import { canDo } from '@/lib/permissions'
 
 type CreateEstimateResult =
   | { success: true; estimateId: string }
@@ -31,6 +32,9 @@ export async function createEstimate(input: {
   })
   if (!membership) {
     return { success: false, error: 'You must belong to an organization' }
+  }
+  if (!canDo(membership.role, 'editPricing')) {
+    return { success: false, error: 'You do not have permission to create estimates' }
   }
 
   const organizationId = membership.organizationId
@@ -114,6 +118,9 @@ export async function generateAiDraft(jobId: string): Promise<AiDraftResult> {
   })
   if (!membership) {
     return { success: false, error: 'You must belong to an organization' }
+  }
+  if (!canDo(membership.role, 'editPricing')) {
+    return { success: false, error: 'You do not have permission to create estimates' }
   }
 
   const organizationId = membership.organizationId

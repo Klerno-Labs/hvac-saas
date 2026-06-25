@@ -115,7 +115,10 @@ export function TeamSection({ members, invites, currentUserId }: {
             <Input id="invite-email" name="email" type="email" required placeholder="team@example.com" />
           </div>
           <select name="role" className="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-            <option value="member">Member</option>
+            <option value="technician">Technician</option>
+            <option value="dispatcher">Dispatcher</option>
+            <option value="csr">CSR</option>
+            <option value="office_admin">Office Admin</option>
             <option value="owner">Owner</option>
           </select>
           <Button type="submit" disabled={loading}>
