@@ -82,20 +82,21 @@ export function isSubscriptionActive(org: { subscriptionStatus: 'TRIALING' | 'AC
   return false
 }
 
+const PLAN_RANK: Record<string, number> = {
+  free: 0,
+  starter: 1,
+  pro: 2,
+}
+
 /**
  * Check if an organization's subscription plan meets or exceeds the required plan.
  * Returns true if org's plan is at least the required plan (e.g., 'pro' >= 'starter').
  */
 export function hasRequiredPlan(org: { plan: 'FREE' | 'STARTER' | 'PRO' }, requiredPlan: PlanId): boolean {
-  const orgPlan = org.plan.toLowerCase() as PlanId
-  
-  if (orgPlan === requiredPlan) return true
-  
-  if (requiredPlan === 'starter') return true
-  
-  if (requiredPlan === 'pro' && orgPlan === 'starter') return false
-  
-  return true
+  const orgRank = PLAN_RANK[org.plan.toLowerCase()]
+  const requiredRank = PLAN_RANK[requiredPlan]
+  if (orgRank === undefined || requiredRank === undefined) return false
+  return orgRank >= requiredRank
 }
 
 /**
