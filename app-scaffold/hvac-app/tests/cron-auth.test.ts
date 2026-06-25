@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { POST as collectionsRun } from '@/app/api/collections/run/route'
 import { POST as recurringGenerate } from '@/app/api/recurring/generate/route'
 
@@ -9,6 +9,7 @@ describe('cron route authentication', () => {
 
   afterEach(() => {
     delete process.env.COLLECTIONS_CRON_SECRET
+    vi.unstubAllEnvs()
   })
 
   describe('/api/collections/run', () => {
@@ -52,15 +53,13 @@ describe('cron route authentication', () => {
     })
 
   it('returns 500 when COLLECTIONS_CRON_SECRET not configured in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
     delete process.env.COLLECTIONS_CRON_SECRET
     const request = new Request('http://localhost:3000/api/collections/run', {
       method: 'POST',
-      headers: {
-        'x-vercel-env': 'production',
-      },
     })
     const response = await collectionsRun(request)
-    
+
     expect(response.status).toBe(500)
     const data = await response.json()
     expect(data).toHaveProperty('error', 'COLLECTIONS_CRON_SECRET not configured')
@@ -108,15 +107,13 @@ describe('cron route authentication', () => {
     })
 
     it('returns 500 when COLLECTIONS_CRON_SECRET not configured in production', async () => {
+      vi.stubEnv('NODE_ENV', 'production')
       delete process.env.COLLECTIONS_CRON_SECRET
       const request = new Request('http://localhost:3000/api/recurring/generate', {
         method: 'POST',
-        headers: {
-          'x-vercel-env': 'production',
-        },
       })
       const response = await recurringGenerate(request)
-      
+
       expect(response.status).toBe(500)
       const data = await response.json()
       expect(data).toHaveProperty('error', 'COLLECTIONS_CRON_SECRET not configured')
