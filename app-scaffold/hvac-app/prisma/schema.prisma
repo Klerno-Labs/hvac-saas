@@ -160,6 +160,8 @@ model Organization {
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
   jobNotes                 JobNote[]
+  membershipPlans          MembershipPlan[]
+  memberships              Membership[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -215,6 +217,7 @@ model Customer {
   recurringJobs  RecurringJob[]
   reviews        CustomerReview[]
   equipment      Equipment[]
+  memberships    Membership[]
   deletedAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -560,6 +563,7 @@ model RecurringJob {
   isActive        Boolean      @default(true)
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id])
+  membership      Membership?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -645,11 +649,12 @@ model Equipment {
   nextServiceDueAt    DateTime?
   status              String                   @default("active") // active|retired
   notes               String?
-  organization        Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customer            Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  serviceRecords      EquipmentServiceRecord[]
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
+  organization         Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer             Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceRecords       EquipmentServiceRecord[]
+  membershipEquipments MembershipEquipment[]
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
   @@index([organizationId])
   @@index([customerId])
@@ -671,4 +676,56 @@ model EquipmentServiceRecord {
   @@index([organizationId])
   @@index([equipmentId])
   @@index([jobId])
+}
+
+model MembershipPlan {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  cadence        String       // monthly|quarterly|biannual|annual
+  visitsPerYear  Int
+  priceCents     Int          @default(0)
+  isActive       Boolean      @default(true)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships    Membership[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Membership {
+  id               String               @id @default(cuid())
+  organizationId   String
+  customerId       String
+  planId           String
+  recurringJobId   String?              @unique
+  status           String               @default("active") // active|paused|cancelled
+  visitsIncluded   Int
+  startDate        DateTime
+  endDate          DateTime?
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer         Customer             @relation(fields: [customerId], references: [id])
+  plan             MembershipPlan       @relation(fields: [planId], references: [id])
+  recurringJob     RecurringJob?        @relation(fields: [recurringJobId], references: [id])
+  coveredEquipment MembershipEquipment[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([organizationId])
+  @@index([customerId])
+}
+
+model MembershipEquipment {
+  id           String     @id @default(cuid())
+  membershipId String
+  equipmentId  String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  equipment    Equipment  @relation(fields: [equipmentId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([membershipId, equipmentId])
+  @@index([membershipId])
+  @@index([equipmentId])
 }
