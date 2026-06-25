@@ -23,23 +23,33 @@ enum SubscriptionStatus {
 }
 
 model PlanLimit {
-  id                  String   @id @default(cuid())
-  plan                Plan     @unique
-  maxUsers            Int
-  maxJobsPerMonth     Int
-  maxActiveCustomers  Int
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  plan               Plan     @unique
+  maxUsers           Int
+  maxJobsPerMonth    Int
+  maxActiveCustomers Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model WebhookEvent {
-  id            String        @id @default(cuid())
-  stripeEventId String        @unique
-  type          String
-  orgId         String?
-  receivedAt    DateTime      @default(now())
-  processedAt   DateTime?
-  metadata      Json?
+  id             String    @id @default(cuid())
+  stripeEventId  String    @unique // Stripe event.id — the idempotency key
+  eventType      String // e.g. checkout.session.completed
+  payloadHash    String // sha256 hex of raw body; never store raw payload (card/PII)
+  organizationId String? // best-effort resolved org; nullable for platform-level events
+  status         String    @default("received") // received | processed | failed | dead_letter | replayed
+  attempts       Int       @default(0)
+  lastError      String?
+  nextRetryAt    DateTime?
+  processedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status])
+  @@index([eventType])
+  @@index([nextRetryAt])
+  @@index([organizationId])
 }
 
 model User {
@@ -92,50 +102,50 @@ model VerificationToken {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
+  id        String    @id @default(cuid())
+  token     String    @unique
   email     String
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([token])
   @@index([email])
 }
 
 model Organization {
-  id                       String               @id @default(cuid())
+  id                       String                   @id @default(cuid())
   name                     String
-  tradeType                String               @default("hvac")
+  tradeType                String                   @default("hvac")
   timezone                 String?
   phone                    String?
   email                    String?
-  onboardingStatus         String               @default("not_started")
+  onboardingStatus         String                   @default("not_started")
   stripeConnectedAccountId String?
-  stripeChargesEnabled     Boolean              @default(false)
-  stripePayoutsEnabled     Boolean              @default(false)
-  stripeTerminalEnabled    Boolean              @default(false)
-  collectionsEnabled       Boolean              @default(false)
-  collectionsOverdue1Days  Int                  @default(7)
-  collectionsOverdue2Days  Int                  @default(14)
-  collectionsFinalDays     Int                  @default(30)
-  smsEnabled               Boolean              @default(false)
-  platformFeePercent       Float                @default(2.9)
-  stripeCustomerId         String?              @unique
-  stripeSubscriptionId     String?              @unique
-  subscriptionStatus       SubscriptionStatus   @default(TRIALING)
-  plan                     Plan                 @default(STARTER)
+  stripeChargesEnabled     Boolean                  @default(false)
+  stripePayoutsEnabled     Boolean                  @default(false)
+  stripeTerminalEnabled    Boolean                  @default(false)
+  collectionsEnabled       Boolean                  @default(false)
+  collectionsOverdue1Days  Int                      @default(7)
+  collectionsOverdue2Days  Int                      @default(14)
+  collectionsFinalDays     Int                      @default(30)
+  smsEnabled               Boolean                  @default(false)
+  platformFeePercent       Float                    @default(2.9)
+  stripeCustomerId         String?                  @unique
+  stripeSubscriptionId     String?                  @unique
+  subscriptionStatus       SubscriptionStatus       @default(TRIALING)
+  plan                     Plan                     @default(STARTER)
   trialEndsAt              DateTime?
   currentPeriodEnd         DateTime?
   readOnlyAt               DateTime?
   accountingProvider       String?
-  accountingConnected      Boolean              @default(false)
+  accountingConnected      Boolean                  @default(false)
   accountingLastSyncAt     DateTime?
-  referralCode             String?              @unique
-  referralCredits          Int                  @default(0)
+  referralCode             String?                  @unique
+  referralCredits          Int                      @default(0)
   referredByOrgId          String?
-  referredByOrg            Organization?        @relation("ReferredBy", fields: [referredByOrgId], references: [id])
-  referrals                Organization[]       @relation("ReferredBy")
+  referredByOrg            Organization?            @relation("ReferredBy", fields: [referredByOrgId], references: [id])
+  referrals                Organization[]           @relation("ReferredBy")
   members                  OrganizationMember[]
   customers                Customer[]
   jobs                     Job[]
@@ -160,8 +170,8 @@ model Organization {
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
   jobNotes                 JobNote[]
-  createdAt                DateTime             @default(now())
-  updatedAt                DateTime             @updatedAt
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
 }
 
 model OrganizationMember {
@@ -194,7 +204,7 @@ model TeamInvite {
 }
 
 model Customer {
-  id             String       @id @default(cuid())
+  id             String           @id @default(cuid())
   organizationId String
   firstName      String
   lastName       String?
@@ -207,7 +217,7 @@ model Customer {
   state          String?
   postalCode     String?
   notes          String?
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   jobs           Job[]
   invoices       Invoice[]
   reminders      Reminder[]
@@ -216,8 +226,8 @@ model Customer {
   reviews        CustomerReview[]
   equipment      Equipment[]
   deletedAt      DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([organizationId])
 }
@@ -238,31 +248,31 @@ model PortalToken {
 }
 
 model Job {
-  id              String       @id @default(cuid())
-  organizationId  String
-  customerId      String
-  title           String
-  status          String       @default("draft")
-  scheduledFor    DateTime?
-  completedAt     DateTime?
-  technicianName  String?
-  notes           String?
-  workSummary     String?
-  materialsUsed   String?
-  completionNotes String?
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  estimates       Estimate[]
-  invoices        Invoice[]
-  reminders       Reminder[]
-  assets          ProofOfWorkAsset[]
-  signatures      JobSignature[]
-  reviews         CustomerReview[]
-  inventoryUsages InventoryUsage[]
+  id                      String                   @id @default(cuid())
+  organizationId          String
+  customerId              String
+  title                   String
+  status                  String                   @default("draft")
+  scheduledFor            DateTime?
+  completedAt             DateTime?
+  technicianName          String?
+  notes                   String?
+  workSummary             String?
+  materialsUsed           String?
+  completionNotes         String?
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer                Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  estimates               Estimate[]
+  invoices                Invoice[]
+  reminders               Reminder[]
+  assets                  ProofOfWorkAsset[]
+  signatures              JobSignature[]
+  reviews                 CustomerReview[]
+  inventoryUsages         InventoryUsage[]
   equipmentServiceRecords EquipmentServiceRecord[]
-  jobNotes        JobNote[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  jobNotes                JobNote[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@index([organizationId])
   @@index([customerId])
@@ -283,41 +293,41 @@ model JobNote {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  job            Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  author         User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  job          Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([jobId, createdAt])
 }
 
 model Estimate {
-  id             String             @id @default(cuid())
-  organizationId String
-  jobId          String
-  estimateNumber String
-  status         String             @default("draft")
-  scopeOfWork    String?
-  terms          String?
-  notes          String?
-  subtotalCents  Int                @default(0)
-  taxCents       Int                @default(0)
-  totalCents     Int                @default(0)
-  aiDraftUsed    Boolean            @default(false)
-  sentAt         DateTime?
-  viewedAt       DateTime?
-  acceptedAt     DateTime?
-  declinedAt     DateTime?
-  decisionByName String?
-  decisionByIp   String?
+  id               String             @id @default(cuid())
+  organizationId   String
+  jobId            String
+  estimateNumber   String
+  status           String             @default("draft")
+  scopeOfWork      String?
+  terms            String?
+  notes            String?
+  subtotalCents    Int                @default(0)
+  taxCents         Int                @default(0)
+  totalCents       Int                @default(0)
+  aiDraftUsed      Boolean            @default(false)
+  sentAt           DateTime?
+  viewedAt         DateTime?
+  acceptedAt       DateTime?
+  declinedAt       DateTime?
+  decisionByName   String?
+  decisionByIp     String?
   signatureDataUrl String?
-  declineReason  String?
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  job            Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  lineItems      EstimateLineItem[]
-  reminders      Reminder[]
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  declineReason    String?
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job              Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  lineItems        EstimateLineItem[]
+  reminders        Reminder[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   @@index([organizationId])
   @@index([jobId])
@@ -338,32 +348,32 @@ model EstimateLineItem {
 }
 
 model Invoice {
-  id                       String            @id @default(cuid())
-  organizationId           String
-  jobId                    String
-  customerId               String
-  invoiceNumber            String
-  status                   String            @default("draft")
-  descriptionOfWork        String?
-  notes                    String?
-  subtotalCents            Int               @default(0)
-  taxCents                 Int               @default(0)
-  totalCents               Int               @default(0)
-  outstandingCents         Int               @default(0)
-  dueDate                  DateTime?
-  sentAt                   DateTime?
-  paidAt                   DateTime?
-  stripeCheckoutSessionId  String?              @unique
-  collectionsPaused        Boolean              @default(false)
-  organization             Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  job                      Job                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  customer                 Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  lineItems                InvoiceLineItem[]
-  payments                 Payment[]
-  reminders                Reminder[]
-  collectionAttempts       CollectionAttempt[]
-  createdAt                DateTime             @default(now())
-  updatedAt                DateTime             @updatedAt
+  id                      String              @id @default(cuid())
+  organizationId          String
+  jobId                   String
+  customerId              String
+  invoiceNumber           String
+  status                  String              @default("draft")
+  descriptionOfWork       String?
+  notes                   String?
+  subtotalCents           Int                 @default(0)
+  taxCents                Int                 @default(0)
+  totalCents              Int                 @default(0)
+  outstandingCents        Int                 @default(0)
+  dueDate                 DateTime?
+  sentAt                  DateTime?
+  paidAt                  DateTime?
+  stripeCheckoutSessionId String?             @unique
+  collectionsPaused       Boolean             @default(false)
+  organization            Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job                     Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  customer                Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lineItems               InvoiceLineItem[]
+  payments                Payment[]
+  reminders               Reminder[]
+  collectionAttempts      CollectionAttempt[]
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
 
   @@index([organizationId])
   @@index([jobId])
@@ -400,24 +410,24 @@ model Payment {
 }
 
 model Reminder {
-  id             String        @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   title          String
   notes          String?
-  reminderType   String        @default("general")
-  status         String        @default("open")
+  reminderType   String       @default("general")
+  status         String       @default("open")
   dueAt          DateTime?
   invoiceId      String?
   jobId          String?
   customerId     String?
   estimateId     String?
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  invoice        Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  job            Job?          @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  estimate       Estimate?     @relation(fields: [estimateId], references: [id], onDelete: Cascade)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice        Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  job            Job?         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  customer       Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  estimate       Estimate?    @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([organizationId])
 }
@@ -487,9 +497,9 @@ model AccountingSyncRecord {
 }
 
 model AccountingConnection {
-  id                    String   @id @default(cuid())
-  organizationId        String   @unique
-  provider              String   @default("quickbooks")
+  id                    String       @id @default(cuid())
+  organizationId        String       @unique
+  provider              String       @default("quickbooks")
   realmId               String
   accessToken           String
   refreshToken          String
@@ -500,19 +510,19 @@ model AccountingConnection {
   scope                 String?
   disconnectedAt        DateTime?
   organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 }
 
 model TaxCodeMapping {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   label          String
   qboTaxCodeId   String
-  isDefault      Boolean  @default(false)
+  isDefault      Boolean      @default(false)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, label])
   @@index([organizationId])
@@ -554,7 +564,7 @@ model RecurringJob {
   customerId      String
   title           String
   description     String?
-  frequency       String       // 'monthly', 'quarterly', 'biannual', 'annual'
+  frequency       String // 'monthly', 'quarterly', 'biannual', 'annual'
   nextDueDate     DateTime
   lastGeneratedAt DateTime?
   isActive        Boolean      @default(true)
@@ -568,38 +578,38 @@ model RecurringJob {
 }
 
 model CustomerReview {
-  id              String       @id @default(cuid())
-  organizationId  String
-  jobId           String       @unique
-  customerId      String
-  rating          Int
-  comment         String?
-  token           String       @unique
-  submittedAt     DateTime?
-  createdAt       DateTime     @default(now())
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  job             Job          @relation(fields: [jobId], references: [id])
-  customer        Customer     @relation(fields: [customerId], references: [id])
+  id             String       @id @default(cuid())
+  organizationId String
+  jobId          String       @unique
+  customerId     String
+  rating         Int
+  comment        String?
+  token          String       @unique
+  submittedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job            Job          @relation(fields: [jobId], references: [id])
+  customer       Customer     @relation(fields: [customerId], references: [id])
 
   @@index([organizationId])
   @@index([token])
 }
 
 model InventoryItem {
-  id              String       @id @default(cuid())
-  organizationId  String
-  name            String
-  sku             String?
-  description     String?
-  unitCostCents   Int          @default(0)
-  sellPriceCents  Int          @default(0)
-  quantityOnHand  Int          @default(0)
-  reorderPoint    Int          @default(0)
-  category        String?
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  usages          InventoryUsage[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id             String           @id @default(cuid())
+  organizationId String
+  name           String
+  sku            String?
+  description    String?
+  unitCostCents  Int              @default(0)
+  sellPriceCents Int              @default(0)
+  quantityOnHand Int              @default(0)
+  reorderPoint   Int              @default(0)
+  category       String?
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  usages         InventoryUsage[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([organizationId])
   @@index([organizationId, sku])
@@ -626,7 +636,7 @@ model Equipment {
   id                  String                   @id @default(cuid())
   organizationId      String
   customerId          String
-  type                String                   // ac_condenser|furnace|heat_pump|mini_split|boiler|water_heater|thermostat|air_handler|ductwork|other
+  type                String // ac_condenser|furnace|heat_pump|mini_split|boiler|water_heater|thermostat|air_handler|ductwork|other
   make                String?
   model               String?
   serial              String?
@@ -656,17 +666,17 @@ model Equipment {
 }
 
 model EquipmentServiceRecord {
-  id              String       @id @default(cuid())
-  organizationId  String
-  equipmentId     String
-  jobId           String?
-  serviceType     String       // tune-up|repair|install|inspection|warranty|other
-  description     String?
-  performedAt     DateTime
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  equipment       Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  job             Job?         @relation(fields: [jobId], references: [id])
-  createdAt       DateTime     @default(now())
+  id             String       @id @default(cuid())
+  organizationId String
+  equipmentId    String
+  jobId          String?
+  serviceType    String // tune-up|repair|install|inspection|warranty|other
+  description    String?
+  performedAt    DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  equipment      Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  job            Job?         @relation(fields: [jobId], references: [id])
+  createdAt      DateTime     @default(now())
 
   @@index([organizationId])
   @@index([equipmentId])
