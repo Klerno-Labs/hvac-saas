@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Providers } from './providers'
 import { NavHeader } from './components/nav-header'
 import { TrialBannerWrapper } from './components/trial-banner-wrapper'
+import { ReadOnlyBannerWrapper } from './components/read-only-banner-wrapper'
 import { Analytics } from '@vercel/analytics/react'
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -99,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <NavHeader />
           <TrialBannerWrapper />
+          <ReadOnlyBannerWrapper />
           {children}
         </Providers>
         <Analytics />
