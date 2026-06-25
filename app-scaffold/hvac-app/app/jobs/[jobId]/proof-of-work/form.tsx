@@ -235,6 +235,7 @@ export function ProofOfWorkForm({
             id="photos"
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            capture="environment"
             multiple
             onChange={handleFileUpload}
             disabled={uploading}
