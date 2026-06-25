@@ -58,6 +58,10 @@ describe('hasRequiredPlan', () => {
     expect(hasRequiredPlan({ plan: 'STARTER' }, 'pro')).toBe(false)
   })
 
+  it('returns false when org is free and required is pro', () => {
+    expect(hasRequiredPlan({ plan: 'FREE' }, 'pro')).toBe(false)
+  })
+
   it('returns true when org is pro and required is pro', () => {
     expect(hasRequiredPlan({ plan: 'PRO' }, 'pro')).toBe(true)
   })
