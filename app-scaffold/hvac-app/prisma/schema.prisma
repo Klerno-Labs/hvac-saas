@@ -247,9 +247,11 @@ model Job {
   completedAt     DateTime?
   technicianName  String?
   notes           String?
-  workSummary     String?
-  materialsUsed   String?
-  completionNotes String?
+  workSummary              String?
+  materialsUsed            String?
+  completionNotes          String?
+  completionNoticeSentAt   DateTime?
+  completionNoticeChannels String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   estimates       Estimate[]
