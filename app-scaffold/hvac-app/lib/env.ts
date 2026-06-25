@@ -69,3 +69,9 @@ export function validateEnv(): EnvCheckResult {
     warnings,
   }
 }
+
+export function twilioAuthToken(): string {
+  const v = process.env.TWILIO_AUTH_TOKEN
+  if (!v) throw new Error('[env] TWILIO_AUTH_TOKEN is not set')
+  return v
+}
