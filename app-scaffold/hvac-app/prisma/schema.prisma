@@ -655,6 +655,21 @@ model Equipment {
   @@index([customerId])
 }
 
+// Org-agnostic by design: rate limiting for AUTH and PUBLIC PORTAL/PAY endpoints
+// runs BEFORE an org/session is known, so this table is keyed by (bucket, identifier)
+// and is intentionally NOT scoped to an organization. Append-only (one row per
+// request hit) so a sliding window is computable by counting rows where
+// hitAt > now - window. Never log raw identifiers/emails/tokens at this layer.
+model RateLimitHit {
+  id         String   @id @default(cuid())
+  bucket     String
+  identifier String
+  hitAt      DateTime @default(now())
+
+  @@index([bucket, identifier, hitAt])
+  @@index([hitAt])
+}
+
 model EquipmentServiceRecord {
   id              String       @id @default(cuid())
   organizationId  String
