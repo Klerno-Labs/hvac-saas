@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { updateEstimateSchema, updateEstimateStatusSchema } from '@/lib/validations/estimate'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendEstimateEmail } from '@/lib/email'
@@ -55,6 +56,12 @@ export async function updateEstimate(
 
   const data = parsed.data
 
+  const beforeTotals = {
+    subtotalCents: estimate.subtotalCents,
+    taxCents: estimate.taxCents,
+    totalCents: estimate.totalCents,
+  }
+
   const lineItemsWithTotals = data.lineItems.map((item, index) => ({
     name: item.name,
     description: item.description || null,
@@ -91,6 +98,31 @@ export async function updateEstimate(
     entityType: 'estimate',
     entityId: estimateId,
   })
+
+  if (
+    beforeTotals.subtotalCents !== subtotalCents ||
+    beforeTotals.taxCents !== taxCents ||
+    beforeTotals.totalCents !== totalCents
+  ) {
+    try {
+      await logAudit({
+        organizationId,
+        actorId: userId,
+        actorEmail: session.user.email ?? undefined,
+        eventType: 'estimate.priced',
+        targetType: 'estimate',
+        targetId: estimateId,
+        metadata: {
+          subtotalBefore: beforeTotals.subtotalCents,
+          subtotalAfter: subtotalCents,
+          taxBefore: beforeTotals.taxCents,
+          taxAfter: taxCents,
+          totalBefore: beforeTotals.totalCents,
+          totalAfter: totalCents,
+        },
+      })
+    } catch (_e) { /* best-effort */ }
+  }
 
   return { success: true }
 }

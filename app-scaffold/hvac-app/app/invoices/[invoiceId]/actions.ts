@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
+import { summarizeInvoicePriceChange } from './price-diff'
 import { updateInvoiceSchema, updateInvoiceStatusSchema } from '@/lib/validations/invoice'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendInvoiceEmail } from '@/lib/email'
@@ -56,6 +57,11 @@ export async function updateInvoice(
 
   const data = parsed.data
 
+  const beforeLineItems = await db.invoiceLineItem.findMany({
+    where: { invoiceId },
+    orderBy: { sortOrder: 'asc' },
+  })
+
   const lineItemsWithTotals = data.lineItems.map((item, index) => ({
     name: item.name,
     description: item.description || null,
@@ -93,6 +99,24 @@ export async function updateInvoice(
     entityType: 'invoice',
     entityId: invoiceId,
   })
+
+  const priceSummary = summarizeInvoicePriceChange(
+    { subtotalCents: invoice.subtotalCents, taxCents: invoice.taxCents, totalCents: invoice.totalCents, lineItems: beforeLineItems },
+    { subtotalCents, taxCents, totalCents, lineItems: lineItemsWithTotals },
+  )
+  if (priceSummary) {
+    try {
+      await logAudit({
+        organizationId,
+        actorId: userId,
+        actorEmail: session.user.email ?? undefined,
+        eventType: 'invoice.priced',
+        targetType: 'invoice',
+        targetId: invoiceId,
+        metadata: priceSummary as unknown as Record<string, unknown>,
+      })
+    } catch (_e) { /* best-effort */ }
+  }
 
   return { success: true }
 }
