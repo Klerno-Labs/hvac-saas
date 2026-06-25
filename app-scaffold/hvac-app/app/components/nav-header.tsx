@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/customers', label: 'Customers' },
   { href: '/jobs', label: 'Jobs' },
+  { href: '/dispatch', label: 'Dispatch' },
   { href: '/calendar', label: 'Calendar' },
   { href: '/estimates', label: 'Estimates' },
   { href: '/invoices', label: 'Invoices' },
