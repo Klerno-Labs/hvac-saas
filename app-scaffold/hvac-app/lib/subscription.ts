@@ -6,7 +6,7 @@ export function getTrialDaysRemaining(org: {
   subscriptionStatus: string
   trialEndsAt: Date | null
 }): number | null {
-  if (org.subscriptionStatus !== 'trialing') return null
+  if (org.subscriptionStatus.toLowerCase() !== 'trialing') return null
   if (!org.trialEndsAt) return null
 
   const now = new Date()

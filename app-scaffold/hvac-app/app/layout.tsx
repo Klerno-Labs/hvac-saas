@@ -2,7 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Providers } from './providers'
 import { NavHeader } from './components/nav-header'
-import { TrialBannerWrapper } from './components/trial-banner-wrapper'
+import { BillingBannerWrapper } from './components/billing-banner-wrapper'
 import { Analytics } from '@vercel/analytics/react'
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -98,7 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <NavHeader />
-          <TrialBannerWrapper />
+          <BillingBannerWrapper />
           {children}
         </Providers>
         <Analytics />

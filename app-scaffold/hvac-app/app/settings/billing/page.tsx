@@ -1,12 +1,21 @@
 import { requireAuth } from '@/lib/session'
 import { PLANS, isSubscriptionActive } from '@/lib/billing'
+import { getEntitlements, getUsage } from '@/lib/entitlements'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SubscribeButton } from './subscribe-button'
+import { BillingOverview } from './billing-overview'
 
 export default async function BillingPage() {
-  const { organization, userId, user } = await requireAuth()
+  // Settings use requireAuth (not requireActiveSubscription) so frozen/read-only
+  // orgs can still reach this page to reactivate.
+  const { organization, user } = await requireAuth()
+
+  const [entitlements, usage] = await Promise.all([
+    getEntitlements(organization.id),
+    getUsage(organization.id),
+  ])
 
   const isActive = isSubscriptionActive(organization)
 
@@ -20,31 +29,9 @@ export default async function BillingPage() {
         <p className="text-sm text-muted-foreground">{organization.name}</p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Current plan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold capitalize">{organization.plan.toLowerCase()}</span>
-            <Badge variant={isActive ? 'default' : 'destructive'}>
-              {organization.subscriptionStatus === 'TRIALING' ? 'Trial' : organization.subscriptionStatus.toLowerCase()}
-            </Badge>
-          </div>
-          {organization.trialEndsAt && organization.subscriptionStatus === 'TRIALING' && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Trial ends {new Date(organization.trialEndsAt).toLocaleDateString()}
-            </p>
-          )}
-          {!organization.trialEndsAt && organization.subscriptionStatus === 'TRIALING' && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Free beta — no trial expiration set
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <BillingOverview entitlements={entitlements} usage={usage} />
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 mt-6">
         {(Object.entries(PLANS) as [string, typeof PLANS[keyof typeof PLANS]][]).map(([planId, plan]) => (
           <Card key={planId} className={organization.plan.toLowerCase() === planId ? 'border-primary border-2' : ''}>
             <CardHeader>
