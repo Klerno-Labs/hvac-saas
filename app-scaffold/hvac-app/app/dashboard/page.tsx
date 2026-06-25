@@ -15,6 +15,7 @@ export default async function DashboardPage() {
     outstandingInvoices,
     overdueInvoices,
     stalledJobCount,
+    newBookingCount,
   ] = await Promise.all([
     db.customer.count({ where: { organizationId } }),
     db.job.count({ where: { organizationId, status: { in: ['draft', 'scheduled', 'in_progress'] } } }),
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
         updatedAt: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
       },
     }),
+    db.bookingRequest.count({ where: { organizationId, status: 'new' } }),
   ])
 
   const totalOutstandingCents = outstandingInvoices.reduce((sum, inv) => sum + inv.outstandingCents, 0)
@@ -105,6 +107,14 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* New booking requests */}
+      {newBookingCount > 0 && (
+        <div className="mb-6 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">
+          {newBookingCount} new booking request{newBookingCount !== 1 ? 's' : ''} waiting.{' '}
+          <Link href="/bookings" className="underline font-medium">Review bookings →</Link>
+        </div>
+      )}
 
       {/* Weekly habit nudge — stalled jobs (no update in 3+ days) */}
       {stalledJobCount > 0 && (

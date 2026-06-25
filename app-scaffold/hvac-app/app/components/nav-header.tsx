@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { href: '/inventory', label: 'Inventory' },
   { href: '/reports', label: 'Reports' },
   { href: '/reminders', label: 'Reminders' },
+  { href: '/bookings', label: 'Bookings' },
   { href: '/recurring', label: 'Recurring' },
   { href: '/settings', label: 'Settings' },
 ]

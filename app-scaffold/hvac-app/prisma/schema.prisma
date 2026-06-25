@@ -160,6 +160,9 @@ model Organization {
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
   jobNotes                 JobNote[]
+  bookingEnabled           Boolean              @default(false)
+  bookingSlug              String?              @unique
+  bookingRequests          BookingRequest[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -214,10 +217,12 @@ model Customer {
   portalTokens   PortalToken[]
   recurringJobs  RecurringJob[]
   reviews        CustomerReview[]
-  equipment      Equipment[]
-  deletedAt      DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  equipment       Equipment[]
+  leadSource      String?
+  bookingRequests BookingRequest[]
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@index([organizationId])
 }
@@ -261,6 +266,8 @@ model Job {
   inventoryUsages InventoryUsage[]
   equipmentServiceRecords EquipmentServiceRecord[]
   jobNotes        JobNote[]
+  leadSource      String?
+  bookingRequests BookingRequest[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -671,4 +678,31 @@ model EquipmentServiceRecord {
   @@index([organizationId])
   @@index([equipmentId])
   @@index([jobId])
+}
+
+model BookingRequest {
+  id              String        @id @default(cuid())
+  organizationId  String
+  serviceType     String
+  preferredWindow String?
+  contactName     String
+  phone           String?
+  email           String?
+  addressLine1    String?
+  city            String?
+  state           String?
+  postalCode      String?
+  notes           String?
+  status          String        @default("new")
+  leadSource      String?
+  customerId      String?
+  jobId           String?
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer        Customer?     @relation(fields: [customerId], references: [id])
+  job             Job?          @relation(fields: [jobId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
 }
