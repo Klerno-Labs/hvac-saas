@@ -154,6 +154,7 @@ model Organization {
   signatures               JobSignature[]
   events                   ActivityEvent[]
   recurringJobs            RecurringJob[]
+  memberships              Membership[]
   reviews                  CustomerReview[]
   inventoryItems           InventoryItem[]
   inventoryUsages          InventoryUsage[]
@@ -213,6 +214,7 @@ model Customer {
   reminders      Reminder[]
   portalTokens   PortalToken[]
   recurringJobs  RecurringJob[]
+  memberships    Membership[]
   reviews        CustomerReview[]
   equipment      Equipment[]
   deletedAt      DateTime?
@@ -560,8 +562,27 @@ model RecurringJob {
   isActive        Boolean      @default(true)
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id])
+  membership      Membership?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([customerId])
+}
+
+model Membership {
+  id             String        @id @default(cuid())
+  organizationId String
+  customerId     String
+  recurringJobId String?       @unique
+  planName       String
+  status         String        @default("active")
+  visitsUsed     Int           @default(0)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  recurringJob   RecurringJob? @relation(fields: [recurringJobId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([organizationId])
   @@index([customerId])
