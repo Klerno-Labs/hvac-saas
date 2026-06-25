@@ -1,0 +1,31 @@
+import { requireActiveSubscription } from '@/lib/session'
+import { db } from '@/lib/db'
+import { notFound } from 'next/navigation'
+import { EditPriceBookForm } from './form'
+import { priceBookItemToFormState } from '@/lib/pricebook-mappers'
+
+export default async function EditPriceBookItemPage({
+  params,
+}: {
+  params: Promise<{ itemId: string }>
+}) {
+  const { organizationId } = await requireActiveSubscription()
+  const { itemId } = await params
+
+  const item = await db.priceBookItem.findFirst({
+    where: { id: itemId, organizationId, deletedAt: null },
+    include: { optionGroups: { orderBy: { sortOrder: 'asc' } } },
+  })
+
+  if (!item) {
+    notFound()
+  }
+
+  const initialData = priceBookItemToFormState(item)
+
+  return (
+    <main className="max-w-2xl mx-auto px-4 py-8">
+      <EditPriceBookForm itemId={itemId} initialData={initialData} />
+    </main>
+  )
+}
