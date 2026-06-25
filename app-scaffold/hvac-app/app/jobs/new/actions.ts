@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createJobSchema } from '@/lib/validations/job'
+import { assertCanWrite, assertWithinLimit, handleGuardError } from '@/lib/billing-guard'
 
 type CreateJobResult =
   | { success: true; jobId: string }
@@ -25,6 +26,15 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
   }
 
   const organizationId = membership.organizationId
+
+  try {
+    await assertCanWrite(organizationId)
+    await assertWithinLimit(organizationId, 'maxJobsPerMonth')
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   const raw = {
     customerId: formData.get('customerId'),

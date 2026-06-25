@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/audit'
 import { updateInvoiceSchema, updateInvoiceStatusSchema } from '@/lib/validations/invoice'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendInvoiceEmail } from '@/lib/email'
+import { assertCanWrite, handleGuardError } from '@/lib/billing-guard'
 
 type ActionResult =
   | { success: true }
@@ -37,6 +38,14 @@ export async function updateInvoice(
   }
 
   const organizationId = membership.organizationId
+
+  try {
+    await assertCanWrite(organizationId)
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   const invoice = await db.invoice.findFirst({
     where: { id: invoiceId, organizationId },

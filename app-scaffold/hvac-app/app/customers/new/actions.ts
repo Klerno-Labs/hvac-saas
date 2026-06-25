@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createCustomerSchema } from '@/lib/validations/customer'
+import { assertCanWrite, assertWithinLimit, handleGuardError } from '@/lib/billing-guard'
 
 type CreateCustomerResult =
   | { success: true; customerId: string }
@@ -25,6 +26,15 @@ export async function createCustomer(formData: FormData): Promise<CreateCustomer
   }
 
   const organizationId = membership.organizationId
+
+  try {
+    await assertCanWrite(organizationId)
+    await assertWithinLimit(organizationId, 'maxActiveCustomers')
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   const raw = {
     firstName: formData.get('firstName'),

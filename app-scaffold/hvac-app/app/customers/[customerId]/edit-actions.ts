@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createCustomerSchema } from '@/lib/validations/customer'
+import { assertCanWrite, handleGuardError } from '@/lib/billing-guard'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
@@ -13,6 +14,14 @@ export async function updateCustomer(customerId: string, formData: FormData): Pr
 
   const membership = await db.organizationMember.findFirst({ where: { userId: session.user.id } })
   if (!membership) return { success: false, error: 'You must belong to an organization' }
+
+  try {
+    await assertCanWrite(membership.organizationId)
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   const customer = await db.customer.findFirst({
     where: { id: customerId, organizationId: membership.organizationId },
@@ -71,6 +80,14 @@ export async function deleteCustomer(customerId: string): Promise<ActionResult> 
 
   const membership = await db.organizationMember.findFirst({ where: { userId: session.user.id } })
   if (!membership) return { success: false, error: 'You must belong to an organization' }
+
+  try {
+    await assertCanWrite(membership.organizationId)
+  } catch (e) {
+    const guard = handleGuardError(e)
+    if (guard) return guard
+    throw e
+  }
 
   const customer = await db.customer.findFirst({
     where: { id: customerId, organizationId: membership.organizationId, deletedAt: null },
