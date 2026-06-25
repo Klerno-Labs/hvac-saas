@@ -64,6 +64,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ invoiceId: 
       lineItems: invoice.lineItems,
       subtotalCents: invoice.subtotalCents,
       taxCents: invoice.taxCents,
+      taxRateBps: invoice.lineItems.find((li) => li.taxable && li.taxRateBps > 0)?.taxRateBps,
       totalCents: invoice.totalCents,
       outstandingCents: invoice.outstandingCents,
       notes: invoice.notes,

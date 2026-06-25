@@ -13,9 +13,8 @@ export async function createInvoice(input: {
   jobId: string
   descriptionOfWork: string
   notes?: string
-  taxCents: number
   dueDate?: string
-  lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number }[]
+  lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number; taxable: boolean; taxRateBps: number }[]
 }): Promise<CreateInvoiceResult> {
   const session = await auth()
   if (!session?.user?.id) {
@@ -40,29 +39,47 @@ export async function createInvoice(input: {
 
   const data = parsed.data
 
-  // Verify job belongs to same organization
-  const job = await db.job.findFirst({
-    where: { id: data.jobId, organizationId },
-  })
+  const [job, org] = await Promise.all([
+    db.job.findFirst({
+      where: { id: data.jobId, organizationId },
+      include: { customer: { select: { taxExempt: true } } },
+    }),
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: { defaultTaxRateBps: true },
+    }),
+  ])
+
   if (!job) {
     return { success: false, error: 'Job not found in your organization' }
   }
 
-  // Calculate totals server-side
-  const lineItemsWithTotals = data.lineItems.map((item, index) => ({
-    name: item.name,
-    description: item.description || null,
-    quantity: item.quantity,
-    unitPriceCents: item.unitPriceCents,
-    lineTotalCents: item.quantity * item.unitPriceCents,
-    sortOrder: index,
-  }))
+  const customerTaxExempt = job.customer.taxExempt
+  const defaultTaxRateBps = org?.defaultTaxRateBps ?? 0
+
+  const lineItemsWithTotals = data.lineItems.map((item, index) => {
+    const lineTotalCents = item.quantity * item.unitPriceCents
+    const taxable = customerTaxExempt ? false : item.taxable
+    const taxRateBps = item.taxRateBps > 0 ? item.taxRateBps : defaultTaxRateBps
+    return {
+      name: item.name,
+      description: item.description || null,
+      quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+      lineTotalCents,
+      sortOrder: index,
+      taxable,
+      taxRateBps,
+    }
+  })
 
   const subtotalCents = lineItemsWithTotals.reduce((sum, li) => sum + li.lineTotalCents, 0)
-  const taxCents = data.taxCents
+  const taxCents = lineItemsWithTotals.reduce(
+    (sum, li) => sum + (li.taxable ? Math.round(li.lineTotalCents * li.taxRateBps / 10000) : 0),
+    0,
+  )
   const totalCents = subtotalCents + taxCents
 
-  // Generate invoice number
   const count = await db.invoice.count({ where: { organizationId } })
   const invoiceNumber = `INV-${String(count + 1).padStart(4, '0')}`
 

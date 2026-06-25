@@ -13,12 +13,15 @@ type LineItem = {
   description: string
   quantity: number
   unitPriceCents: number
+  taxable: boolean
+  taxRateBps: number
 }
 
 type InitialData = {
   descriptionOfWork: string
   notes: string
-  taxCents: number
+  defaultTaxRateBps: number
+  customerTaxExempt: boolean
   dueDate: string
   lineItems: LineItem[]
 }
@@ -30,15 +33,21 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
 
   const [descriptionOfWork, setDescriptionOfWork] = useState(initialData.descriptionOfWork)
   const [notes, setNotes] = useState(initialData.notes)
-  const [taxCents, setTaxCents] = useState(initialData.taxCents)
+  const initRate = initialData.lineItems.find((li) => li.taxRateBps > 0)?.taxRateBps ?? initialData.defaultTaxRateBps
+  const [taxRateBps, setTaxRateBps] = useState(initRate)
   const [dueDate, setDueDate] = useState(initialData.dueDate)
   const [lineItems, setLineItems] = useState<LineItem[]>(initialData.lineItems)
 
+  const customerTaxExempt = initialData.customerTaxExempt
   const subtotalCents = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPriceCents, 0)
+  const taxCents = lineItems.reduce(
+    (sum, li) => sum + (li.taxable && !customerTaxExempt ? Math.round(li.quantity * li.unitPriceCents * taxRateBps / 10000) : 0),
+    0,
+  )
   const totalCents = subtotalCents + taxCents
 
   function addLineItem() {
-    setLineItems([...lineItems, { name: '', description: '', quantity: 1, unitPriceCents: 0 }])
+    setLineItems([...lineItems, { name: '', description: '', quantity: 1, unitPriceCents: 0, taxable: true, taxRateBps }])
   }
 
   function removeLineItem(index: number) {
@@ -46,7 +55,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
     setLineItems(lineItems.filter((_, i) => i !== index))
   }
 
-  function updateLineItem(index: number, field: keyof LineItem, value: string | number) {
+  function updateLineItem(index: number, field: keyof LineItem, value: string | number | boolean) {
     const updated = [...lineItems]
     updated[index] = { ...updated[index], [field]: value }
     setLineItems(updated)
@@ -60,13 +69,14 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
     const result = await updateInvoice(invoiceId, {
       descriptionOfWork,
       notes: notes || undefined,
-      taxCents,
       dueDate: dueDate || undefined,
       lineItems: lineItems.map((li) => ({
         name: li.name,
         description: li.description || undefined,
         quantity: li.quantity,
         unitPriceCents: li.unitPriceCents,
+        taxable: li.taxable,
+        taxRateBps,
       })),
     })
 
@@ -148,6 +158,17 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
                       />
                     </div>
                   </div>
+                  {!customerTaxExempt && (
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={li.taxable}
+                        onChange={(e) => updateLineItem(i, 'taxable', e.target.checked)}
+                        className="h-3.5 w-3.5"
+                      />
+                      Taxable
+                    </label>
+                  )}
                 </div>
                 {lineItems.length > 1 && (
                   <button
@@ -164,16 +185,24 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="space-y-1.5">
-            <Label>Tax ($)</Label>
+            <Label>Tax rate (%)</Label>
             <Input
               type="number"
               min={0}
               step="0.01"
-              value={(taxCents / 100).toFixed(2)}
-              onChange={(e) => setTaxCents(Math.round(parseFloat(e.target.value || '0') * 100))}
+              value={(taxRateBps / 100).toFixed(2)}
+              onChange={(e) => setTaxRateBps(Math.round(parseFloat(e.target.value || '0') * 100))}
+              disabled={customerTaxExempt}
             />
+            {customerTaxExempt && (
+              <p className="text-xs text-muted-foreground">Customer is tax-exempt</p>
+            )}
+          </div>
+          <div>
+            <Label>Tax</Label>
+            <p className="text-base font-medium mt-1">{formatCents(taxCents)}</p>
           </div>
           <div>
             <Label>Total</Label>

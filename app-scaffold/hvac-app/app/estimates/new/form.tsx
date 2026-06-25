@@ -14,9 +14,20 @@ type LineItem = {
   description: string
   quantity: number
   unitPriceCents: number
+  taxable: boolean
 }
 
-export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: string }) {
+export function EstimateForm({
+  jobId,
+  jobTitle,
+  defaultTaxRateBps = 0,
+  customerTaxExempt = false,
+}: {
+  jobId: string
+  jobTitle: string
+  defaultTaxRateBps?: number
+  customerTaxExempt?: boolean
+}) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -26,12 +37,17 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
   const [scopeOfWork, setScopeOfWork] = useState('')
   const [terms, setTerms] = useState('')
   const [notes, setNotes] = useState('')
-  const [taxCents, setTaxCents] = useState(0)
+  const [taxRateBps, setTaxRateBps] = useState(defaultTaxRateBps)
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { name: '', description: '', quantity: 1, unitPriceCents: 0 },
+    { name: '', description: '', quantity: 1, unitPriceCents: 0, taxable: true },
   ])
 
   const subtotalCents = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPriceCents, 0)
+  const effectiveRate = customerTaxExempt ? 0 : taxRateBps
+  const taxCents = lineItems.reduce(
+    (sum, li) => sum + (li.taxable && !customerTaxExempt ? Math.round(li.quantity * li.unitPriceCents * effectiveRate / 10000) : 0),
+    0,
+  )
   const totalCents = subtotalCents + taxCents
 
   async function handleAiDraft() {
@@ -48,6 +64,7 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
         description: li.description,
         quantity: li.quantity,
         unitPriceCents: li.unitPriceCents,
+        taxable: true,
       })))
       setAiUsed(true)
     } else {
@@ -58,7 +75,7 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
   }
 
   function addLineItem() {
-    setLineItems([...lineItems, { name: '', description: '', quantity: 1, unitPriceCents: 0 }])
+    setLineItems([...lineItems, { name: '', description: '', quantity: 1, unitPriceCents: 0, taxable: true }])
   }
 
   function removeLineItem(index: number) {
@@ -66,7 +83,7 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
     setLineItems(lineItems.filter((_, i) => i !== index))
   }
 
-  function updateLineItem(index: number, field: keyof LineItem, value: string | number) {
+  function updateLineItem(index: number, field: keyof LineItem, value: string | number | boolean) {
     const updated = [...lineItems]
     updated[index] = { ...updated[index], [field]: value }
     setLineItems(updated)
@@ -82,12 +99,13 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
       scopeOfWork,
       terms: terms || undefined,
       notes: notes || undefined,
-      taxCents,
       lineItems: lineItems.map((li) => ({
         name: li.name,
         description: li.description || undefined,
         quantity: li.quantity,
         unitPriceCents: li.unitPriceCents,
+        taxable: li.taxable,
+        taxRateBps,
       })),
       aiDraftUsed: aiUsed,
     })
@@ -198,6 +216,17 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
                       />
                     </div>
                   </div>
+                  {!customerTaxExempt && (
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={li.taxable}
+                        onChange={(e) => updateLineItem(i, 'taxable', e.target.checked)}
+                        className="h-3.5 w-3.5"
+                      />
+                      Taxable
+                    </label>
+                  )}
                 </div>
                 {lineItems.length > 1 && (
                   <button
@@ -214,17 +243,25 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <Label className="text-sm font-medium">Tax ($)</Label>
+            <Label className="text-sm font-medium">Tax rate (%)</Label>
             <Input
               type="number"
               min={0}
               step="0.01"
-              value={(taxCents / 100).toFixed(2)}
-              onChange={(e) => setTaxCents(Math.round(parseFloat(e.target.value || '0') * 100))}
+              value={(taxRateBps / 100).toFixed(2)}
+              onChange={(e) => setTaxRateBps(Math.round(parseFloat(e.target.value || '0') * 100))}
+              disabled={customerTaxExempt}
               className="mt-1"
             />
+            {customerTaxExempt && (
+              <p className="text-xs text-muted-foreground mt-1">Customer is tax-exempt</p>
+            )}
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Tax</Label>
+            <p className="text-base font-medium mt-1">{formatCents(taxCents)}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">Total</Label>

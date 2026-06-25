@@ -12,10 +12,16 @@ export default async function NewEstimatePage({ searchParams }: { searchParams: 
     redirect('/jobs')
   }
 
-  const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
-    include: { customer: true },
-  })
+  const [job, org] = await Promise.all([
+    db.job.findFirst({
+      where: { id: jobId, organizationId },
+      include: { customer: { select: { firstName: true, lastName: true, taxExempt: true } } },
+    }),
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: { defaultTaxRateBps: true },
+    }),
+  ])
 
   if (!job) {
     notFound()
@@ -34,6 +40,8 @@ export default async function NewEstimatePage({ searchParams }: { searchParams: 
           <EstimateForm
             jobId={job.id}
             jobTitle={job.title}
+            defaultTaxRateBps={org?.defaultTaxRateBps ?? 0}
+            customerTaxExempt={job.customer.taxExempt}
           />
         </CardContent>
       </Card>
