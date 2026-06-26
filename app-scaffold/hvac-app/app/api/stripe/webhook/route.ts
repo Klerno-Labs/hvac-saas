@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { TERMINAL_PAYMENT_METHOD } from '@/lib/terminal'
 import Stripe from 'stripe'
 
@@ -149,6 +150,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     entityId: invoiceId,
   })
 
+  try {
+    await logAudit({
+      organizationId: invoice.organizationId,
+      actorEmail: 'stripe-webhook',
+      eventType: 'payment.recorded',
+      targetType: 'invoice',
+      targetId: invoiceId,
+      metadata: {
+        amountCents: session.amount_total ?? invoice.totalCents,
+        currency: session.currency ?? 'usd',
+        status: 'succeeded',
+        invoiceId,
+      },
+    })
+  } catch (_e) { /* best-effort */ }
+
   // Fire-and-forget: emit `order.ingest` to Robert for satellite revenue
   // attribution. Robert outages must never affect this webhook's 2xx reply
   // to Stripe, so failures are swallowed and the fetch is not awaited.
@@ -200,6 +217,21 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
         where: { id: payment.id },
         data: { status: 'failed' },
       })
+      try {
+        await logAudit({
+          organizationId: invoice.organizationId,
+          actorEmail: 'stripe-webhook',
+          eventType: 'payment.failed',
+          targetType: 'invoice',
+          targetId: invoiceId,
+          metadata: {
+            amountCents: session.amount_total ?? null,
+            currency: session.currency ?? 'usd',
+            status: 'failed',
+            invoiceId,
+          },
+        })
+      } catch (_e) { /* best-effort */ }
     }
   }
 
@@ -255,6 +287,21 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
         where: { id: payment.id },
         data: { status: 'failed' },
       })
+      try {
+        await logAudit({
+          organizationId: invoice.organizationId,
+          actorEmail: 'stripe-webhook',
+          eventType: 'payment.failed',
+          targetType: 'invoice',
+          targetId: invoiceId,
+          metadata: {
+            amountCents: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            status: 'failed',
+            invoiceId,
+          },
+        })
+      } catch (_e) { /* best-effort */ }
     }
   }
 
@@ -338,6 +385,22 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     entityType: 'invoice',
     entityId: invoiceId,
   })
+
+  try {
+    await logAudit({
+      organizationId: invoice.organizationId,
+      actorEmail: 'stripe-webhook',
+      eventType: 'payment.recorded',
+      targetType: 'invoice',
+      targetId: invoiceId,
+      metadata: {
+        amountCents: paymentIntent.amount_received || invoice.totalCents,
+        currency: paymentIntent.currency,
+        status: 'succeeded',
+        invoiceId,
+      },
+    })
+  } catch (_e) { /* best-effort */ }
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {
