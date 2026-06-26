@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { PriceBookPicker } from '../_components/pricebook-picker'
+import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
 
 type LineItem = {
   name: string
@@ -23,7 +25,15 @@ type InitialData = {
   lineItems: LineItem[]
 }
 
-export function EstimateEditForm({ estimateId, initialData }: { estimateId: string; initialData: InitialData }) {
+export function EstimateEditForm({
+  estimateId,
+  initialData,
+  priceBookItems,
+}: {
+  estimateId: string
+  initialData: InitialData
+  priceBookItems: PriceBookItem[]
+}) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -83,6 +93,11 @@ export function EstimateEditForm({ estimateId, initialData }: { estimateId: stri
       {error && (
         <div className="text-destructive text-sm mb-3">{error}</div>
       )}
+      <PriceBookPicker
+        items={priceBookItems}
+        onPick={(li) => setLineItems([...lineItems, li])}
+      />
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div>
           <Label className="text-sm font-medium">Scope of work *</Label>

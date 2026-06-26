@@ -8,6 +8,8 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { PriceBookPicker } from '../_components/pricebook-picker'
+import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
 
 type LineItem = {
   name: string
@@ -16,7 +18,15 @@ type LineItem = {
   unitPriceCents: number
 }
 
-export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: string }) {
+export function EstimateForm({
+  jobId,
+  jobTitle,
+  priceBookItems,
+}: {
+  jobId: string
+  jobTitle: string
+  priceBookItems: PriceBookItem[]
+}) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -142,6 +152,11 @@ export function EstimateForm({ jobId, jobTitle }: { jobId: string; jobTitle: str
             className="mt-1 resize-y"
           />
         </div>
+
+        <PriceBookPicker
+          items={priceBookItems}
+          onPick={(li) => setLineItems([...lineItems, li])}
+        />
 
         <div className="mt-2">
           <div className="flex justify-between items-center mb-2">
