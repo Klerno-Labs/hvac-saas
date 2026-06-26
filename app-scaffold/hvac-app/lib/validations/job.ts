@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const JOB_STATUSES = ['draft', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const
+export const JOB_STATUSES = ['draft', 'booked', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const
 export type JobStatus = (typeof JOB_STATUSES)[number]
 
 export const createJobSchema = z.object({
