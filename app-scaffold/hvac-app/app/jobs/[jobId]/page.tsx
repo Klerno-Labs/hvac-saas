@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { JobStatusForm } from './status-form'
 import { PartsUsedSection } from './parts-used'
 import { ReviewSection } from './review-section'
+import { CompletionNoticeSection } from './completion-notice-section'
 import { TerminalCollectSection } from './terminal-collect-section'
 import { getTerminalEligibility } from '@/lib/terminal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -277,6 +278,14 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
         }))}
       />
 
+      {/* Completion notice section */}
+      <CompletionNoticeSection
+        jobId={job.id}
+        jobStatus={job.status}
+        sentAt={job.completionNoticeSentAt?.toISOString() ?? null}
+        channels={job.completionNoticeChannels ?? null}
+      />
+
       {/* Customer review section */}
       <ReviewSection
         jobId={job.id}
@@ -310,6 +319,7 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
     case 'completed': return 'default'
     case 'cancelled': return 'destructive'
     case 'in_progress': return 'outline'
+    case 'booked': return 'secondary'
     default: return 'secondary'
   }
 }
