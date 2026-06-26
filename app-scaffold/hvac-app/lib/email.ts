@@ -137,6 +137,42 @@ export async function sendCollectionEmail(params: {
   })
 }
 
+export async function sendAppointmentReminderEmail(params: {
+  to: string
+  customerName: string
+  jobTitle: string
+  orgName: string
+  scheduledFor: Date
+}): Promise<SendResult> {
+  const dateStr = params.scheduledFor.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+  const timeStr = params.scheduledFor.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
+  const body = `
+    <p>Hi ${params.customerName},</p>
+    <p>This is a reminder that <strong>${params.orgName}</strong> has a scheduled appointment with you tomorrow.</p>
+    <p><strong>${params.jobTitle}</strong><br>${dateStr} at ${timeStr}</p>
+    <p>If you need to reschedule, please contact us as soon as possible.</p>
+  `
+
+  return sendEmail({
+    to: params.to,
+    subject: `Appointment reminder: ${params.jobTitle} on ${dateStr}`,
+    html: renderEmail({
+      title: 'Appointment Reminder',
+      preheader: `Your appointment with ${params.orgName} is coming up`,
+      body,
+      footer: `Questions? Contact ${params.orgName} directly.`,
+    }),
+  })
+}
+
 export async function sendPasswordResetEmail(params: {
   to: string
   resetUrl: string
