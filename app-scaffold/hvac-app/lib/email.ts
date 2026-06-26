@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { renderEmail } from './email-template'
+import { renderEmail, escapeHtml } from './email-template'
 
 let _resend: Resend | null = null
 
@@ -132,6 +132,55 @@ export async function sendCollectionEmail(params: {
       preheader: `Invoice #${params.invoiceNumber} — ${params.totalFormatted} outstanding`,
       body,
       cta: params.portalUrl ? { label: 'Pay Now', url: params.portalUrl } : undefined,
+      footer: `Questions? Contact ${params.orgName} directly.`,
+    }),
+  })
+}
+
+export function buildJobCompleteEmailBody(params: {
+  customerName: string
+  orgName: string
+  jobTitle: string
+  workSummary?: string
+  outstandingFormatted?: string
+  payUrl?: string
+  reviewUrl?: string
+}): string {
+  const hasPay = !!(params.outstandingFormatted && params.payUrl)
+  return `
+    <p>Hi ${escapeHtml(params.customerName)},</p>
+    <p>Your <strong>${escapeHtml(params.jobTitle)}</strong> job with <strong>${escapeHtml(params.orgName)}</strong> is complete. Thank you for your business!</p>
+    ${params.workSummary ? `<p>${escapeHtml(params.workSummary)}</p>` : ''}
+    ${hasPay ? `<p>You have a balance of <strong>${escapeHtml(params.outstandingFormatted!)}</strong>.</p>` : ''}
+    ${!hasPay && params.reviewUrl ? `<p>We'd love to hear your feedback — <a href="${params.reviewUrl}" style="color:#0f766e;">leave a review</a>.</p>` : ''}
+  `
+}
+
+export async function sendJobCompleteEmail(params: {
+  to: string
+  customerName: string
+  orgName: string
+  jobTitle: string
+  workSummary?: string
+  payUrl?: string
+  reviewUrl?: string
+  outstandingFormatted?: string
+}): Promise<SendResult> {
+  const hasPay = !!(params.outstandingFormatted && params.payUrl)
+  return sendEmail({
+    to: params.to,
+    subject: `Your ${params.jobTitle} job is complete`,
+    html: renderEmail({
+      title: `Your ${params.jobTitle} job is complete`,
+      preheader: hasPay
+        ? `Thank you — you have a balance of ${params.outstandingFormatted}`
+        : `Your ${params.jobTitle} job is complete`,
+      body: buildJobCompleteEmailBody(params),
+      cta: hasPay
+        ? { label: 'View & Pay Invoice', url: params.payUrl! }
+        : params.reviewUrl
+          ? { label: 'Leave a Review', url: params.reviewUrl }
+          : undefined,
       footer: `Questions? Contact ${params.orgName} directly.`,
     }),
   })
