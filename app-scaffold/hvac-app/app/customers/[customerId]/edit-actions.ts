@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { createCustomerSchema } from '@/lib/validations/customer'
 
 type ActionResult = { success: true } | { success: false; error: string }
@@ -62,6 +63,21 @@ export async function updateCustomer(customerId: string, formData: FormData): Pr
     entityId: customerId,
   })
 
+  try {
+    await logAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      actorEmail: session.user.email ?? undefined,
+      eventType: 'customer.updated',
+      targetType: 'customer',
+      targetId: customerId,
+      metadata: {
+        before: { firstName: customer.firstName, lastName: customer.lastName, email: customer.email, phone: customer.phone },
+        after: { firstName: data.firstName, lastName: data.lastName || null, email: data.email || null, phone: data.phone },
+      },
+    })
+  } catch { /* best-effort */ }
+
   return { success: true }
 }
 
@@ -89,6 +105,17 @@ export async function deleteCustomer(customerId: string): Promise<ActionResult> 
     entityType: 'customer',
     entityId: customerId,
   })
+
+  try {
+    await logAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      actorEmail: session.user.email ?? undefined,
+      eventType: 'customer.deleted',
+      targetType: 'customer',
+      targetId: customerId,
+    })
+  } catch { /* best-effort */ }
 
   return { success: true }
 }
