@@ -15,6 +15,7 @@ export default async function DashboardPage() {
     outstandingInvoices,
     overdueInvoices,
     stalledJobCount,
+    newBookingCount,
   ] = await Promise.all([
     db.customer.count({ where: { organizationId } }),
     db.job.count({ where: { organizationId, status: { in: ['draft', 'scheduled', 'in_progress'] } } }),
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
         updatedAt: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
       },
     }),
+    db.bookingRequest.count({ where: { organizationId, status: 'new' } }),
   ])
 
   const totalOutstandingCents = outstandingInvoices.reduce((sum, inv) => sum + inv.outstandingCents, 0)
@@ -111,6 +113,16 @@ export default async function DashboardPage() {
         <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
           {stalledJobCount} job{stalledJobCount !== 1 ? 's' : ''} in progress with no update in 3+ days.{' '}
           <Link href="/jobs" className="underline font-medium">Review jobs →</Link>
+        </div>
+      )}
+
+      {/* New booking requests nudge */}
+      {newBookingCount > 0 && (
+        <div className="mb-6 rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 px-4 py-3 text-sm text-blue-800 dark:text-blue-300 flex items-center justify-between">
+          <span>
+            {newBookingCount} new booking request{newBookingCount !== 1 ? 's' : ''} awaiting review.
+          </span>
+          <Link href="/bookings" className="underline font-medium ml-2 whitespace-nowrap">Review →</Link>
         </div>
       )}
 
