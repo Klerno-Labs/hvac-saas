@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
 
 export default async function EstimateDetailPage({ params }: { params: Promise<{ estimateId: string }> }) {
   const { organizationId } = await requireActiveSubscription()
@@ -26,6 +27,14 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
   }
 
   const isDraft = estimate.status === 'draft'
+
+  const priceBookItems: PriceBookItem[] = isDraft
+    ? await db.inventoryItem.findMany({
+        where: { organizationId },
+        select: { id: true, name: true, description: true, category: true, sellPriceCents: true },
+        orderBy: { name: 'asc' },
+      })
+    : []
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
@@ -152,6 +161,7 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
           <CardContent>
             <EstimateEditForm
               estimateId={estimate.id}
+              priceBookItems={priceBookItems}
               initialData={{
                 scopeOfWork: estimate.scopeOfWork || '',
                 terms: estimate.terms || '',
