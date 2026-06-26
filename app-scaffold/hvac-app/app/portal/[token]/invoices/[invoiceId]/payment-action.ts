@@ -4,6 +4,9 @@ import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { getStripe } from '@/lib/stripe'
 import { validatePortalToken } from '@/lib/portal'
+import { headers } from 'next/headers'
+import { limit } from '@/lib/rate-limit'
+import { RL } from '@/lib/rate-limit/config'
 
 type CreateCheckoutResult =
   | { success: true; checkoutUrl: string }
@@ -13,6 +16,12 @@ export async function createPortalCheckoutSession(
   token: string,
   invoiceId: string,
 ): Promise<CreateCheckoutResult> {
+  const h = await headers()
+  const ip = (h.get('x-forwarded-for') ?? h.get('x-real-ip') ?? '127.0.0.1').split(',')[0].trim()
+  const r = await limit({ preset: RL.publicPay, ip, id: token || undefined })
+  if (!r.allowed) {
+    return { success: false, error: `Too many attempts. Try again in ${r.retryAfterSeconds} seconds.` }
+  }
   const ctx = await validatePortalToken(token)
   if (!ctx) {
     return { success: false, error: 'Invalid or expired portal link' }

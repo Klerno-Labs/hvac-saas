@@ -2,12 +2,22 @@
 
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { headers } from 'next/headers'
+import { limit } from '@/lib/rate-limit'
+import { RL } from '@/lib/rate-limit/config'
 
 type Result = { success: true } | { success: false; error: string }
 
 export async function resetPassword(formData: FormData): Promise<Result> {
   const token = formData.get('token') as string
   const password = formData.get('password') as string
+
+  const h = await headers()
+  const ip = (h.get('x-forwarded-for') ?? h.get('x-real-ip') ?? '127.0.0.1').split(',')[0].trim()
+  const r = await limit({ preset: RL.passwordReset, ip, id: token || undefined })
+  if (!r.allowed) {
+    return { success: false, error: `Too many attempts. Try again in ${r.retryAfterSeconds} seconds.` }
+  }
 
   if (!token || !password) {
     return { success: false, error: 'Token and password are required' }

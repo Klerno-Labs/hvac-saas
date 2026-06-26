@@ -2,6 +2,9 @@ import { validatePortalToken } from '@/lib/portal'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
+import { limit } from '@/lib/rate-limit'
+import { RL } from '@/lib/rate-limit/config'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +12,11 @@ import { cn } from '@/lib/utils'
 
 export default async function PortalDashboardPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
+
+  const h = await headers()
+  const ip = (h.get('x-forwarded-for') ?? h.get('x-real-ip') ?? '127.0.0.1').split(',')[0].trim()
+  const rl = await limit({ preset: RL.portalToken, ip, id: token })
+  if (!rl.allowed) notFound()
 
   const ctx = await validatePortalToken(token)
   if (!ctx) {
