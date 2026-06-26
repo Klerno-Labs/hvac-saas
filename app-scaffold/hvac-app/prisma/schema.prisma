@@ -311,7 +311,11 @@ model Estimate {
   decisionByName String?
   decisionByIp   String?
   signatureDataUrl String?
-  declineReason  String?
+  declineReason      String?
+  depositRequired    Boolean            @default(false)
+  depositAmountCents Int                @default(0)
+  depositStatus      String?
+  depositPaidAt      DateTime?
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   job            Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
   lineItems      EstimateLineItem[]

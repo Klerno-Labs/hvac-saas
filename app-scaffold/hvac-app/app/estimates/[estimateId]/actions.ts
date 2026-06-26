@@ -169,3 +169,43 @@ export async function updateEstimateStatus(
 
   return { success: true }
 }
+
+export async function setEstimateDeposit(
+  estimateId: string,
+  input: { depositRequired: boolean; depositAmountCents: number },
+): Promise<ActionResult> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { success: false, error: 'You must be logged in' }
+  }
+
+  const membership = await db.organizationMember.findFirst({
+    where: { userId: session.user.id },
+  })
+  if (!membership) {
+    return { success: false, error: 'You must belong to an organization' }
+  }
+
+  const estimate = await db.estimate.findFirst({
+    where: { id: estimateId, organizationId: membership.organizationId },
+  })
+  if (!estimate) {
+    return { success: false, error: 'Estimate not found in your organization' }
+  }
+  if (estimate.status !== 'draft') {
+    return { success: false, error: 'Deposit settings can only be changed on draft estimates' }
+  }
+  if (input.depositAmountCents < 0) {
+    return { success: false, error: 'Deposit amount must be non-negative' }
+  }
+
+  await db.estimate.update({
+    where: { id: estimateId },
+    data: {
+      depositRequired: input.depositRequired,
+      depositAmountCents: input.depositAmountCents,
+    },
+  })
+
+  return { success: true }
+}

@@ -9,6 +9,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { ApprovalSection } from './approval-section'
+import { formatDepositLabel } from '@/lib/deposit'
 
 export default async function PortalEstimateDetailPage({
   params,
@@ -43,6 +44,10 @@ export default async function PortalEstimateDetailPage({
       acceptedAt: true,
       declinedAt: true,
       decisionByName: true,
+      depositRequired: true,
+      depositAmountCents: true,
+      depositStatus: true,
+      depositPaidAt: true,
       lineItems: {
         select: { id: true, name: true, description: true, quantity: true, unitPriceCents: true, lineTotalCents: true },
         orderBy: { sortOrder: 'asc' },
@@ -108,6 +113,17 @@ export default async function PortalEstimateDetailPage({
               </div>
             </div>
 
+            {estimate.depositRequired && estimate.depositAmountCents > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground">Deposit</p>
+                <p className={estimate.depositStatus === 'paid' ? 'text-emerald-700' : undefined}>
+                  {estimate.depositStatus === 'paid'
+                    ? 'Deposit paid ✓'
+                    : formatDepositLabel(estimate.depositAmountCents, estimate.depositStatus)}
+                </p>
+              </div>
+            )}
+
             {estimate.scopeOfWork && (
               <div>
                 <p className="text-xs text-muted-foreground">Scope of work</p>
@@ -167,6 +183,9 @@ export default async function PortalEstimateDetailPage({
             decisionByName={estimate.decisionByName}
             acceptedAt={estimate.acceptedAt}
             declinedAt={estimate.declinedAt}
+            depositRequired={estimate.depositRequired}
+            depositAmountCents={estimate.depositAmountCents}
+            depositStatus={estimate.depositStatus}
           />
         </div>
 
