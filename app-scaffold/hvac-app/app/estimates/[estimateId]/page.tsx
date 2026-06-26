@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { EstimateStatusForm } from './status-form'
+import { DepositForm } from './deposit-form'
 import { EstimateEditForm } from './edit-form'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -140,6 +141,23 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
           <EstimateStatusForm estimateId={estimate.id} currentStatus={estimate.status} />
         </CardContent>
       </Card>
+
+      {isDraft && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Deposit</CardTitle>
+            <CardDescription>Require a deposit before work begins. Locked once sent.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DepositForm
+              estimateId={estimate.id}
+              totalCents={estimate.totalCents}
+              depositRequired={estimate.depositRequired}
+              depositAmountCents={estimate.depositAmountCents}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {isDraft && (
         <Card>
