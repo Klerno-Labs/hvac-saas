@@ -51,6 +51,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               <p className="text-xs text-muted-foreground">Email</p>
               <p className="text-sm font-medium">{customer.email || '—'}</p>
             </div>
+            {customer.leadSource && (
+              <div>
+                <p className="text-xs text-muted-foreground">Lead source</p>
+                <Badge variant="secondary">{customer.leadSource}</Badge>
+              </div>
+            )}
           </div>
 
           {(customer.addressLine1 || customer.city) && (
