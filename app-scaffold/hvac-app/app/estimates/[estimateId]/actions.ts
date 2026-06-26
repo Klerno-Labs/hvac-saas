@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { updateEstimateSchema, updateEstimateStatusSchema } from '@/lib/validations/estimate'
+import { depositConfigSchema } from '@/lib/validations/deposit'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendEstimateEmail } from '@/lib/email'
 
@@ -88,6 +89,71 @@ export async function updateEstimate(
     organizationId,
     userId,
     eventName: 'estimate_updated',
+    entityType: 'estimate',
+    entityId: estimateId,
+  })
+
+  return { success: true }
+}
+
+export async function setEstimateDeposit(
+  estimateId: string,
+  input: {
+    depositRequired: boolean
+    depositType?: 'percent' | 'fixed' | null
+    depositPercent?: number | null
+    depositFixedCents?: number | null
+  },
+): Promise<ActionResult> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { success: false, error: 'You must be logged in' }
+  }
+
+  const userId = session.user.id
+
+  const membership = await db.organizationMember.findFirst({
+    where: { userId },
+  })
+  if (!membership) {
+    return { success: false, error: 'You must belong to an organization' }
+  }
+
+  const organizationId = membership.organizationId
+
+  const estimate = await db.estimate.findFirst({
+    where: { id: estimateId, organizationId },
+  })
+  if (!estimate) {
+    return { success: false, error: 'Estimate not found in your organization' }
+  }
+
+  if (estimate.status !== 'draft') {
+    return { success: false, error: 'Only draft estimates can have deposit configured' }
+  }
+
+  const parsed = depositConfigSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.errors[0].message }
+  }
+
+  const data = parsed.data
+
+  await db.estimate.update({
+    where: { id: estimateId },
+    data: {
+      depositRequired: data.depositRequired,
+      depositType: data.depositType ?? null,
+      depositPercent: data.depositPercent ?? null,
+      depositFixedCents: data.depositFixedCents ?? null,
+      depositStatus: data.depositRequired ? 'required' : 'none',
+    },
+  })
+
+  await trackEvent({
+    organizationId,
+    userId,
+    eventName: 'estimate_deposit_configured',
     entityType: 'estimate',
     entityId: estimateId,
   })

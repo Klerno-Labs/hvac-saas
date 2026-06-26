@@ -2,12 +2,15 @@
 
 import { db } from '@/lib/db'
 import { validatePortalToken } from '@/lib/portal'
+import { resolveDepositCents } from '@/lib/deposit'
 import { trackEvent } from '@/lib/events'
 import { sendEmail } from '@/lib/email'
 import { renderEmail } from '@/lib/email-template'
 import { headers } from 'next/headers'
 
-type Result = { success: true; jobId?: string } | { success: false; error: string }
+type Result =
+  | { success: true; jobId?: string; depositRequired?: boolean; depositAmountCents?: number }
+  | { success: false; error: string }
 
 async function getClientIp(): Promise<string | null> {
   const h = await headers()
@@ -55,6 +58,21 @@ export async function approveEstimate(
 
   const ip = await getClientIp()
 
+  const depositAmountCents = estimate.depositRequired
+    ? resolveDepositCents({
+        depositType: estimate.depositType,
+        depositPercent: estimate.depositPercent,
+        depositFixedCents: estimate.depositFixedCents,
+        totalCents: estimate.totalCents,
+      })
+    : 0
+
+  const depositStatus = estimate.depositRequired
+    ? depositAmountCents > 0
+      ? 'required'
+      : 'waived'
+    : undefined
+
   await db.estimate.update({
     where: { id: estimateId },
     data: {
@@ -63,6 +81,7 @@ export async function approveEstimate(
       decisionByName: input.signerName.trim(),
       decisionByIp: ip,
       signatureDataUrl: input.signatureDataUrl,
+      ...(depositStatus !== undefined && { depositAmountCents, depositStatus }),
     },
   })
 
@@ -88,7 +107,12 @@ export async function approveEstimate(
     }).catch((e) => console.error('approval notify failed', e))
   }
 
-  return { success: true, jobId: estimate.jobId }
+  return {
+    success: true,
+    jobId: estimate.jobId,
+    depositRequired: estimate.depositRequired && depositAmountCents > 0,
+    depositAmountCents: estimate.depositRequired ? depositAmountCents : undefined,
+  }
 }
 
 export async function declineEstimate(
