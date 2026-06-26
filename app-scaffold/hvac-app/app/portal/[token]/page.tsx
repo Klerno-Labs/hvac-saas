@@ -6,9 +6,16 @@ import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { limit, RL, extractIp } from '@/lib/rate-limit'
+import { headers } from 'next/headers'
 
 export default async function PortalDashboardPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
+
+  const guard = await limit({ preset: RL.portalToken, ip: extractIp(await headers()), id: token })
+  if (!guard.allowed) {
+    notFound()
+  }
 
   const ctx = await validatePortalToken(token)
   if (!ctx) {

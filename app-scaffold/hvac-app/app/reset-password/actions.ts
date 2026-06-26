@@ -2,6 +2,9 @@
 
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { headers } from 'next/headers'
+import { limit, RL, extractIp } from '@/lib/rate-limit'
+import { assertRateLimit, RateLimitError } from '@/lib/rate-limit/respond'
 
 type Result = { success: true } | { success: false; error: string }
 
@@ -11,6 +14,17 @@ export async function resetPassword(formData: FormData): Promise<Result> {
 
   if (!token || !password) {
     return { success: false, error: 'Token and password are required' }
+  }
+
+  const ip = extractIp(await headers())
+  const guard = await limit({ preset: RL.passwordReset, ip, id: token })
+  try {
+    assertRateLimit(guard)
+  } catch (e) {
+    if (e instanceof RateLimitError) {
+      return { success: false, error: `Too many attempts. Try again in ${e.retryAfterSeconds}s.` }
+    }
+    throw e
   }
 
   if (password.length < 8) {
