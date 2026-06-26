@@ -6,8 +6,11 @@ import { trackEvent } from '@/lib/events'
 import { sendEmail } from '@/lib/email'
 import { renderEmail } from '@/lib/email-template'
 import { headers } from 'next/headers'
+import { resolveDepositCents } from '@/lib/deposit'
 
-type Result = { success: true; jobId?: string } | { success: false; error: string }
+type Result =
+  | { success: true; jobId?: string; depositRequired?: boolean; depositAmountCents?: number }
+  | { success: false; error: string }
 
 async function getClientIp(): Promise<string | null> {
   const h = await headers()
@@ -47,13 +50,30 @@ export async function approveEstimate(
   const { estimate } = loaded
 
   if (estimate.status === 'accepted') {
-    return { success: true, jobId: estimate.jobId }
+    return {
+      success: true,
+      jobId: estimate.jobId,
+      depositRequired: estimate.depositRequired,
+      depositAmountCents: estimate.depositAmountCents ?? undefined,
+    }
   }
   if (!['sent', 'draft'].includes(estimate.status)) {
     return { success: false, error: `Cannot approve an estimate with status "${estimate.status}"` }
   }
 
   const ip = await getClientIp()
+
+  let snapshotDepositAmountCents: number | undefined
+  let snapshotDepositStatus: string | undefined
+  if (estimate.depositRequired) {
+    snapshotDepositAmountCents = resolveDepositCents({
+      depositType: estimate.depositType,
+      depositPercent: estimate.depositPercent,
+      depositFixedCents: estimate.depositFixedCents,
+      totalCents: estimate.totalCents,
+    })
+    snapshotDepositStatus = snapshotDepositAmountCents > 0 ? 'required' : 'waived'
+  }
 
   await db.estimate.update({
     where: { id: estimateId },
@@ -63,6 +83,8 @@ export async function approveEstimate(
       decisionByName: input.signerName.trim(),
       decisionByIp: ip,
       signatureDataUrl: input.signatureDataUrl,
+      ...(snapshotDepositAmountCents !== undefined && { depositAmountCents: snapshotDepositAmountCents }),
+      ...(snapshotDepositStatus !== undefined && { depositStatus: snapshotDepositStatus }),
     },
   })
 
@@ -88,7 +110,12 @@ export async function approveEstimate(
     }).catch((e) => console.error('approval notify failed', e))
   }
 
-  return { success: true, jobId: estimate.jobId }
+  return {
+    success: true,
+    jobId: estimate.jobId,
+    depositRequired: estimate.depositRequired,
+    depositAmountCents: snapshotDepositAmountCents,
+  }
 }
 
 export async function declineEstimate(

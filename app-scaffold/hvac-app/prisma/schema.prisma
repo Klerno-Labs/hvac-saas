@@ -308,10 +308,18 @@ model Estimate {
   viewedAt       DateTime?
   acceptedAt     DateTime?
   declinedAt     DateTime?
-  decisionByName String?
-  decisionByIp   String?
-  signatureDataUrl String?
-  declineReason  String?
+  decisionByName     String?
+  decisionByIp       String?
+  signatureDataUrl   String?
+  declineReason      String?
+  depositRequired    Boolean   @default(false)
+  depositType        String?
+  depositPercent     Float?
+  depositFixedCents  Int?
+  depositAmountCents Int?
+  depositStatus      String    @default("none")
+  depositPaidAt      DateTime?
+  acceptedOptionKey  String?
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   job            Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
   lineItems      EstimateLineItem[]
