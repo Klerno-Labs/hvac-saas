@@ -97,9 +97,12 @@ export default async function SettingsPage() {
           <CardTitle>Administration</CardTitle>
           <CardDescription>Security and audit tools for organization owners.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex gap-2 flex-wrap">
           <Link href="/settings/audit" className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}>
             View audit log
+          </Link>
+          <Link href="/settings/webhooks" className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}>
+            Webhook dead letters
           </Link>
         </CardContent>
       </Card>
