@@ -3,6 +3,8 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
+import { summarizeInvoicePriceChange } from '@/app/invoices/[invoiceId]/price-diff'
 import { updateEstimateSchema, updateEstimateStatusSchema } from '@/lib/validations/estimate'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendEstimateEmail } from '@/lib/email'
@@ -55,6 +57,12 @@ export async function updateEstimate(
 
   const data = parsed.data
 
+  const beforeSnapshot = {
+    subtotalCents: estimate.subtotalCents,
+    taxCents: estimate.taxCents,
+    totalCents: estimate.totalCents,
+  }
+
   const lineItemsWithTotals = data.lineItems.map((item, index) => ({
     name: item.name,
     description: item.description || null,
@@ -91,6 +99,19 @@ export async function updateEstimate(
     entityType: 'estimate',
     entityId: estimateId,
   })
+
+  try {
+    const priceDiff = summarizeInvoicePriceChange(beforeSnapshot, { subtotalCents, taxCents, totalCents })
+    await logAudit({
+      organizationId,
+      actorId: userId,
+      actorEmail: session.user.email ?? undefined,
+      eventType: 'estimate.priced',
+      targetType: 'estimate',
+      targetId: estimateId,
+      metadata: { ...(priceDiff ?? {}), estimateId },
+    })
+  } catch { /* best-effort */ }
 
   return { success: true }
 }
