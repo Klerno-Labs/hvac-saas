@@ -33,12 +33,18 @@ model PlanLimit {
 }
 
 model WebhookEvent {
-  id            String        @id @default(cuid())
-  stripeEventId String        @unique
+  id            String    @id @default(cuid())
+  stripeEventId String    @unique
   type          String
+  payloadHash   String?
+  status        String    @default("received")
   orgId         String?
-  receivedAt    DateTime      @default(now())
+  attempts      Int       @default(0)
+  lastError     String?
+  nextRetryAt   DateTime?
+  receivedAt    DateTime  @default(now())
   processedAt   DateTime?
+  updatedAt     DateTime  @updatedAt
   metadata      Json?
 }
 
