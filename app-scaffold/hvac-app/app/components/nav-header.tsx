@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { href: '/reports', label: 'Reports' },
   { href: '/reminders', label: 'Reminders' },
   { href: '/recurring', label: 'Recurring' },
+  { href: '/memberships', label: 'Memberships' },
   { href: '/settings', label: 'Settings' },
 ]
 
