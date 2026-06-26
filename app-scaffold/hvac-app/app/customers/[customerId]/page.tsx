@@ -71,6 +71,13 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               <p className="text-sm">{customer.notes}</p>
             </div>
           )}
+
+          {customer.leadSource && (
+            <div>
+              <p className="text-xs text-muted-foreground">Lead source</p>
+              <Badge variant="secondary" className="text-xs">{customer.leadSource}</Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
 

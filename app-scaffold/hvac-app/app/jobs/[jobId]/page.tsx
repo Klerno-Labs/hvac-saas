@@ -92,6 +92,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
               <p className="text-sm">{job.technicianName}</p>
             </div>
           )}
+
+          {job.leadSource && (
+            <div>
+              <p className="text-xs text-muted-foreground">Lead source</p>
+              <Badge variant="secondary" className="text-xs">{job.leadSource}</Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -160,6 +160,9 @@ model Organization {
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
   jobNotes                 JobNote[]
+  bookingEnabled           Boolean              @default(false)
+  bookingSlug              String?              @unique
+  bookingRequests          BookingRequest[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -215,6 +218,8 @@ model Customer {
   recurringJobs  RecurringJob[]
   reviews        CustomerReview[]
   equipment      Equipment[]
+  leadSource     String?
+  bookingRequests BookingRequest[]
   deletedAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -261,6 +266,8 @@ model Job {
   inventoryUsages InventoryUsage[]
   equipmentServiceRecords EquipmentServiceRecord[]
   jobNotes        JobNote[]
+  leadSource      String?
+  bookingRequests BookingRequest[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -671,4 +678,28 @@ model EquipmentServiceRecord {
   @@index([organizationId])
   @@index([equipmentId])
   @@index([jobId])
+}
+
+model BookingRequest {
+  id              String       @id @default(cuid())
+  organizationId  String
+  status          String       @default("new")
+  serviceType     String
+  preferredWindow String?
+  contactName     String
+  contactPhone    String?
+  contactEmail    String?
+  address         String?
+  notes           String?
+  leadSource      String?
+  customerId      String?
+  jobId           String?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer        Customer?    @relation(fields: [customerId], references: [id])
+  job             Job?         @relation(fields: [jobId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
 }
