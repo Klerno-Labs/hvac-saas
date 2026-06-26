@@ -8,6 +8,8 @@ import { runCollectionsAutomation } from '@/lib/collections'
  * Intended to be called by a cron job or manual trigger.
  * Protected by a shared secret to prevent unauthorized invocation.
  */
+export const GET = POST
+
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
   const expectedSecret = process.env.COLLECTIONS_CRON_SECRET

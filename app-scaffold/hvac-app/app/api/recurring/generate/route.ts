@@ -10,6 +10,8 @@ export const runtime = 'nodejs'
  * creates a new Job for each, and advances the nextDueDate.
  * Protected by COLLECTIONS_CRON_SECRET (same pattern as /api/collections/run).
  */
+export const GET = POST
+
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
   const expectedSecret = process.env.COLLECTIONS_CRON_SECRET
