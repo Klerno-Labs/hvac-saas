@@ -672,3 +672,11 @@ model EquipmentServiceRecord {
   @@index([equipmentId])
   @@index([jobId])
 }
+
+model RateLimitHit {
+  id    String   @id @default(cuid())
+  key   String
+  hitAt DateTime @default(now())
+
+  @@index([key, hitAt])
+}
