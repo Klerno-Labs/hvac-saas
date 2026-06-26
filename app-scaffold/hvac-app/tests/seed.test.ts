@@ -56,7 +56,8 @@ describe('Plan Limits Seed', () => {
     await prisma.webhookEvent.create({
       data: {
         stripeEventId,
-        type: 'customer.subscription.created',
+        eventType: 'customer.subscription.created',
+        payloadHash: 'sha256:aaaaaaaaaaaaaaaa',
       },
     })
 
@@ -64,7 +65,8 @@ describe('Plan Limits Seed', () => {
       prisma.webhookEvent.create({
         data: {
           stripeEventId,
-          type: 'customer.subscription.updated',
+          eventType: 'customer.subscription.updated',
+          payloadHash: 'sha256:bbbbbbbbbbbbbbbb',
         },
       })
     ).rejects.toThrow()
