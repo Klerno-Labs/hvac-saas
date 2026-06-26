@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createCustomerSchema, updateCustomerSchema } from '@/lib/validations/customer'
+import { updateJobStatusSchema, JOB_STATUSES } from '@/lib/validations/job'
 
 describe('createCustomerSchema', () => {
   it('accepts valid customer data', () => {
@@ -71,5 +72,21 @@ describe('updateCustomerSchema', () => {
       phone: '555-999-0000',
     })
     expect(invalid.success).toBe(false)
+  })
+})
+
+describe('updateJobStatusSchema', () => {
+  it('accepts booked', () => {
+    expect(updateJobStatusSchema.safeParse({ status: 'booked' }).success).toBe(true)
+  })
+
+  it('accepts all legacy statuses', () => {
+    for (const status of JOB_STATUSES) {
+      expect(updateJobStatusSchema.safeParse({ status }).success).toBe(true)
+    }
+  })
+
+  it('rejects unknown status', () => {
+    expect(updateJobStatusSchema.safeParse({ status: 'xyz' }).success).toBe(false)
   })
 })
