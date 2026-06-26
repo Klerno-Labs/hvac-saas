@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { validatePortalToken } from '@/lib/portal'
 import { EstimatePdf } from '@/lib/pdf/estimate-pdf'
+import { resolveDepositCents } from '@/lib/deposit'
 
 export const runtime = 'nodejs'
 
@@ -49,6 +50,13 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
 
   const customerName = [estimate.job.customer.firstName, estimate.job.customer.lastName].filter(Boolean).join(' ')
 
+  const depositCents = resolveDepositCents(
+    estimate.totalCents,
+    estimate.depositType,
+    estimate.depositPercent,
+    estimate.depositFixedCents,
+  )
+
   const buffer = await renderToBuffer(
     EstimatePdf({
       orgName: estimate.organization.name,
@@ -61,11 +69,16 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
       customerPhone: estimate.job.customer.phone,
       scopeOfWork: estimate.scopeOfWork,
       terms: estimate.terms,
-      notes: estimate.notes,
       lineItems: estimate.lineItems,
       subtotalCents: estimate.subtotalCents,
       taxCents: estimate.taxCents,
       totalCents: estimate.totalCents,
+      depositRequired: estimate.depositRequired,
+      depositStatus: estimate.depositStatus,
+      depositPaidAt: estimate.depositPaidAt,
+      depositCents,
+      acceptedAt: estimate.acceptedAt,
+      signerName: estimate.decisionByName,
     }),
   )
 

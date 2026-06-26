@@ -16,7 +16,10 @@ const s = StyleSheet.create({
   totals: { marginTop: 8, alignItems: 'flex-end' },
   totalRow: { flexDirection: 'row', width: 200, justifyContent: 'space-between', paddingVertical: 3 },
   grandTotal: { fontSize: 14, fontWeight: 'bold', color: '#0f766e', borderTop: 1, borderColor: '#0f766e', paddingTop: 6, marginTop: 4 },
+  depositRow: { flexDirection: 'row', width: 200, justifyContent: 'space-between', paddingVertical: 3, color: '#0f766e' },
+  depositPaid: { flexDirection: 'row', width: 200, justifyContent: 'space-between', paddingVertical: 3, color: '#16a34a' },
   box: { marginTop: 14, padding: 12, backgroundColor: '#f8fafc', fontSize: 10 },
+  sigBlock: { marginTop: 20, padding: 12, backgroundColor: '#f0fdf4', borderLeft: 3, borderColor: '#16a34a', fontSize: 10 },
   footer: { position: 'absolute', bottom: 30, left: 40, right: 40, textAlign: 'center', color: '#94a3b8', fontSize: 9 },
 })
 
@@ -33,11 +36,16 @@ type EstimatePdfProps = {
   customerPhone: string | null
   scopeOfWork: string | null
   terms: string | null
-  notes: string | null
   lineItems: { name: string; description: string | null; quantity: number; unitPriceCents: number; lineTotalCents: number }[]
   subtotalCents: number
   taxCents: number
   totalCents: number
+  depositRequired: boolean
+  depositStatus: string
+  depositPaidAt: Date | null
+  depositCents: number
+  acceptedAt: Date | null
+  signerName: string | null
 }
 
 export function EstimatePdf(p: EstimatePdfProps) {
@@ -107,6 +115,19 @@ export function EstimatePdf(p: EstimatePdfProps) {
             <Text>Estimate Total</Text>
             <Text>{fmt(p.totalCents)}</Text>
           </View>
+          {p.depositRequired ? (
+            p.depositStatus === 'paid' && p.depositPaidAt ? (
+              <View style={s.depositPaid}>
+                <Text>Deposit paid on {new Date(p.depositPaidAt).toLocaleDateString()}</Text>
+                <Text>{fmt(p.depositCents)}</Text>
+              </View>
+            ) : (
+              <View style={s.depositRow}>
+                <Text>Deposit due on approval</Text>
+                <Text>{fmt(p.depositCents)}</Text>
+              </View>
+            )
+          ) : null}
         </View>
 
         {p.terms ? (
@@ -116,10 +137,13 @@ export function EstimatePdf(p: EstimatePdfProps) {
           </View>
         ) : null}
 
-        {p.notes ? (
-          <View style={s.box}>
-            <Text style={s.label}>Notes</Text>
-            <Text>{p.notes}</Text>
+        {p.status === 'accepted' && p.acceptedAt ? (
+          <View style={s.sigBlock}>
+            <Text style={[s.label, { color: '#16a34a' }]}>Accepted</Text>
+            {p.signerName ? <Text style={{ fontWeight: 'bold' }}>{p.signerName}</Text> : null}
+            <Text style={{ color: '#64748b', marginTop: 2 }}>
+              {new Date(p.acceptedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+            </Text>
           </View>
         ) : null}
 
