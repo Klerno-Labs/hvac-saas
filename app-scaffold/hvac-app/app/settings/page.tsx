@@ -98,9 +98,14 @@ export default async function SettingsPage() {
           <CardDescription>Security and audit tools for organization owners.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/settings/audit" className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}>
-            View audit log
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/settings/audit" className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}>
+              View audit log
+            </Link>
+            <Link href="/settings/export" className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}>
+              Export data
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </main>
