@@ -50,6 +50,34 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
   }
 }
 
+export function buildJobCompleteSmsText(params: {
+  customerName: string
+  orgName: string
+  jobTitle: string
+  outstandingFormatted?: string
+  payUrl?: string
+  reviewUrl?: string
+}): string {
+  const hasPay = !!(params.outstandingFormatted && params.payUrl)
+  if (hasPay) {
+    return `Hi ${params.customerName}, your ${params.jobTitle} job with ${params.orgName} is complete. Pay your balance of ${params.outstandingFormatted}: ${params.payUrl}`
+  }
+  const reviewPart = params.reviewUrl ? ` Leave a review: ${params.reviewUrl}` : ''
+  return `Hi ${params.customerName}, your ${params.jobTitle} job with ${params.orgName} is complete.${reviewPart}`
+}
+
+export async function sendJobCompleteSms(params: {
+  to: string
+  customerName: string
+  orgName: string
+  jobTitle: string
+  payUrl?: string
+  reviewUrl?: string
+  outstandingFormatted?: string
+}): Promise<SmsResult> {
+  return sendSms(params.to, buildJobCompleteSmsText(params))
+}
+
 /**
  * Send a collection reminder SMS for overdue invoices.
  */
