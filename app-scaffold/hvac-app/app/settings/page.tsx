@@ -93,6 +93,20 @@ export default async function SettingsPage() {
       </Card>
 
       <Card className="mt-6">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Import data</CardTitle>
+            <CardDescription>
+              Bulk-import customers, equipment, or price book items from a CSV file.
+            </CardDescription>
+          </div>
+          <Link href="/settings/import" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>
+            Import CSV
+          </Link>
+        </CardHeader>
+      </Card>
+
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle>Administration</CardTitle>
           <CardDescription>Security and audit tools for organization owners.</CardDescription>
