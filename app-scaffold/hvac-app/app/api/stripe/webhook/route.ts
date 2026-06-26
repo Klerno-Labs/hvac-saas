@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { TERMINAL_PAYMENT_METHOD } from '@/lib/terminal'
 import Stripe from 'stripe'
+import { hashPayload, recordInboundEvent, markProcessed, markFailed } from '@/lib/webhook-store'
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -24,48 +25,64 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 })
   }
 
+  const payloadHash = hashPayload(body)
+  const { event: stored, alreadyProcessed } = await recordInboundEvent({
+    stripeEventId: event.id,
+    eventType: event.type,
+    payloadHash,
+  })
+  if (alreadyProcessed) {
+    return NextResponse.json({ received: true, duplicate: true })
+  }
+
   try {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
-        break
-
-      case 'checkout.session.expired':
-        await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session)
-        break
-
-      case 'payment_intent.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.PaymentIntent)
-        break
-
-      case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent)
-        break
-
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await handleSubscriptionChange(event.data.object as Stripe.Subscription)
-        break
-
-      case 'account.updated':
-        await handleAccountUpdated(event.data.object as Stripe.Account)
-        break
-
-      default:
-        // Unhandled event type — log but don't fail
-        console.log(`Unhandled webhook event type: ${event.type}`)
-    }
+    await dispatchEvent(event)
 
     await trackEvent({
       eventName: 'webhook_processed',
       metadataJson: { eventType: event.type, eventId: event.id },
     })
+    await markProcessed(stored.id)
 
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error(`Webhook processing error for ${event.type}:`, error)
+    await markFailed(stored.id, error)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+  }
+}
+
+export async function dispatchEvent(event: Stripe.Event): Promise<void> {
+  switch (event.type) {
+    case 'checkout.session.completed':
+      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
+      break
+
+    case 'checkout.session.expired':
+      await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session)
+      break
+
+    case 'payment_intent.payment_failed':
+      await handlePaymentFailed(event.data.object as Stripe.PaymentIntent)
+      break
+
+    case 'payment_intent.succeeded':
+      await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent)
+      break
+
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+      await handleSubscriptionChange(event.data.object as Stripe.Subscription)
+      break
+
+    case 'account.updated':
+      await handleAccountUpdated(event.data.object as Stripe.Account)
+      break
+
+    default:
+      // Unhandled event type — log but don't fail
+      console.log(`Unhandled webhook event type: ${event.type}`)
   }
 }
 
