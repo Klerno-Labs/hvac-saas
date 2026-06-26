@@ -160,6 +160,8 @@ model Organization {
   equipment                Equipment[]
   equipmentServiceRecords  EquipmentServiceRecord[]
   jobNotes                 JobNote[]
+  priceBookItems           PriceBookItem[]
+  optionGroups             OptionGroup[]
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
 }
@@ -671,4 +673,39 @@ model EquipmentServiceRecord {
   @@index([organizationId])
   @@index([equipmentId])
   @@index([jobId])
+}
+
+model PriceBookItem {
+  id              String        @id @default(cuid())
+  organizationId  String
+  name            String
+  category        String?
+  description     String?
+  basePriceCents  Int           @default(0)
+  costCents       Int           @default(0)
+  tier            String?
+  isActive        Boolean       @default(true)
+  deletedAt       DateTime?
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  optionGroups    OptionGroup[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([organizationId])
+}
+
+model OptionGroup {
+  id               String        @id @default(cuid())
+  organizationId   String
+  priceBookItemId  String
+  name             String
+  description      String?
+  priceCents       Int           @default(0)
+  sortOrder        Int           @default(0)
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  priceBookItem    PriceBookItem @relation(fields: [priceBookItemId], references: [id], onDelete: Cascade)
+  createdAt        DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([priceBookItemId])
 }
