@@ -69,7 +69,72 @@ export async function POST(req: Request) {
   }
 }
 
+async function handleDepositCompleted(session: Stripe.Checkout.Session) {
+  const estimateId = session.metadata?.depositForEstimateId
+  if (!estimateId) return
+
+  const estimate = await db.estimate.findUnique({ where: { id: estimateId } })
+  if (!estimate) {
+    console.error(`checkout.session.completed (deposit): estimate ${estimateId} not found`)
+    return
+  }
+
+  if (estimate.depositStatus === 'paid') return
+
+  const paymentIntentId =
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null
+
+  const now = new Date()
+
+  await db.$transaction(async (tx) => {
+    await tx.estimate.update({
+      where: { id: estimateId },
+      data: { depositStatus: 'paid', depositPaidAt: now },
+    })
+
+    if (paymentIntentId) {
+      const existingPayment = await tx.payment.findUnique({
+        where: { stripePaymentIntent: paymentIntentId },
+      })
+
+      if (existingPayment) {
+        await tx.payment.update({
+          where: { id: existingPayment.id },
+          data: { status: 'succeeded', paidAt: now },
+        })
+      } else {
+        await tx.payment.create({
+          data: {
+            organizationId: estimate.organizationId,
+            estimateId: estimate.id,
+            kind: 'deposit',
+            stripePaymentIntent: paymentIntentId,
+            amountCents: session.amount_total ?? estimate.depositAmountCents,
+            status: 'succeeded',
+            paidAt: now,
+          },
+        })
+      }
+    }
+  })
+
+  await trackEvent({
+    organizationId: estimate.organizationId,
+    eventName: 'estimate_deposit_paid',
+    entityType: 'estimate',
+    entityId: estimateId,
+    metadataJson: { paymentIntentId, sessionId: session.id },
+  })
+}
+
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  if (session.metadata?.depositForEstimateId) {
+    await handleDepositCompleted(session)
+    return
+  }
+
   const invoiceId = session.metadata?.invoiceId
   if (!invoiceId) {
     console.error('checkout.session.completed: missing invoiceId in metadata')
@@ -174,6 +239,25 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
+  if (session.metadata?.depositForEstimateId) {
+    const paymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id ?? null
+    if (paymentIntentId) {
+      const payment = await db.payment.findUnique({
+        where: { stripePaymentIntent: paymentIntentId },
+      })
+      if (payment && payment.status === 'pending') {
+        await db.payment.update({
+          where: { id: payment.id },
+          data: { status: 'failed' },
+        })
+      }
+    }
+    return
+  }
+
   const invoiceId = session.metadata?.invoiceId
   if (!invoiceId) return
 
