@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { updateJobStatusSchema } from '@/lib/validations/job'
+import { sendJobCompleteNotice, shouldSendCompletionNotice } from '@/lib/job-complete-notice'
 
 type UpdateStatusResult =
   | { success: true }
@@ -57,6 +58,14 @@ export async function updateJobStatus(jobId: string, formData: FormData): Promis
     entityId: jobId,
     metadataJson: { from: job.status, to: status },
   })
+
+  if (shouldSendCompletionNotice(job.status, status)) {
+    try {
+      await sendJobCompleteNotice(jobId, organizationId)
+    } catch (err) {
+      console.error('[job-complete-notice] delivery failed:', err)
+    }
+  }
 
   return { success: true }
 }
