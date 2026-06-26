@@ -42,7 +42,7 @@ const SENSITIVE_KEYS = new Set([
   'webhook_secret', 'hashedPassword',
 ])
 
-function sanitizeMetadata(obj: Record<string, unknown>): Record<string, unknown> {
+export function sanitizeMetadata(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(obj)) {
     if (SENSITIVE_KEYS.has(key.toLowerCase())) {
