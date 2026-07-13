@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { trackEvent } from '@/lib/events'
+import { calculateNextDueDate } from '@/lib/recurring-cadence'
+
+export { calculateNextDueDate }
 
 export const runtime = 'nodejs'
 
@@ -33,6 +37,7 @@ export async function POST(req: Request) {
     })
 
     let generated = 0
+    let generatedMembershipVisits = 0
 
     for (const rj of dueJobs) {
       await db.job.create({
@@ -57,34 +62,32 @@ export async function POST(req: Request) {
       })
 
       generated++
+
+      try {
+        const membership = await db.membership.findUnique({
+          where: { recurringJobId: rj.id },
+        })
+        if (membership && membership.status === 'active') {
+          await db.membership.update({
+            where: { id: membership.id },
+            data: { visitsUsed: { increment: 1 } },
+          })
+          await trackEvent({
+            organizationId: rj.organizationId,
+            eventName: 'membership_visit_generated',
+            entityId: membership.id,
+            metadataJson: { recurringJobId: rj.id, jobTitle: rj.title },
+          })
+          generatedMembershipVisits++
+        }
+      } catch (membershipErr) {
+        console.error('Membership visit tracking error for recurringJob', rj.id, membershipErr)
+      }
     }
 
-    return NextResponse.json({ success: true, generated })
+    return NextResponse.json({ success: true, generated, generatedMembershipVisits })
   } catch (error) {
     console.error('Recurring job generation error:', error)
     return NextResponse.json({ error: 'Recurring job generation failed' }, { status: 500 })
   }
-}
-
-function calculateNextDueDate(current: Date, frequency: string): Date {
-  const next = new Date(current)
-
-  switch (frequency) {
-    case 'monthly':
-      next.setMonth(next.getMonth() + 1)
-      break
-    case 'quarterly':
-      next.setMonth(next.getMonth() + 3)
-      break
-    case 'biannual':
-      next.setMonth(next.getMonth() + 6)
-      break
-    case 'annual':
-      next.setFullYear(next.getFullYear() + 1)
-      break
-    default:
-      next.setMonth(next.getMonth() + 1)
-  }
-
-  return next
 }
