@@ -7,8 +7,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { approveEstimate, declineEstimate } from './approval-actions'
+import { createDepositCheckoutSession } from './deposit-action'
 
-type Mode = 'idle' | 'approving' | 'declining' | 'submitted'
+type Mode = 'idle' | 'approving' | 'declining' | 'submitted' | 'deposit'
+
+function formatCents(cents: number) {
+  return '$' + (cents / 100).toFixed(2)
+}
 
 export function ApprovalSection({
   token,
@@ -17,6 +22,9 @@ export function ApprovalSection({
   decisionByName,
   acceptedAt,
   declinedAt,
+  depositRequired,
+  depositAmountCents,
+  depositStatus,
 }: {
   token: string
   estimateId: string
@@ -24,12 +32,17 @@ export function ApprovalSection({
   decisionByName: string | null
   acceptedAt: Date | string | null
   declinedAt: Date | string | null
+  depositRequired: boolean
+  depositAmountCents: number | null
+  depositStatus: string
 }) {
   const [mode, setMode] = useState<Mode>('idle')
   const [signerName, setSignerName] = useState('')
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [depositError, setDepositError] = useState<string | null>(null)
+  const [approveDepositCents, setApproveDepositCents] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const drawingRef = useRef(false)
   const lastPointRef = useRef<{ x: number; y: number } | null>(null)
@@ -110,9 +123,26 @@ export function ApprovalSection({
       signatureDataUrl: dataUrl,
     })
     if (result.success) {
-      setMode('submitted')
+      if (result.depositRequired && result.depositAmountCents && result.depositAmountCents > 0) {
+        setApproveDepositCents(result.depositAmountCents)
+        setMode('deposit')
+      } else {
+        setMode('submitted')
+      }
     } else {
       setError(result.error)
+      setLoading(false)
+    }
+  }
+
+  async function handlePayDeposit(amountCents: number) {
+    setDepositError(null)
+    setLoading(true)
+    const result = await createDepositCheckoutSession(token, estimateId)
+    if (result.success) {
+      window.location.href = result.checkoutUrl
+    } else {
+      setDepositError(result.error)
       setLoading(false)
     }
   }
@@ -134,12 +164,36 @@ export function ApprovalSection({
     }
   }
 
-  // Already decided
+  // Already decided — accepted
   if (status === 'accepted') {
+    // Deposit required but not paid — show deposit CTA
+    if (depositRequired && depositStatus !== 'paid' && depositAmountCents && depositAmountCents > 0) {
+      return (
+        <Card>
+          <CardContent className="py-6 space-y-3 text-center">
+            <p className="text-lg font-semibold text-emerald-700">✓ Approved</p>
+            <p className="text-sm text-muted-foreground">One more step — pay your deposit to book the job.</p>
+            {depositError && <div className="text-sm text-destructive">{depositError}</div>}
+            <Button
+              onClick={() => handlePayDeposit(depositAmountCents)}
+              disabled={loading}
+              size="lg"
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {loading ? 'Redirecting...' : `Pay deposit (${formatCents(depositAmountCents)}) to book your job`}
+            </Button>
+          </CardContent>
+        </Card>
+      )
+    }
+
     return (
       <Card className="border-emerald-500/40 bg-emerald-50/50">
         <CardContent className="py-6 text-center">
           <p className="text-lg font-semibold text-emerald-700">✓ Approved</p>
+          {depositRequired && depositStatus === 'paid' && (
+            <p className="text-sm text-emerald-600 mt-1">Deposit paid ✓</p>
+          )}
           {decisionByName && (
             <p className="text-sm text-muted-foreground mt-1">
               Approved by {decisionByName}
@@ -173,6 +227,27 @@ export function ApprovalSection({
         <CardContent className="py-6 text-center">
           <p className="text-lg font-semibold text-emerald-700">✓ Submitted</p>
           <p className="text-sm text-muted-foreground mt-1">Thanks! Refresh the page to see your decision recorded.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (mode === 'deposit') {
+    const cents = approveDepositCents ?? 0
+    return (
+      <Card>
+        <CardContent className="py-6 space-y-3 text-center">
+          <p className="text-lg font-semibold text-emerald-700">✓ Approved</p>
+          <p className="text-sm text-muted-foreground">Pay your deposit to book the job.</p>
+          {depositError && <div className="text-sm text-destructive">{depositError}</div>}
+          <Button
+            onClick={() => handlePayDeposit(cents)}
+            disabled={loading}
+            size="lg"
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            {loading ? 'Redirecting...' : `Pay deposit (${formatCents(cents)}) to book your job`}
+          </Button>
         </CardContent>
       </Card>
     )

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { EstimateStatusForm } from './status-form'
 import { EstimateEditForm } from './edit-form'
+import { DepositForm } from './deposit-form'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -149,6 +150,23 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
           <EstimateStatusForm estimateId={estimate.id} currentStatus={estimate.status} />
         </CardContent>
       </Card>
+
+      {isDraft && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Deposit settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DepositForm
+              estimateId={estimate.id}
+              currentRequired={estimate.depositRequired}
+              currentType={estimate.depositType}
+              currentPercent={estimate.depositPercent}
+              currentAmountCents={estimate.depositAmountCents}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {isDraft && (
         <Card>
