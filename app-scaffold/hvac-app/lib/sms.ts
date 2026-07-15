@@ -50,6 +50,32 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
   }
 }
 
+type JobCompleteSmsParams = {
+  to: string
+  customerName: string
+  orgName: string
+  jobTitle: string
+  payUrl?: string
+  reviewUrl?: string
+  outstandingFormatted?: string
+}
+
+export function buildJobCompleteSmsText(params: Omit<JobCompleteSmsParams, 'to'>): string {
+  const hasBalance = !!(params.outstandingFormatted && params.payUrl)
+  const base = `Hi ${params.customerName}, your ${params.jobTitle} job has been completed by ${params.orgName}.`
+  if (hasBalance) {
+    return `${base} Pay your balance of ${params.outstandingFormatted}: ${params.payUrl}`
+  }
+  if (params.reviewUrl) {
+    return `${base} Leave a review: ${params.reviewUrl}`
+  }
+  return base
+}
+
+export async function sendJobCompleteSms(params: JobCompleteSmsParams): Promise<SmsResult> {
+  return sendSms(params.to, buildJobCompleteSmsText(params))
+}
+
 /**
  * Send a collection reminder SMS for overdue invoices.
  */

@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { renderEmail } from './email-template'
+import { renderEmail, escapeHtml } from './email-template'
 
 let _resend: Resend | null = null
 
@@ -132,6 +132,48 @@ export async function sendCollectionEmail(params: {
       preheader: `Invoice #${params.invoiceNumber} — ${params.totalFormatted} outstanding`,
       body,
       cta: params.portalUrl ? { label: 'Pay Now', url: params.portalUrl } : undefined,
+      footer: `Questions? Contact ${params.orgName} directly.`,
+    }),
+  })
+}
+
+type JobCompleteEmailParams = {
+  to: string
+  customerName: string
+  orgName: string
+  jobTitle: string
+  workSummary?: string
+  payUrl?: string
+  reviewUrl?: string
+  outstandingFormatted?: string
+}
+
+export function buildJobCompleteEmailBody(params: Omit<JobCompleteEmailParams, 'to'>): string {
+  const hasBalance = !!(params.outstandingFormatted && params.payUrl)
+  return `
+    <p>Hi ${escapeHtml(params.customerName)},</p>
+    <p>Great news — your <strong>${escapeHtml(params.jobTitle)}</strong> job has been completed by <strong>${escapeHtml(params.orgName)}</strong>.</p>
+    ${params.workSummary ? `<p>${escapeHtml(params.workSummary)}</p>` : ''}
+    ${hasBalance ? `<p>You have a balance of <strong>${escapeHtml(params.outstandingFormatted!)}</strong> remaining. Please use the link below to view and pay your invoice.</p>` : ''}
+  `
+}
+
+export async function sendJobCompleteEmail(params: JobCompleteEmailParams): Promise<SendResult> {
+  const hasBalance = !!(params.outstandingFormatted && params.payUrl)
+  const cta = hasBalance
+    ? { label: 'View & Pay Invoice', url: params.payUrl! }
+    : params.reviewUrl
+      ? { label: 'Leave a Review', url: params.reviewUrl }
+      : undefined
+
+  return sendEmail({
+    to: params.to,
+    subject: `Your ${params.jobTitle} job is complete`,
+    html: renderEmail({
+      title: `Your ${params.jobTitle} job is complete`,
+      preheader: `${params.orgName} has completed your ${params.jobTitle} job`,
+      body: buildJobCompleteEmailBody(params),
+      cta,
       footer: `Questions? Contact ${params.orgName} directly.`,
     }),
   })

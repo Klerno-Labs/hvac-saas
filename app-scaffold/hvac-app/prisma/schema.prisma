@@ -120,6 +120,7 @@ model Organization {
   collectionsOverdue2Days  Int                  @default(14)
   collectionsFinalDays     Int                  @default(30)
   smsEnabled               Boolean              @default(false)
+  jobCompletionNoticeEnabled Boolean            @default(false)
   platformFeePercent       Float                @default(2.9)
   stripeCustomerId         String?              @unique
   stripeSubscriptionId     String?              @unique
@@ -253,6 +254,8 @@ model Job {
   workSummary     String?
   materialsUsed   String?
   completionNotes String?
+  completionNoticeSentAt   DateTime?
+  completionNoticeChannels String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   estimates       Estimate[]
