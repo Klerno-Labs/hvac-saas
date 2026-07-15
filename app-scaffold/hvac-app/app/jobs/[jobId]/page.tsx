@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { JobStatusForm } from './status-form'
 import { PartsUsedSection } from './parts-used'
 import { ReviewSection } from './review-section'
+import { ResendNoticeButton } from './completion-notice-section'
 import { TerminalCollectSection } from './terminal-collect-section'
+import { formatNoticeChannels } from '@/lib/format-notice-channels'
 import { getTerminalEligibility } from '@/lib/terminal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -277,6 +279,28 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
         }))}
       />
 
+      {/* Completion notice section */}
+      {job.status === 'completed' && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="text-lg">Completion notice</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {job.completionNoticeSentAt ? (
+              <p className="text-sm text-muted-foreground">
+                Customer notified on {new Date(job.completionNoticeSentAt).toLocaleDateString()} via{' '}
+                {formatNoticeChannels(job.completionNoticeChannels)}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Customer not yet notified. Sends automatically on completion.
+              </p>
+            )}
+            <ResendNoticeButton jobId={job.id} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Customer review section */}
       <ReviewSection
         jobId={job.id}
@@ -310,6 +334,7 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
     case 'completed': return 'default'
     case 'cancelled': return 'destructive'
     case 'in_progress': return 'outline'
+    case 'booked': return 'secondary'
     default: return 'secondary'
   }
 }
