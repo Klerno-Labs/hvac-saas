@@ -10,6 +10,10 @@
     {
       "path": "/api/collections/run",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/appointments/reminders",
+      "schedule": "0 * * * *"
     }
   ]
 }
