@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { recordProofOfWork } from './actions'
 import { saveJobSignature } from './signature-actions'
+import { enqueueWrite } from '@/lib/offline-queue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -39,6 +40,7 @@ export function ProofOfWorkForm({
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [queued, setQueued] = useState(false)
   const [loading, setLoading] = useState(false)
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>(
     existingAssets.map((a) => ({ id: a.id, fileUrl: a.fileUrl }))
@@ -123,9 +125,29 @@ export function ProofOfWorkForm({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
+    setQueued(false)
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
+
+    if (!navigator.onLine) {
+      try {
+        await enqueueWrite({
+          type: 'job_notes',
+          jobId,
+          workSummary: formData.get('workSummary') as string,
+          materialsUsed: (formData.get('materialsUsed') as string) || undefined,
+          completionNotes: (formData.get('completionNotes') as string) || undefined,
+          technicianName: (formData.get('technicianName') as string) || undefined,
+        })
+        setQueued(true)
+      } catch {
+        setError('Could not save offline — check browser storage permissions.')
+      }
+      setLoading(false)
+      return
+    }
+
     const result = await recordProofOfWork(jobId, formData)
 
     if (!result.success) {
@@ -183,6 +205,11 @@ export function ProofOfWorkForm({
     <>
       {error && (
         <div className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">{error}</div>
+      )}
+      {queued && (
+        <div className="text-sm text-amber-700 mb-4 p-3 bg-amber-50 rounded-lg">
+          Notes saved offline — photos unavailable without connection. Will sync when connected.
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">

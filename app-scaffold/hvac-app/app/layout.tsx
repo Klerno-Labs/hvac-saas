@@ -6,6 +6,7 @@ import { TrialBannerWrapper } from './components/trial-banner-wrapper'
 import { Analytics } from '@vercel/analytics/react'
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { SWRegister } from './components/sw-register'
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -102,6 +103,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </Providers>
         <Analytics />
+        <SWRegister />
       </body>
     </html>
   )

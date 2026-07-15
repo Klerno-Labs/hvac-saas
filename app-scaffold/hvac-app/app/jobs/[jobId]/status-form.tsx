@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateJobStatus } from './actions'
+import { enqueueWrite } from '@/lib/offline-queue'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 
@@ -17,14 +18,29 @@ const STATUSES = [
 export function JobStatusForm({ jobId, currentStatus }: { jobId: string; currentStatus: string }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [queued, setQueued] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
+    setQueued(false)
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
+    const status = formData.get('status') as string
+
+    if (!navigator.onLine) {
+      try {
+        await enqueueWrite({ type: 'job_status', jobId, status })
+        setQueued(true)
+      } catch {
+        setError('Could not save offline — check browser storage permissions.')
+      }
+      setLoading(false)
+      return
+    }
+
     const result = await updateJobStatus(jobId, formData)
 
     if (result.success) {
@@ -39,6 +55,11 @@ export function JobStatusForm({ jobId, currentStatus }: { jobId: string; current
     <>
       {error && (
         <div className="text-sm text-destructive mb-3 p-3 bg-destructive/10 rounded-lg">{error}</div>
+      )}
+      {queued && (
+        <div className="text-sm text-amber-700 mb-3 p-3 bg-amber-50 rounded-lg">
+          Status saved offline — will sync when connected.
+        </div>
       )}
       <form onSubmit={handleSubmit} className="flex gap-3 items-end">
         <div className="flex-1 space-y-2">
