@@ -306,15 +306,21 @@ model Estimate {
   subtotalCents  Int                @default(0)
   taxCents       Int                @default(0)
   totalCents     Int                @default(0)
-  aiDraftUsed    Boolean            @default(false)
-  sentAt         DateTime?
-  viewedAt       DateTime?
-  acceptedAt     DateTime?
-  declinedAt     DateTime?
-  decisionByName String?
-  decisionByIp   String?
-  signatureDataUrl String?
-  declineReason  String?
+  aiDraftUsed      Boolean            @default(false)
+  depositRequired  Boolean            @default(false)
+  depositType      String?
+  depositPercent   Float?
+  depositFixedCents Int?
+  depositStatus    String?
+  depositPaidAt    DateTime?
+  sentAt           DateTime?
+  viewedAt         DateTime?
+  acceptedAt       DateTime?
+  declinedAt       DateTime?
+  decisionByName   String?
+  decisionByIp     String?
+  signatureDataUrl  String?
+  declineReason    String?
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   job            Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
   lineItems      EstimateLineItem[]
@@ -389,7 +395,7 @@ model InvoiceLineItem {
 model Payment {
   id                  String       @id @default(cuid())
   organizationId      String
-  invoiceId           String
+  invoiceId           String?
   stripePaymentIntent String?      @unique
   amountCents         Int
   currency            String       @default("usd")
@@ -397,7 +403,7 @@ model Payment {
   status              String       @default("pending")
   paidAt              DateTime?
   organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  invoice             Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice             Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 }

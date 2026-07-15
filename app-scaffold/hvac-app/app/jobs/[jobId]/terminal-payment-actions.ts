@@ -126,6 +126,9 @@ export async function captureTerminalPayment(paymentIntentId: string): Promise<C
   }
 
   const invoice = payment.invoice
+  if (!invoice) {
+    return { success: false, error: 'Payment has no associated invoice' }
+  }
   if (invoice.status === 'paid') {
     return { success: true, paymentIntentId, invoiceId: invoice.id }
   }
