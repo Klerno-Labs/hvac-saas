@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 
 const STATUSES = [
   { value: 'draft', label: 'Draft' },
+  { value: 'booked', label: 'Booked' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
