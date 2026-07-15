@@ -314,13 +314,22 @@ model Estimate {
   decisionByName String?
   decisionByIp   String?
   signatureDataUrl String?
-  declineReason  String?
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  job            Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  lineItems      EstimateLineItem[]
-  reminders      Reminder[]
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  declineReason      String?
+  depositRequired    Boolean            @default(false)
+  depositType        String?
+  depositPercent     Float?
+  depositFixedCents  Int?
+  depositAmountCents Int?
+  depositStatus      String             @default("none")
+  depositPaidAt      DateTime?
+  acceptedOptionKey  String?
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job                Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  lineItems          EstimateLineItem[]
+  reminders          Reminder[]
+  payments           Payment[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   @@index([organizationId])
   @@index([jobId])
@@ -389,7 +398,9 @@ model InvoiceLineItem {
 model Payment {
   id                  String       @id @default(cuid())
   organizationId      String
-  invoiceId           String
+  invoiceId           String?
+  estimateId          String?
+  kind                String?
   stripePaymentIntent String?      @unique
   amountCents         Int
   currency            String       @default("usd")
@@ -397,7 +408,8 @@ model Payment {
   status              String       @default("pending")
   paidAt              DateTime?
   organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  invoice             Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice             Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  estimate            Estimate?    @relation(fields: [estimateId], references: [id], onDelete: Cascade)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 }
