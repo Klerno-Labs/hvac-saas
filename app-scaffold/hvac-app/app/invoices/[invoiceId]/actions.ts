@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
+import { summarizeInvoicePriceChange } from './price-diff'
 import { updateInvoiceSchema, updateInvoiceStatusSchema } from '@/lib/validations/invoice'
 import { getOrCreatePortalUrl } from '@/lib/portal'
 import { sendInvoiceEmail } from '@/lib/email'
@@ -56,6 +57,12 @@ export async function updateInvoice(
 
   const data = parsed.data
 
+  const beforeSnapshot = {
+    subtotalCents: invoice.subtotalCents,
+    taxCents: invoice.taxCents,
+    totalCents: invoice.totalCents,
+  }
+
   const lineItemsWithTotals = data.lineItems.map((item, index) => ({
     name: item.name,
     description: item.description || null,
@@ -93,6 +100,19 @@ export async function updateInvoice(
     entityType: 'invoice',
     entityId: invoiceId,
   })
+
+  try {
+    const priceDiff = summarizeInvoicePriceChange(beforeSnapshot, { subtotalCents, taxCents, totalCents })
+    await logAudit({
+      organizationId,
+      actorId: userId,
+      actorEmail: session.user.email ?? undefined,
+      eventType: 'invoice.priced',
+      targetType: 'invoice',
+      targetId: invoiceId,
+      metadata: { ...(priceDiff ?? {}), invoiceId },
+    })
+  } catch { /* best-effort */ }
 
   return { success: true }
 }

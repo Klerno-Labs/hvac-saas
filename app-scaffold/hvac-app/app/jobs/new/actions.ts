@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { logAudit } from '@/lib/audit'
 import { createJobSchema } from '@/lib/validations/job'
 import { canDo } from '@/lib/permissions'
 
@@ -70,6 +71,18 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
     entityType: 'job',
     entityId: job.id,
   })
+
+  try {
+    await logAudit({
+      organizationId,
+      actorId: userId,
+      actorEmail: session.user.email ?? undefined,
+      eventType: 'job.created',
+      targetType: 'job',
+      targetId: job.id,
+      metadata: { customerId: data.customerId, title: data.title, status: 'draft' },
+    })
+  } catch { /* best-effort */ }
 
   return { success: true, jobId: job.id }
 }
