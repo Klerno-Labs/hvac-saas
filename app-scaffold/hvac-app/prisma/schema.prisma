@@ -120,6 +120,7 @@ model Organization {
   collectionsOverdue2Days  Int                  @default(14)
   collectionsFinalDays     Int                  @default(30)
   smsEnabled               Boolean              @default(false)
+  jobCompletionNoticeEnabled Boolean            @default(false)
   platformFeePercent       Float                @default(2.9)
   stripeCustomerId         String?              @unique
   stripeSubscriptionId     String?              @unique
@@ -247,7 +248,8 @@ model Job {
   title           String
   status          String       @default("draft")
   scheduledFor    DateTime?
-  completedAt     DateTime?
+  completedAt              DateTime?
+  completionNoticeSentAt   DateTime?
   technicianName  String?
   notes           String?
   workSummary     String?
