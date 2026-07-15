@@ -3,6 +3,9 @@
 import { db } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
 import { randomBytes } from 'crypto'
+import { headers } from 'next/headers'
+import { limit, RL, extractIp } from '@/lib/rate-limit'
+import { assertRateLimit, RateLimitError } from '@/lib/rate-limit/respond'
 
 type Result = { success: true } | { success: false; error: string }
 
@@ -10,6 +13,18 @@ export async function requestPasswordReset(formData: FormData): Promise<Result> 
   const email = formData.get('email') as string
   if (!email) {
     return { success: false, error: 'Email is required' }
+  }
+
+  const normalizedEmail = email.toLowerCase()
+  const ip = extractIp(await headers())
+  const guard = await limit({ preset: RL.passwordReset, ip, id: normalizedEmail })
+  try {
+    assertRateLimit(guard)
+  } catch (e) {
+    if (e instanceof RateLimitError) {
+      return { success: false, error: `Too many attempts. Try again in ${e.retryAfterSeconds}s.` }
+    }
+    throw e
   }
 
   const user = await db.user.findUnique({ where: { email } })
