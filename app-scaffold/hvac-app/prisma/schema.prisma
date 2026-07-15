@@ -37,9 +37,18 @@ model WebhookEvent {
   stripeEventId String        @unique
   type          String
   orgId         String?
+  payloadHash   String
+  status        String        @default("received")
+  attempts      Int           @default(0)
+  lastError     String?
+  nextRetryAt   DateTime?
   receivedAt    DateTime      @default(now())
   processedAt   DateTime?
   metadata      Json?
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([status, updatedAt])
 }
 
 model User {
