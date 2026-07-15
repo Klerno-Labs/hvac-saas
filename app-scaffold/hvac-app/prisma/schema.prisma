@@ -710,3 +710,15 @@ model EquipmentServiceRecord {
   @@index([equipmentId])
   @@index([jobId])
 }
+
+// Append-only rate limit hit log. Intentionally org-agnostic: auth and public
+// portal endpoints hit this before any org/session context is known.
+model RateLimitHit {
+  id         String   @id @default(cuid())
+  bucket     String   // e.g. "auth:login", "portal:token", "public:pay"
+  identifier String   // composite key: "<ip>|<id>" (id = email/token-hash/"-")
+  hitAt      DateTime @default(now())
+
+  @@index([bucket, identifier, hitAt])
+  @@index([hitAt])
+}
