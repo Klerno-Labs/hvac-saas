@@ -8,10 +8,11 @@ import { sendTeamInviteEmail } from '@/lib/email'
 import { randomBytes } from 'crypto'
 import { z } from 'zod'
 import { requirePlan } from '@/lib/billing'
+import { VALID_ROLES } from '@/lib/permissions'
 
 const inviteSchema = z.object({
   email: z.string().email('Invalid email'),
-  role: z.enum(['owner', 'member']),
+  role: z.enum(VALID_ROLES),
 })
 
 type InviteResult = { success: true } | { success: false; error: string }
@@ -24,7 +25,7 @@ export async function inviteTeamMember(formData: FormData): Promise<InviteResult
 
   const parsed = inviteSchema.safeParse({
     email: formData.get('email'),
-    role: formData.get('role') || 'member',
+    role: formData.get('role') || 'technician',
   })
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message }
 

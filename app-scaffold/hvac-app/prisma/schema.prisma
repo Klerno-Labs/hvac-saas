@@ -62,6 +62,7 @@ model User {
   sessions       Session[]
   memberships    OrganizationMember[]
   jobNotes       JobNote[]
+  assignedJobs   Job[]                @relation("AssignedTechnician")
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 }
@@ -259,12 +260,14 @@ model Job {
   completedAt                 DateTime?
   appointmentReminderSentAt   DateTime?
   technicianName  String?
+  assignedUserId  String?
   notes           String?
   workSummary     String?
   materialsUsed   String?
   completionNotes String?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignedTo      User?        @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
   estimates       Estimate[]
   invoices        Invoice[]
   reminders       Reminder[]
@@ -279,6 +282,7 @@ model Job {
 
   @@index([organizationId])
   @@index([customerId])
+  @@index([assignedUserId])
 }
 
 // Appendable, idempotent field notes authored from the offline-first field PWA.

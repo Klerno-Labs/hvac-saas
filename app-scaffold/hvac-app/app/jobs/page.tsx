@@ -7,6 +7,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Pagination } from '@/app/components/pagination'
 import { SearchInput } from '@/app/components/search-input'
+import { canDo } from '@/lib/permissions'
 
 const PAGE_SIZE = 20
 
@@ -17,13 +18,16 @@ export default async function JobsPage({
 }: {
   searchParams: Promise<{ page?: string; q?: string; status?: string }>
 }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId, userId, role } = await requireActiveSubscription()
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page || '1', 10) || 1)
   const q = params.q?.trim() || ''
   const statusFilter = params.status || ''
 
   const where: Record<string, unknown> = { organizationId }
+  if (role === 'technician') {
+    where.assignedUserId = userId
+  }
 
   if (statusFilter && JOB_STATUSES.includes(statusFilter as (typeof JOB_STATUSES)[number])) {
     where.status = statusFilter
@@ -57,7 +61,9 @@ export default async function JobsPage({
     <main className="max-w-[1200px] mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Jobs</h1>
-        <Link href="/jobs/new" className={cn(buttonVariants(), 'no-underline')}>New job</Link>
+        {canDo(role, 'manageJobs') && (
+          <Link href="/jobs/new" className={cn(buttonVariants(), 'no-underline')}>New job</Link>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-4 mb-6">
