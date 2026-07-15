@@ -61,6 +61,10 @@ describe('resolveCollectAmountCents', () => {
     expect(resolveCollectAmountCents({ ...base, status: 'draft' })).toBeNull()
   })
 
+  it('returns outstanding amount for an overdue invoice (field collection on past-due)', () => {
+    expect(resolveCollectAmountCents({ ...base, status: 'overdue' })).toBe(5000)
+  })
+
   it('returns null when amount is zero or negative', () => {
     expect(resolveCollectAmountCents({ outstandingCents: 0, totalCents: 0, status: 'sent' })).toBeNull()
     expect(resolveCollectAmountCents({ outstandingCents: -1, totalCents: -1, status: 'sent' })).toBeNull()
