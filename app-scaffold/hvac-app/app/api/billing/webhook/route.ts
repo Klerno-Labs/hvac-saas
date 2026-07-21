@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
@@ -29,7 +30,11 @@ export async function POST(req: Request) {
   // and we processed it — return 200 so Stripe stops retrying.
   try {
     await db.webhookEvent.create({
-      data: { stripeEventId: event.id, type: event.type },
+      data: {
+        stripeEventId: event.id,
+        type: event.type,
+        payloadHash: createHash('sha256').update(body).digest('hex'),
+      },
     })
   } catch (e) {
     if ((e as { code?: string }).code === 'P2002') {

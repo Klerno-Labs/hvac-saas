@@ -3,7 +3,9 @@ import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { calculateNextDueDate } from '@/lib/recurring-cadence'
 
-export { calculateNextDueDate }
+// (removed invalid `export { calculateNextDueDate }` 2026-07-21 — Next.js 15
+// route files may only export route handlers/config; import it from
+// @/lib/recurring-cadence directly, which tests already do.)
 
 export const runtime = 'nodejs'
 

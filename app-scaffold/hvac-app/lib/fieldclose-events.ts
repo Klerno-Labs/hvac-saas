@@ -1,5 +1,4 @@
 import "server-only";
-import { emitEvent } from "./robert-client";
 
 export type SmsConsentAction = "STOP" | "START" | "HELP" | "NONE";
 
@@ -11,6 +10,9 @@ export function classifyInboundKeyword(body: string): SmsConsentAction {
   return "NONE";
 }
 
+// Robert ingest forwarding removed 2026-07-21 — Robert is decommissioned
+// (robert-client deleted, ROBERT_* unset). Inbound SMS is handled locally by
+// the route (consent action); there is no upstream to emit to anymore.
 export async function emitInboundSms(input: {
   from: string;
   to: string;
@@ -18,23 +20,8 @@ export async function emitInboundSms(input: {
   messageSid: string;
   consentAction: SmsConsentAction;
 }): Promise<void> {
-  const result = await emitEvent({
-    eventId: input.messageSid,
-    type: "sms.inbound",
-    payload: {
-      from: input.from,
-      to: input.to,
-      body: input.body,
-      messageSid: input.messageSid,
-      consentAction: input.consentAction,
-      source: "fieldclose.app",
-    },
-  });
-  if (!result.ok) {
-    console.warn(
-      "[fieldclose-events] emitInboundSms upstream not ok:",
-      result.status,
-      result.reason,
-    );
-  }
+  // Intentionally a no-op sink for now: the consent action is applied by the
+  // caller; retain this hook so a future event pipeline can slot in without
+  // touching the route.
+  void input;
 }

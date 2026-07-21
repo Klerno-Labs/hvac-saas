@@ -1,6 +1,7 @@
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
+import type { Route } from 'next'
 import { Card, CardContent } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -21,7 +22,7 @@ export default async function PriceBookPage() {
           <Link href="/pricebook/import" className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}>
             Import CSV
           </Link>
-          <Link href="/pricebook/new" className={cn(buttonVariants(), 'no-underline')}>
+          <Link href={'/pricebook/new' as Route} className={cn(buttonVariants(), 'no-underline')}>
             Add item
           </Link>
         </div>
