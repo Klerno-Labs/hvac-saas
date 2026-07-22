@@ -1,7 +1,5 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { getOptionalSession } from '@/lib/session'
-import { redirect } from 'next/navigation'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -59,12 +57,7 @@ const jsonLd = {
   ],
 }
 
-export default async function HomePage() {
-  const session = await getOptionalSession()
-  if (session?.membership) {
-    redirect('/dashboard')
-  }
-
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -295,7 +288,7 @@ export default async function HomePage() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-3 mb-8">
-                {['Everything in Starter', 'Collections automation', 'Accounting sync', 'Team members & roles', 'Audit log & admin controls', 'Priority support'].map((f) => (
+                {['Everything in Starter', 'Collections automation', 'Recurring contracts', 'Team members & roles', 'Audit log & admin controls', 'Priority support'].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm">
                     <span className="text-primary">&#10003;</span> {f}
                   </li>
@@ -326,9 +319,9 @@ export default async function HomePage() {
             />
           </div>
           <blockquote className="text-xl font-medium italic text-foreground mb-4">
-            &ldquo;We used to chase payments for weeks. Now our customers pay the same day we finish the job.&rdquo;
+            Stop chasing invoices. Stop losing track of jobs. Get paid the day the work is done.
           </blockquote>
-          <p className="text-sm text-muted-foreground">— Built for HVAC shops with 1-5 technicians</p>
+          <p className="text-sm text-muted-foreground">Built for HVAC shops with 1-5 technicians. Started free, stayed organized, got paid faster.</p>
         </div>
       </section>
 
@@ -352,11 +345,14 @@ export default async function HomePage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
               <span className="font-bold text-primary">FieldClose</span>
-              <p className="text-xs text-muted-foreground mt-1">&copy; {new Date().getFullYear()} FieldClose. All rights reserved.</p>
+              <p className="text-xs text-muted-foreground mt-1">&copy; {new Date().getFullYear()} Pegrio LLC. FieldClose is a Pegrio LLC product.</p>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link href="/login" className="hover:text-foreground no-underline">Log in</Link>
               <Link href="/signup" className="hover:text-foreground no-underline">Sign up</Link>
+              <Link href="/terms" className="hover:text-foreground no-underline">Terms</Link>
+              <Link href="/privacy" className="hover:text-foreground no-underline">Privacy</Link>
+              <Link href="/refund-policy" className="hover:text-foreground no-underline">Refunds</Link>
             </div>
           </div>
         </div>

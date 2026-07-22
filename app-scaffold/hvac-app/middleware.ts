@@ -20,8 +20,28 @@ export function middleware(request: NextRequest) {
   // Remove server identification
   response.headers.delete('X-Powered-By')
 
+  const pathname = request.nextUrl.pathname
+
+  // Public, indexable pages — allow CDN caching so Google can crawl efficiently
+  const isPublicPage =
+    pathname === '/' ||
+    pathname === '/signup' ||
+    pathname === '/login' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password' ||
+    pathname === '/terms' ||
+    pathname === '/privacy' ||
+    pathname === '/refund-policy'
+
+  if (isPublicPage) {
+    // s-maxage lets Vercel's CDN cache the page; stale-while-revalidate serves
+    // fresh content on the next request. This overrides NextAuth's default
+    // no-store which was preventing Google from indexing the site.
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+  }
+
   // For API routes, ensure JSON content type on errors
-  if (request.nextUrl.pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/')) {
     response.headers.set('X-Content-Type-Options', 'nosniff')
   }
 
