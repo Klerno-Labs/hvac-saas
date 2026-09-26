@@ -1,3 +1,5 @@
+import { customerAccessWhere } from '@/lib/mutation-access'
+import { canDo } from '@/lib/permissions'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
@@ -14,12 +16,12 @@ export default async function CustomersPage({
 }: {
   searchParams: Promise<{ page?: string; q?: string }>
 }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page || '1', 10) || 1)
   const q = params.q?.trim() || ''
 
-  const where: Record<string, unknown> = { organizationId, deletedAt: null }
+  const where: Record<string, unknown> = customerAccessWhere(context)
 
   if (q) {
     where.OR = [
@@ -49,9 +51,9 @@ export default async function CustomersPage({
     <main className="max-w-[1200px] mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-        <Link href="/customers/new" className={cn(buttonVariants(), 'no-underline')}>
+        {canDo(context.role, 'manageCustomers') && <Link href="/customers/new" className={cn(buttonVariants(), 'no-underline')}>
           Add customer
-        </Link>
+        </Link>}
       </div>
 
       <SearchInput

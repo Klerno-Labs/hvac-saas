@@ -2,9 +2,11 @@ import { createHash } from 'crypto'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
+import { isPlatformBillingEvent, verifyStripeWebhook } from '@/lib/stripe-webhook'
 import { db } from '@/lib/db'
 import { sendDunningEmail } from '@/lib/billing-dunning'
 import Stripe from 'stripe'
+import type { Prisma } from '@prisma/client'
 
 // This route is intentionally unauthenticated — Stripe signs every request with
 // STRIPE_WEBHOOK_SECRET and we verify that signature before touching the database.
@@ -13,67 +15,60 @@ export async function POST(req: Request) {
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
 
-  if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Missing webhook configuration' }, { status: 400 })
+  const verification = verifyStripeWebhook(body, signature, ['platform'])
+  if (!verification.verified) return NextResponse.json({ error: verification.error }, { status: verification.status })
+  const { event } = verification
+  if (!verification.modeMatches || !isPlatformBillingEvent(event.type)) {
+    return NextResponse.json({ received: true, ignored: true })
   }
 
-  let event: Stripe.Event
-
   try {
-    event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET)
-  } catch {
-    return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 })
-  }
-
-  // Idempotency: atomically claim the event before processing.
-  // A unique-constraint violation (P2002) means Stripe already delivered this event
-  // and we processed it — return 200 so Stripe stops retrying.
-  try {
-    await db.webhookEvent.create({
-      data: {
-        stripeEventId: event.id,
-        type: event.type,
-        payloadHash: createHash('sha256').update(body).digest('hex'),
-      },
-    })
-  } catch (e) {
-    if ((e as { code?: string }).code === 'P2002') {
-      return NextResponse.json({ received: true })
+    // Stripe does not guarantee delivery order. Reconcile the current resource,
+    // rather than letting a delayed invoice event reactivate a canceled account.
+    let subscriptionId: string | undefined
+    if (event.type.startsWith('customer.subscription.')) {
+      subscriptionId = (event.data.object as Stripe.Subscription).id
+    } else if (event.type === 'invoice.payment_failed' || event.type === 'invoice.payment_succeeded') {
+      const reference = (event.data.object as Stripe.Invoice).subscription
+      subscriptionId = typeof reference === 'string' ? reference : reference?.id
     }
-    throw e
-  }
-
-  try {
-    switch (event.type) {
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await handleSubscriptionChange(
-          event.data.object as Stripe.Subscription,
-          event.type === 'customer.subscription.deleted',
-        )
-        break
-
-      case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
-        break
-
-      case 'invoice.payment_succeeded':
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice)
-        break
-    }
-
-    await db.webhookEvent.update({
-      where: { stripeEventId: event.id },
-      data: { processedAt: new Date() },
+    const currentSubscription = subscriptionId ? await getStripe().subscriptions.retrieve(subscriptionId) : null
+    // Claim and state changes commit together. Failure rolls back the claim so
+    // Stripe can safely retry. The unique key serializes duplicate deliveries.
+    const dunning = await db.$transaction(async tx => {
+      await tx.webhookEvent.deleteMany({where: {stripeEventId: event.id, processedAt: null}})
+      await tx.webhookEvent.create({data: {stripeEventId: event.id, type: event.type,
+        payloadHash: createHash('sha256').update(body).digest('hex')}})
+      let notification: {orgId: string; attempt: number} | null = null
+      switch (event.type) {
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted':
+          if (currentSubscription) await handleSubscriptionChange(tx, currentSubscription)
+          break
+        case 'invoice.payment_failed':
+          if (currentSubscription) {
+            const orgId = await handleSubscriptionChange(tx, currentSubscription)
+            if (orgId && currentSubscription.status === 'past_due') notification = {orgId, attempt: (event.data.object as Stripe.Invoice).attempt_count}
+          }
+          break
+        case 'invoice.payment_succeeded':
+          if (currentSubscription) await handleSubscriptionChange(tx, currentSubscription)
+          break
+      }
+      await tx.webhookEvent.update({where: {stripeEventId: event.id}, data: {processedAt: new Date(), status: 'processed'}})
+      return notification
     })
+    if (dunning) await sendDunningEmail(dunning.orgId, dunning.attempt).catch(error => console.error('[billing-webhook] notification failed', error))
   } catch (error) {
-    // Log but return 200 — the event is recorded so Stripe won't retry into an infinite loop.
-    // Operators can audit WebhookEvent rows where processedAt IS NULL.
-    console.error(`[billing-webhook] error processing ${event.type} (${event.id}):`, error)
+    if ((error as {code?: string}).code === 'P2002') {
+      const completed = await db.webhookEvent.findUnique({where: {stripeEventId: event.id}})
+      if (completed?.processedAt) return NextResponse.json({received: true})
+    }
+    console.error(`[billing-webhook] processing failed (${event.id})`, error)
+    return NextResponse.json({error: 'Webhook processing failed'}, {status: 500})
   }
-
-  return NextResponse.json({ received: true })
+  return NextResponse.json({received: true})
 }
 
 const STATUS_MAP: Record<string, 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE'> = {
@@ -94,22 +89,33 @@ function resolveCustomerId(
   return customer.id
 }
 
-async function handleSubscriptionChange(subscription: Stripe.Subscription, isDeleted: boolean) {
+async function handleSubscriptionChange(tx: Prisma.TransactionClient, subscription: Stripe.Subscription) {
   const customerId = resolveCustomerId(subscription.customer)
   if (!customerId) return
 
-  const org = await db.organization.findFirst({ where: { stripeCustomerId: customerId } })
-  if (!org) return
+  const org = await tx.organization.findFirst({ where: { stripeCustomerId: customerId } })
+  if (!org) throw new Error('Subscription customer is not linked to an organization')
+  if (subscription.metadata?.organizationId && subscription.metadata.organizationId !== org.id) throw new Error('Subscription organization mismatch')
+  // Events from a replaced subscription must never change the current one.
+  if (org.stripeSubscriptionId && org.stripeSubscriptionId !== subscription.id) {
+    const replacement = org.subscriptionStatus === 'CANCELED' &&
+      subscription.metadata?.organizationId === org.id &&
+      (subscription.status === 'active' || subscription.status === 'trialing')
+    if (!replacement) return
+  }
+  const plan = subscription.metadata?.planId?.toUpperCase()
 
-  const newStatus = isDeleted ? 'CANCELED' : (STATUS_MAP[subscription.status] ?? 'ACTIVE')
+  const newStatus = STATUS_MAP[subscription.status] ?? 'INCOMPLETE'
   const shouldFreeze = newStatus === 'UNPAID' || newStatus === 'CANCELED'
   const shouldUnfreeze = newStatus === 'ACTIVE' || newStatus === 'TRIALING'
 
-  await db.organization.update({
+  await tx.organization.update({
     where: { id: org.id },
     data: {
       subscriptionStatus: newStatus,
       stripeSubscriptionId: subscription.id,
+      ...(plan === 'STARTER' || plan === 'PRO' ? {plan} : {}),
+      trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       currentPeriodEnd: subscription.current_period_end
         ? new Date(subscription.current_period_end * 1000)
         : null,
@@ -117,32 +123,5 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, isDel
       ...(shouldUnfreeze ? { readOnlyAt: null } : {}),
     },
   })
-}
-
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-  const customerId = resolveCustomerId(invoice.customer)
-  if (!customerId) return
-
-  const org = await db.organization.findFirst({ where: { stripeCustomerId: customerId } })
-  if (!org) return
-
-  await db.organization.update({
-    where: { id: org.id },
-    data: { subscriptionStatus: 'PAST_DUE' },
-  })
-
-  await sendDunningEmail(org.id, invoice.attempt_count)
-}
-
-async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-  const customerId = resolveCustomerId(invoice.customer)
-  if (!customerId) return
-
-  const org = await db.organization.findFirst({ where: { stripeCustomerId: customerId } })
-  if (!org) return
-
-  await db.organization.update({
-    where: { id: org.id },
-    data: { subscriptionStatus: 'ACTIVE', readOnlyAt: null },
-  })
+  return org.id
 }

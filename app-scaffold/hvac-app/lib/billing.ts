@@ -13,7 +13,7 @@ export const PLANS = {
     name: 'Pro',
     priceMonthly: 9900, // $99/month in cents
     stripePriceId: process.env.STRIPE_PRO_PRICE_ID || '',
-    features: ['Everything in Starter', 'Collections automation', 'Accounting sync', 'Team members', 'Priority support'],
+    features: ['Everything in Starter', 'Collections automation', 'Team members', 'Priority support'],
   },
 } as const
 
@@ -30,7 +30,7 @@ export async function createSubscriptionCheckout(params: {
 }): Promise<{ url: string } | { error: string }> {
   const plan = PLANS[params.planId]
   if (!plan || !plan.stripePriceId) {
-    return { error: `Subscription plan ${params.planId} is not configured. Set STRIPE_${params.planId.toUpperCase()}_PRICE_ID in env.` }
+    return { error: 'Subscription checkout is not available yet. Contact support@fieldclose.app for help.' }
   }
 
   const stripe = getStripe()
@@ -40,7 +40,7 @@ export async function createSubscriptionCheckout(params: {
   if (!org) return { error: 'Organization not found' }
 
   // If org already has a subscription, redirect to billing portal
-  if (org.stripeCustomerId) {
+  if (org.stripeCustomerId && org.stripeSubscriptionId && org.subscriptionStatus !== 'CANCELED') {
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: org.stripeCustomerId,
       return_url: `${appUrl}/settings`,
@@ -48,12 +48,20 @@ export async function createSubscriptionCheckout(params: {
     return { url: portalSession.url }
   }
 
+  let customerId = org.stripeCustomerId
+  if (!customerId) {
+    const customer = await stripe.customers.create({email: params.userEmail,
+      metadata: {organizationId: org.id}}, {idempotencyKey: `fieldclose-customer-${org.id}`})
+    customerId = customer.id
+    await db.organization.update({where: {id: org.id}, data: {stripeCustomerId: customerId}})
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [{ price: plan.stripePriceId, quantity: 1 }],
     success_url: `${appUrl}/settings?subscribed=true`,
     cancel_url: `${appUrl}/settings/billing`,
-    customer_email: params.userEmail,
+    customer: customerId,
     metadata: {
       organizationId: params.organizationId,
       planId: params.planId,

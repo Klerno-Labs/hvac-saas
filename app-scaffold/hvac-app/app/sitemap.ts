@@ -12,22 +12,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
-      url: `${SITE_URL}/signup`,
+      url: `${SITE_URL}/pricing`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
-      url: `${SITE_URL}/login`,
+      url: `${SITE_URL}/faq`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.5,
-    },
-    {
-      url: `${SITE_URL}/forgot-password`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.3,
     },
     {
       url: `${SITE_URL}/terms`,

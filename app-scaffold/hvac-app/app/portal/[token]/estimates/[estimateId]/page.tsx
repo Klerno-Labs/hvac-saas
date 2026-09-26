@@ -69,7 +69,7 @@ export default async function PortalEstimateDetailPage({
   })
 
   return (
-    <main>
+    <main className="px-4 py-6 sm:py-10">
       <div className="mx-auto max-w-175">
         <div className="mb-5">
           <Link href={`/portal/${token}` as never} className="text-xs text-muted-foreground hover:underline">

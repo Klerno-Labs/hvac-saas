@@ -1,9 +1,9 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Providers } from './providers'
-import { NavHeader } from './components/nav-header'
+import { NavigationWrapper } from './components/navigation-wrapper'
 import { TrialBannerWrapper } from './components/trial-banner-wrapper'
-import { Analytics } from '@vercel/analytics/react'
+import { PublicAnalytics } from '@/app/components/public-analytics'
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SWRegister } from './components/sw-register'
@@ -98,11 +98,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Providers>
-          <NavHeader />
+          <a className="app-skip" href="#main-content">Skip to content</a>
+          <NavigationWrapper />
           <TrialBannerWrapper />
-          {children}
+          <div id="main-content" tabIndex={-1}>{children}</div>
         </Providers>
-        <Analytics />
+        <PublicAnalytics />
         <SWRegister />
       </body>
     </html>

@@ -1,3 +1,4 @@
+import { canDo, type Capability } from '@/lib/permissions'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { redirect } from 'next/navigation'
@@ -73,4 +74,11 @@ export async function getOptionalSession() {
     user: session.user,
     membership,
   }
+}
+
+/** Page guard for organization-wide tools containing customer or pricing data. */
+export async function requirePageCapability(capability: Capability) {
+  const context = await requireActiveSubscription()
+  if (!canDo(context.role, capability)) redirect('/field')
+  return context
 }

@@ -1,5 +1,7 @@
 'use client'
 
+import { formatDateOnly } from '@/lib/format'
+
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateFieldJobStatus, addFieldNote } from './actions'
@@ -7,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { FieldJobStatus } from '@/lib/field/types'
+import { MAX_PHOTO_BYTES, PHOTO_SIZE_LIMIT, PHOTO_CONTENT_TYPES } from '@/lib/photo-upload'
 
 type Note = { id: string; authorName: string | null; body: string }
 type Asset = { id: string; fileUrl: string }
@@ -91,6 +94,14 @@ export default function FieldJobCard({ job }: { job: FieldJobCardProps }) {
     setPhotoError(null)
     setPhotoUploading(true)
     try {
+      if (!PHOTO_CONTENT_TYPES.includes(file.type)) {
+        setPhotoError('Use a JPG, PNG, or WebP photo.')
+        return
+      }
+      if (file.size > MAX_PHOTO_BYTES) {
+        setPhotoError(`Photo exceeds the ${PHOTO_SIZE_LIMIT} limit.`)
+        return
+      }
       const fd = new FormData()
       fd.append('jobId', job.id)
       fd.append('file', file)
@@ -99,18 +110,6 @@ export default function FieldJobCard({ job }: { job: FieldJobCardProps }) {
         const body = await res.json().catch(() => ({}))
         setPhotoError((body as { error?: string }).error ?? 'Upload failed')
         return
-      }
-      const data = await res.json() as { presignedUrl?: string; fileUrl: string }
-      if (data.presignedUrl) {
-        const put = await fetch(data.presignedUrl, {
-          method: 'PUT',
-          body: file,
-          headers: { 'Content-Type': file.type },
-        })
-        if (!put.ok) {
-          setPhotoError('Storage upload failed')
-          return
-        }
       }
       router.refresh()
     } catch {
@@ -166,7 +165,7 @@ export default function FieldJobCard({ job }: { job: FieldJobCardProps }) {
         )}
         {job.scheduledFor && (
           <p className="text-xs text-muted-foreground">
-            {new Date(job.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {formatDateOnly(job.scheduledFor)} · Time to be confirmed
           </p>
         )}
       </CardHeader>
@@ -218,6 +217,7 @@ export default function FieldJobCard({ job }: { job: FieldJobCardProps }) {
             value={noteBody}
             onChange={(e) => setNoteBody(e.target.value)}
             placeholder="Add a note…"
+            aria-label={`Add a note for ${job.title}`}
             className="flex-1 h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs placeholder:text-muted-foreground"
           />
           <Button type="submit" size="sm" disabled={!noteBody.trim() || notePending}>
@@ -246,7 +246,7 @@ export default function FieldJobCard({ job }: { job: FieldJobCardProps }) {
           <input
             ref={fileRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             capture="environment"
             className="hidden"
             onChange={handlePhotoChange}
@@ -261,6 +261,7 @@ export default function FieldJobCard({ job }: { job: FieldJobCardProps }) {
           >
             {photoUploading ? 'Uploading…' : job.assets.length === 0 ? 'Add Before Photo' : 'Add Photo'}
           </Button>
+          <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or WebP. Max {PHOTO_SIZE_LIMIT} per file.</p>
           {photoError && <p className="text-xs text-destructive mt-1">{photoError}</p>}
         </div>
       </CardContent>

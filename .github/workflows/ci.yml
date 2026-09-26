@@ -9,6 +9,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: fieldclose
+          POSTGRES_PASSWORD: fieldclose_ci_only
+          POSTGRES_DB: fieldclose_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fieldclose -d fieldclose_test"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://fieldclose:fieldclose_ci_only@localhost:5432/fieldclose_test
     defaults:
       run:
         working-directory: app-scaffold/hvac-app
@@ -18,7 +32,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24.14.0
           cache: npm
           cache-dependency-path: app-scaffold/hvac-app/package-lock.json
 
@@ -26,13 +40,20 @@ jobs:
 
       - run: npx prisma generate
 
+      - run: npx prisma migrate deploy
+
       - run: npx tsc --noEmit
 
       - run: npm run build
         env:
-          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
           AUTH_SECRET: "ci-secret-not-real"
           SKIP_ENV_VALIDATION: "true"
 
       - run: npm test -- --run --reporter=verbose
         if: hashFiles('app-scaffold/hvac-app/vitest.config.*') != ''
+
+      - run: npm run test:integration
+        env:
+          TEST_DATABASE_URL: postgresql://fieldclose:fieldclose_ci_only@localhost:5432/fieldclose_test
+
+      - run: npm audit --omit=dev --audit-level=high

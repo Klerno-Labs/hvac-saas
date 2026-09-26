@@ -1,16 +1,24 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { seedPlanLimits } from '../prisma/seed'
+async function seedPlanLimits() { const seed = await import('../prisma/seed'); return seed.seedPlanLimits() }
 
+// Destructive integration tests require a dedicated disposable database.
+if (!process.env.TEST_DATABASE_URL || !new URL(process.env.TEST_DATABASE_URL).pathname.endsWith('_test')) {
+  throw new Error('Set TEST_DATABASE_URL to a disposable database ending in _test')
+}
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
 const prisma = new PrismaClient()
+afterAll(async () => { await prisma.$disconnect(); await (await import('../prisma/seed')).disconnectSeed() })
 
 describe('Plan Limits Seed', () => {
   beforeEach(async () => {
     await prisma.planLimit.deleteMany()
+    await prisma.webhookEvent.deleteMany()
   })
 
   afterEach(async () => {
     await prisma.planLimit.deleteMany()
+    await prisma.webhookEvent.deleteMany()
   })
 
   it('seeds exactly one PlanLimit row per Plan enum value', async () => {

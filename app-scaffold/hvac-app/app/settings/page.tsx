@@ -9,20 +9,22 @@ import { TeamSection } from './team-section'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { TradeSettingsSection } from './trade-settings'
 
 export default async function SettingsPage() {
-  const { organization, organizationId, userId } = await requireAuth()
+  const { organization, organizationId, userId, role } = await requireAuth()
+  const isOwner = role === 'owner'
 
   const [members, invites] = await Promise.all([
-    db.organizationMember.findMany({
+    isOwner ? db.organizationMember.findMany({
       where: { organizationId },
       include: { user: { select: { name: true, email: true } } },
-    }),
-    db.teamInvite.findMany({
+    }) : Promise.resolve([]),
+    isOwner ? db.teamInvite.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
       take: 20,
-    }),
+    }) : Promise.resolve([]),
   ])
 
   return (
@@ -32,6 +34,9 @@ export default async function SettingsPage() {
         <p className="text-sm text-muted-foreground">{organization.name}</p>
       </div>
 
+      <TradeSettingsSection initialTradeType={organization.tradeType} canEdit={role === 'owner'} />
+
+      {isOwner ? <>
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Team</CardTitle>
@@ -103,6 +108,12 @@ export default async function SettingsPage() {
           </Link>
         </CardContent>
       </Card>
+      </> : <Card>
+        <CardHeader>
+          <CardTitle>Workspace administration</CardTitle>
+          <CardDescription>Your business owner manages team invitations, online payments, billing, and integrations. Contact them to change these settings.</CardDescription>
+        </CardHeader>
+      </Card>}
     </main>
   )
 }

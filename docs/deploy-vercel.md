@@ -1,75 +1,67 @@
 # Deploying FieldClose to Vercel
 
-## 1. Connect repository
+Follow [the release sequence](deployment-guide.md) before promoting a deployment. A working database and applied migrations are prerequisites for the application, even when a build succeeds.
 
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import your GitHub repository
-3. Set **Root Directory** to `app-scaffold/hvac-app`
-4. Framework will auto-detect as **Next.js**
+## Project settings
 
-## 2. Set environment variables
+Import the application repository and set **Root Directory** to `app-scaffold/hvac-app`, framework to **Next.js**, and Node.js to **24.x**, matching CI and the configured Vercel runtime. The committed `vercel.json` runs `prisma generate && next build`. Dependency installation uses the committed package lock. The build does not migrate the database.
 
-Add these in Vercel project settings > Environment Variables:
+Set the production domain, then use its exact HTTPS origin for `AUTH_URL` and `APP_URL`. Configure preview environments separately with a test database and test integrations. Environment changes require a new deployment before the application uses them.
 
-| Variable | Value | Required |
-|---|---|---|
-| `DATABASE_URL` | Your Supabase/Postgres connection string | Yes |
-| `AUTH_SECRET` | Run `openssl rand -base64 32` to generate | Yes |
-| `AUTH_URL` | `https://your-domain.vercel.app` | Yes |
-| `APP_URL` | `https://your-domain.vercel.app` | Yes |
-| `STRIPE_SECRET_KEY` | From Stripe Dashboard (use live key for production) | Yes |
-| `STRIPE_PUBLISHABLE_KEY` | From Stripe Dashboard | Yes |
-| `STRIPE_WEBHOOK_SECRET` | From Stripe webhook setup (step 3) | Yes |
-| `RESEND_API_KEY` | From Resend dashboard | Yes |
-| `EMAIL_FROM` | `FieldClose <noreply@yourdomain.com>` | Yes |
-| `COLLECTIONS_CRON_SECRET` | Run `openssl rand -hex 32` to generate | Yes |
-| `AUTH_GITHUB_ID` | From GitHub OAuth app (optional) | No |
-| `AUTH_GITHUB_SECRET` | From GitHub OAuth app (optional) | No |
-| `OPENAI_API_KEY` | From OpenAI (optional, for AI estimates) | No |
+## Environment variables
 
-## 3. Set up Stripe webhook
+Set values in the Vercel project environment settings. Preserve the exact value without a trailing newline; do not paste shell quotes around it.
 
-1. Go to [Stripe Dashboard > Webhooks](https://dashboard.stripe.com/webhooks)
-2. Add endpoint: `https://your-domain.vercel.app/api/stripe/webhook`
-3. Select events:
-   - `checkout.session.completed`
-   - `checkout.session.expired`
-   - `account.updated`
-4. Copy the signing secret and set it as `STRIPE_WEBHOOK_SECRET`
+| Purpose | Variables | Requirements |
+| --- | --- | --- |
+| Database | `DATABASE_URL` | Reachable PostgreSQL connection with the required TLS and connection-pool settings from the database provider. Migrations must use a connection that supports migration operations. |
+| Authentication | `AUTH_SECRET`, `AUTH_URL` | Strong random signing secret; canonical HTTPS application origin. Keep the secret stable across routine releases. |
+| Application links | `APP_URL` | Canonical HTTPS origin used for portal, payment, and email links. |
+| Scheduled work | `CRON_SECRET` | Strong random bearer secret, at least 32 characters. Vercel sends it automatically. |
+| Release pause | `SCHEDULED_TASKS_ENABLED` | Set exactly `false` before building a production candidate to prevent scheduled execution until database migration and release checks are complete. Unset or `true` enables execution. Changing the value requires redeployment. |
+| Legacy scheduler migration | `COLLECTIONS_CRON_SECRET` | Optional compatibility token accepted by all three cron routes. Prefer the same value as `CRON_SECRET` during migration. Remove or rotate both values to fully revoke an old token. |
+| Stripe API | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` | Matching account/mode keys. Test keys cannot collect live payments. |
+| Platform subscription webhook | `STRIPE_WEBHOOK_SECRET` | Signing secret for the platform endpoint described below. |
+| Customer payment webhook | `STRIPE_CONNECT_WEBHOOK_SECRET` | Separate signing secret for the connected-account endpoint described below. |
+| SaaS subscriptions | `STRIPE_STARTER_PRICE_ID`, `STRIPE_PRO_PRICE_ID` | Recurring prices belonging to the same Stripe account and mode as the secret key. Verify amounts and billing cadence in Stripe. |
+| Email | `RESEND_API_KEY`, `EMAIL_FROM` | Verified sender domain and configured provider; required for password-reset delivery and customer email. |
+| Proof-of-work photos | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` | All five values, a writable bucket, and a reachable image base URL. The server uploads the image to R2 before recording it as uploaded. |
+| SMS | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | Optional; all are needed for outbound SMS. The auth token also verifies inbound signatures. |
+| GitHub sign-in | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | Optional OAuth application with callback URL configured for the deployment origin. |
+| AI estimate drafting | `OPENAI_API_KEY` | Optional; without it, estimate drafting uses the local trade template. |
+| Public trade defaults | `NEXT_PUBLIC_SERVICE_TRADE` | Optional public trade key. Organization-specific behavior comes from the organization's saved trade. |
 
-## 4. Run database migration
+Photos are limited to 4 MB per file in the API and both upload interfaces, leaving room for multipart overhead below Vercel's 4.5 MB function-body limit. On Vercel, missing or incomplete R2 configuration returns a clear 503 error without creating an asset or writing an ephemeral local file. Local development retains the filesystem fallback. The browser sends the file to the app; the server stores it in R2, so browser PUT CORS is not required. Larger files require a future direct-to-storage flow. See [Vercel function limits](https://vercel.com/docs/functions/limitations).
 
-After the first deploy, run:
+## Stripe webhook setup
 
-```bash
-npx prisma migrate deploy
-```
+Register two Stripe snapshot event endpoints using API version `2025-02-24.acacia`, matching the SDK configuration. Each registered webhook endpoint has its own signing secret. See [Stripe's webhook endpoint API](https://docs.stripe.com/api/webhook_endpoints/create).
 
-Or if the database already has the schema (from `db push`), the baseline migration is already marked as applied.
+| Endpoint | Stripe event scope | Signing secret | Events |
+| --- | --- | --- | --- |
+| `/api/billing/webhook` | Platform account | `STRIPE_WEBHOOK_SECRET` | `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.payment_succeeded` |
+| `/api/stripe/webhook` | Connected accounts | `STRIPE_CONNECT_WEBHOOK_SECRET` | `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `account.updated` |
 
-## 5. Set up collections cron (optional)
+Use the production application's HTTPS origin with each path. The common payment route also accepts platform-signed subscription events for compatibility with an existing combined configuration; it must not treat connected-account subscription events as FieldClose subscriptions. Configure the separate scopes and secrets above for a new installation.
 
-To run automated collections reminders, set up a cron job that hits:
+Verify that signature verification succeeds and the expected invoice or subscription reconciles. Test and live endpoint secrets differ. Production payment readiness requires live keys, live prices, live-mode webhooks, and live Connect onboarding for each participating organization. Events from the opposite payment mode are ignored; test-mode delivery does not certify live payments.
 
-```
-POST https://your-domain.vercel.app/api/collections/run
-Authorization: Bearer <COLLECTIONS_CRON_SECRET>
-```
+## Scheduled jobs
 
-You can use Vercel Cron, GitHub Actions, or any external cron service. Recommended: daily at 9 AM.
+`vercel.json` configures these daily jobs. Vercel invokes the production routes with **GET**, using UTC schedules and `Authorization: Bearer <CRON_SECRET>`. The routes also accept POST for existing external schedulers. They reject invalid or missing authorization with 401 and fail closed with 503 if neither supported secret exists. See [Vercel cron jobs](https://vercel.com/docs/cron-jobs) and [secret configuration](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
 
-## 6. Custom domain (optional)
+| Route | UTC schedule | Work |
+| --- | --- | --- |
+| `/api/recurring/generate` | Daily at 02:00 | Generate due recurring jobs and membership visits. |
+| `/api/collections/run` | Daily at 03:00 | Process eligible configured invoice collection rules. |
+| `/api/appointments/reminders` | Daily at 15:00 | Remind customers about jobs on the next calendar day in the organization's timezone. |
 
-1. Go to Vercel project settings > Domains
-2. Add your custom domain
-3. Update `AUTH_URL` and `APP_URL` to match
-4. Update Stripe webhook URL to use the custom domain
+These expressions satisfy Hobby's once-per-day frequency restriction. Hobby execution may occur anywhere within the scheduled hour; they are daily workflows, not precise appointment timers. Higher frequency requires a compatible hosting plan or an external scheduler. See [Vercel cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
 
-## 7. Switch Stripe to live mode
+Deploy after changing secrets or schedules, and confirm the jobs appear in Vercel's cron settings. Avoid a second external scheduler running the same work. An authenticated manual trigger executes real work and may notify customers; it is not a harmless connectivity check.
 
-When ready to accept real payments:
+Set `SCHEDULED_TASKS_ENABLED=false` before creating a staged production candidate, including one created without assigning the production domain. Do not assume domain assignment alone prevents scheduled execution. The shared guard authenticates first, then returns 503 without invoking any engine while this flag is false. Enable with `true` only after the intended database is migrated and release checks pass, and create a new deployment so the setting takes effect. This flag does not change an already-running deployment's environment.
 
-1. Replace `STRIPE_SECRET_KEY` with your live secret key (`sk_live_...`)
-2. Replace `STRIPE_PUBLISHABLE_KEY` with your live publishable key (`pk_live_...`)
-3. Create a new webhook in live mode and update `STRIPE_WEBHOOK_SECRET`
-4. Each organization will need to re-onboard to Stripe Connect in live mode
+## Promotion checks
+
+Before assigning the production domain, confirm the database resolves and accepts connections, all committed migrations are applied, the candidate serves protected application pages, and the configured integrations have passed their own checks. Keep the previous deployment available for recovery, with the database compatibility caveats in [the deployment guide](deployment-guide.md). `/api/health` is a core connectivity check, not an integration certification.

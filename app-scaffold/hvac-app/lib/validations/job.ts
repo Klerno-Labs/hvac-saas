@@ -1,3 +1,4 @@
+import { documentDateSchema } from './document'
 import { z } from 'zod'
 
 export const JOB_STATUSES = ['draft', 'booked', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const
@@ -7,7 +8,7 @@ export const createJobSchema = z.object({
   customerId: z.string().min(1, 'Customer is required'),
   title: z.string().min(1, 'Job title is required').max(200),
   notes: z.string().max(2000).optional().or(z.literal('')),
-  scheduledFor: z.string().optional().or(z.literal('')),
+  scheduledFor: documentDateSchema,
 })
 
 export const updateJobStatusSchema = z.object({

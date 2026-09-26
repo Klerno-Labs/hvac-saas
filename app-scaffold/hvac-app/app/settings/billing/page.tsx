@@ -3,10 +3,10 @@ import { PLANS, isSubscriptionActive } from '@/lib/billing'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { SubscribeButton } from './subscribe-button'
+import { SubscribeButton, ManageBillingButton } from './subscribe-button'
 
 export default async function BillingPage() {
-  const { organization, userId, user } = await requireAuth()
+  const { organization, role, user } = await requireAuth()
 
   const isActive = isSubscriptionActive(organization)
 
@@ -38,9 +38,10 @@ export default async function BillingPage() {
           )}
           {!organization.trialEndsAt && organization.subscriptionStatus === 'TRIALING' && (
             <p className="text-sm text-muted-foreground mt-2">
-              Free beta — no trial expiration set
+              Trial access is not configured. Contact support to activate your trial.
             </p>
           )}
+          {role === 'owner' && organization.stripeCustomerId && <ManageBillingButton />}
         </CardContent>
       </Card>
 
@@ -62,10 +63,10 @@ export default async function BillingPage() {
                   </li>
                 ))}
               </ul>
-              {organization.plan.toLowerCase() === planId && isActive ? (
+              {organization.plan.toLowerCase() === planId && organization.subscriptionStatus === 'ACTIVE' ? (
                 <Badge variant="outline" className="w-full justify-center py-2">Current plan</Badge>
               ) : (
-                <SubscribeButton planId={planId} userEmail={user.email || ''} />
+                role === 'owner' ? <SubscribeButton planId={planId} userEmail={user.email || ''} /> : <p className="text-sm text-muted-foreground">Ask your organization owner to manage billing.</p>
               )}
             </CardContent>
           </Card>

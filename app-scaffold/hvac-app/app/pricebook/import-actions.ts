@@ -1,6 +1,6 @@
 'use server'
 
-import { requireAdmin } from '@/lib/require-admin'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { parsePriceBookCsv } from '@/lib/validations/pricebook-import'
@@ -12,7 +12,7 @@ type ImportResult =
   | { success: false; error: string }
 
 export async function importPriceBookItems(csvText: string): Promise<ImportResult> {
-  const adminResult = await requireAdmin()
+  const adminResult = await requireMutationAccess('manageBilling')
   if (!adminResult.authorized) {
     return { success: false, error: adminResult.error }
   }

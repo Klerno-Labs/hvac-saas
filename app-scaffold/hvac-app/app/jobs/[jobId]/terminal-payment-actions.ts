@@ -1,7 +1,7 @@
 'use server'
 
 import type Stripe from 'stripe'
-import { auth } from '@/lib/auth'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { getStripe } from '@/lib/stripe'
 import { trackEvent } from '@/lib/events'
@@ -13,20 +13,9 @@ import {
   TERMINAL_PAYMENT_METHOD,
 } from '@/lib/terminal'
 
-type AuthCtx = { userId: string; organizationId: string }
-
-async function resolveOrgCtx(): Promise<AuthCtx | { error: string }> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { error: 'You must be logged in' }
-  }
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-  if (!membership) {
-    return { error: 'You must belong to an organization' }
-  }
-  return { userId: session.user.id, organizationId: membership.organizationId }
+async function resolveOrgCtx() {
+  const access = await requireMutationAccess('fieldWork')
+  return access.authorized ? access.context : { error: access.error }
 }
 
 export type CreateIntentResult =
@@ -49,7 +38,7 @@ export async function createTerminalPaymentIntent(
   }
 
   const invoice = await db.invoice.findFirst({
-    where: { id: invoiceId, organizationId },
+    where: { id: invoiceId, organizationId, job: jobAccessWhere(ctx) },
     include: { customer: true },
   })
   if (!invoice) {
@@ -67,7 +56,7 @@ export async function createTerminalPaymentIntent(
     organizationId,
     invoiceNumber: invoice.invoiceNumber,
     amountCents,
-    feePercent: org.platformFeePercent || 2.9,
+    feePercent: org.platformFeePercent ?? 2.9,
   })
 
   let intent: Stripe.PaymentIntent
@@ -129,6 +118,8 @@ export async function captureTerminalPayment(paymentIntentId: string): Promise<C
   if (!invoice) {
     return { success: false, error: 'Payment has no linked invoice' }
   }
+  const job = await db.job.findFirst({ where: { id: invoice.jobId, ...jobAccessWhere(ctx) } })
+  if (!job) return { success: false, error: 'Job not found in your assigned work' }
   if (invoice.status === 'paid') {
     return { success: true, paymentIntentId, invoiceId: invoice.id }
   }
@@ -160,26 +151,10 @@ export async function captureTerminalPayment(paymentIntentId: string): Promise<C
     return { success: false, error: msg }
   }
 
-  await db.$transaction(async (tx) => {
-    await tx.invoice.update({
-      where: { id: invoice.id },
-      data: {
-        status: 'paid',
-        paidAt: new Date(),
-        outstandingCents: 0,
-      },
-    })
-
-    await tx.collectionAttempt.updateMany({
-      where: { invoiceId: invoice.id, status: 'created' },
-      data: { status: 'skipped' },
-    })
-
-    await tx.payment.update({
-      where: { id: payment.id },
-      data: { status: 'succeeded', paidAt: new Date() },
-    })
-  })
+  if (succeededIntent.status !== 'succeeded') {
+    return { success: false, error: 'Payment is still processing. Wait for confirmation before trying again.' }
+  }
+  // The signed payment_intent.succeeded webhook updates the invoice and ledger.
 
   await trackEvent({
     organizationId,
@@ -188,13 +163,6 @@ export async function captureTerminalPayment(paymentIntentId: string): Promise<C
     entityType: 'invoice',
     entityId: invoice.id,
     metadataJson: { paymentIntentId, amountCents: payment.amountCents },
-  })
-
-  await trackEvent({
-    organizationId,
-    eventName: 'collections_stopped_due_to_payment',
-    entityType: 'invoice',
-    entityId: invoice.id,
   })
 
   await logAudit({

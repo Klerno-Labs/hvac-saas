@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import { validatePortalToken } from '@/lib/portal'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
@@ -64,7 +65,7 @@ export default async function PortalInvoiceDetailPage({
   const canPay = invoice.status !== 'paid' && invoice.status !== 'void'
 
   return (
-    <main>
+    <main className="px-4 py-6 sm:py-10">
       <div className="mx-auto max-w-175">
         <div className="mb-5">
           <Link href={`/portal/${token}` as never} className="text-xs text-muted-foreground hover:underline">
@@ -110,7 +111,7 @@ export default async function PortalInvoiceDetailPage({
                 </span>
                 {invoice.dueDate && (
                   <span className="ml-3 text-xs text-muted-foreground">
-                    Due {new Date(invoice.dueDate).toLocaleDateString()}
+                    Due {formatDateOnly(invoice.dueDate)}
                   </span>
                 )}
               </div>

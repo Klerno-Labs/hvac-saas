@@ -54,6 +54,8 @@ describe('public-pay (createPortalCheckoutSession) rate limit', () => {
       invoiceNumber: 'INV-1',
       status: 'sent',
       totalCents: 5000,
+      outstandingCents: 5000,
+      updatedAt: new Date(0),
       taxCents: 0,
       customer: { email: null },
       lineItems: [],
@@ -107,4 +109,17 @@ describe('public-pay (createPortalCheckoutSession) rate limit', () => {
     const other = await createPortalCheckoutSession('token-B', 'inv-1')
     expect(other.success).toBe(true)
   })
+  it('uses the invoice revision as a stable Stripe idempotency key', async () => {
+    await createPortalCheckoutSession('token-A', 'inv-1')
+    expect(getStripe().checkout.sessions.create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({idempotencyKey: 'invoice-checkout-inv-1-0', stripeAccount: 'acct_1'}))
+  })
+  it.each(['complete', 'unavailable'])('does not create another checkout when the previous session is %s', async state => {
+    vi.mocked(db.invoice.findFirst).mockResolvedValue({id:'inv-1',status:'sent',totalCents:5000,outstandingCents:5000,stripeCheckoutSessionId:'cs_old'} as never)
+    const stripe = getStripe()
+    if (state === 'complete') vi.mocked(stripe.checkout.sessions.retrieve).mockResolvedValue({status:'complete'} as never)
+    else vi.mocked(stripe.checkout.sessions.retrieve).mockRejectedValue(new Error('network failed'))
+    expect((await createPortalCheckoutSession('token-A','inv-1')).success).toBe(false)
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled()
+  })
+
 })

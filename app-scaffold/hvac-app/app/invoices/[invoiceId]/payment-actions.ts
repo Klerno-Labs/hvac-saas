@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { getStripe } from '@/lib/stripe'
@@ -10,21 +10,9 @@ type CreateCheckoutResult =
   | { success: false; error: string }
 
 export async function createCheckoutSession(invoiceId: string): Promise<CreateCheckoutResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('editPricing')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, userId, organizationId } = access.context
 
   const org = await db.organization.findUnique({ where: { id: organizationId } })
   if (!org?.stripeConnectedAccountId || !org.stripeChargesEnabled) {
@@ -39,7 +27,7 @@ export async function createCheckoutSession(invoiceId: string): Promise<CreateCh
     return { success: false, error: 'Invoice not found in your organization' }
   }
 
-  if (invoice.status === 'paid' || invoice.status === 'void') {
+  if (!['sent', 'overdue'].includes(invoice.status)) {
     return { success: false, error: `Invoice is already ${invoice.status}` }
   }
 
@@ -95,7 +83,7 @@ export async function createCheckoutSession(invoiceId: string): Promise<CreateCh
   }
 
   // Calculate platform fee
-  const feePercent = org.platformFeePercent || 2.9
+  const feePercent = org.platformFeePercent ?? 2.9
   const applicationFeeAmount = Math.round(invoice.totalCents * (feePercent / 100))
 
   const checkoutSession = await stripe.checkout.sessions.create(

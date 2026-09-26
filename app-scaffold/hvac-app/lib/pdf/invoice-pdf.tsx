@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 
 const s = StyleSheet.create({
@@ -70,7 +71,7 @@ export function InvoicePdf(p: InvoicePdfProps) {
             {p.dueDate ? (
               <>
                 <Text style={[s.label, { marginTop: 6 }]}>Due</Text>
-                <Text>{new Date(p.dueDate).toLocaleDateString()}</Text>
+                <Text>{formatDateOnly(p.dueDate)}</Text>
               </>
             ) : null}
           </View>

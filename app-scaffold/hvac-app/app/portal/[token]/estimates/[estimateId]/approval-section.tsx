@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,6 +26,8 @@ export function ApprovalSection({
   acceptedAt: Date | string | null
   declinedAt: Date | string | null
 }) {
+  const router = useRouter()
+  const [signatureMethod, setSignatureMethod] = useState<'drawn' | 'typed'>('drawn')
   const [mode, setMode] = useState<Mode>('idle')
   const [signerName, setSignerName] = useState('')
   const [reason, setReason] = useState('')
@@ -37,13 +40,14 @@ export function ApprovalSection({
 
   // Set up canvas drawing
   useEffect(() => {
-    if (mode !== 'approving') return
+    if (mode !== 'approving' || signatureMethod !== 'drawn') return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
     const resize = () => {
+      hasSignedRef.current = false
       const rect = canvas.getBoundingClientRect()
       const dpr = window.devicePixelRatio || 1
       canvas.width = rect.width * dpr
@@ -56,7 +60,7 @@ export function ApprovalSection({
     resize()
     window.addEventListener('resize', resize)
     return () => window.removeEventListener('resize', resize)
-  }, [mode])
+  }, [mode, signatureMethod])
 
   function getEventPos(e: React.PointerEvent<HTMLCanvasElement>) {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -101,37 +105,40 @@ export function ApprovalSection({
   async function handleApprove() {
     setError(null)
     if (!signerName.trim()) return setError('Please type your full name')
-    if (!hasSignedRef.current || !canvasRef.current) return setError('Please sign in the box above')
-
+    if (signatureMethod === 'drawn' && (!hasSignedRef.current || !canvasRef.current)) return setError('Please sign in the box above or use your typed name')
     setLoading(true)
-    const dataUrl = canvasRef.current.toDataURL('image/png')
-    const result = await approveEstimate(token, estimateId, {
-      signerName: signerName.trim(),
-      signatureDataUrl: dataUrl,
-    })
-    if (result.success) {
-      setMode('submitted')
-    } else {
-      setError(result.error)
-      setLoading(false)
-    }
+    try {
+      let dataUrl: string
+      if (signatureMethod === 'typed') {
+        const canvas = document.createElement('canvas')
+        canvas.width = 1000
+        canvas.height = 160
+        const ctx = canvas.getContext('2d')
+        if (!ctx) throw new Error('Could not create signature')
+        ctx.font = 'italic 48px Georgia, serif'
+        ctx.fillStyle = '#0f172a'
+        ctx.fillText(signerName.trim(), 20, 96, 960)
+        dataUrl = canvas.toDataURL('image/png')
+      } else {
+        dataUrl = canvasRef.current!.toDataURL('image/png')
+      }
+      const result = await approveEstimate(token, estimateId, { signerName: signerName.trim(), signatureDataUrl: dataUrl, signatureMethod })
+      if (result.success) { setMode('submitted'); router.refresh() }
+      else setError(result.error)
+    } catch { setError('The connection was interrupted. Please try again.') }
+    finally { setLoading(false) }
   }
 
   async function handleDecline() {
     setError(null)
     if (!signerName.trim()) return setError('Please type your full name')
-
     setLoading(true)
-    const result = await declineEstimate(token, estimateId, {
-      signerName: signerName.trim(),
-      reason: reason.trim() || undefined,
-    })
-    if (result.success) {
-      setMode('submitted')
-    } else {
-      setError(result.error)
-      setLoading(false)
-    }
+    try {
+      const result = await declineEstimate(token, estimateId, { signerName: signerName.trim(), reason: reason.trim() || undefined })
+      if (result.success) { setMode('submitted'); router.refresh() }
+      else setError(result.error)
+    } catch { setError('The connection was interrupted. Please try again.') }
+    finally { setLoading(false) }
   }
 
   // Already decided
@@ -169,14 +176,16 @@ export function ApprovalSection({
 
   if (mode === 'submitted') {
     return (
-      <Card className="border-emerald-500/40 bg-emerald-50/50">
+      <Card role="status" className="border-emerald-500/40 bg-emerald-50/50">
         <CardContent className="py-6 text-center">
           <p className="text-lg font-semibold text-emerald-700">✓ Submitted</p>
-          <p className="text-sm text-muted-foreground mt-1">Thanks! Refresh the page to see your decision recorded.</p>
+          <p className="text-sm text-muted-foreground mt-1">Your decision has been saved. Thank you.</p>
         </CardContent>
       </Card>
     )
   }
+
+  if (status !== 'sent') return null
 
   if (mode === 'idle') {
     return (
@@ -184,10 +193,10 @@ export function ApprovalSection({
         <CardContent className="py-6 space-y-3">
           <p className="text-sm font-semibold text-center">Ready to move forward?</p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => setMode('approving')} className="flex-1" size="lg">
+            <Button onClick={() => setMode('approving')} className="min-h-11 sm:flex-1" size="lg">
               ✓ Approve estimate
             </Button>
-            <Button onClick={() => setMode('declining')} variant="outline" className="flex-1" size="lg">
+            <Button onClick={() => setMode('declining')} variant="outline" className="min-h-11 sm:flex-1" size="lg">
               Decline
             </Button>
           </div>
@@ -209,6 +218,8 @@ export function ApprovalSection({
             <Label htmlFor="signerName">Your full name *</Label>
             <Input
               id="signerName"
+              maxLength={200}
+              autoComplete="name"
               value={signerName}
               onChange={(e) => setSignerName(e.target.value)}
               placeholder="Type your full legal name"
@@ -217,10 +228,19 @@ export function ApprovalSection({
           </div>
 
           <div className="space-y-2">
-            <Label>Sign below *</Label>
+            <p id="signature-label" className="text-sm font-medium">Your signature *</p>
+            <div className="flex gap-2" role="group" aria-label="Signature method">
+              <Button type="button" variant={signatureMethod === 'drawn' ? 'default' : 'outline'} aria-pressed={signatureMethod === 'drawn'} onClick={() => setSignatureMethod('drawn')}>Draw signature</Button>
+              <Button type="button" variant={signatureMethod === 'typed' ? 'default' : 'outline'} aria-pressed={signatureMethod === 'typed'} onClick={() => setSignatureMethod('typed')}>Type signature</Button>
+            </div>
+            {signatureMethod === 'typed' ? <div className="rounded-lg border bg-white p-4">
+              <p className="break-words font-serif text-2xl italic text-slate-900" aria-label="Typed signature preview">{signerName.trim() || 'Your full name'}</p>
+              <p className="mt-2 text-xs text-muted-foreground">Submitting uses your typed full name as your signature.</p>
+            </div> : (
             <div className="border-2 border-dashed rounded-lg bg-white relative">
               <canvas
                 ref={canvasRef}
+                aria-labelledby="signature-label"
                 className="w-full h-40 touch-none cursor-crosshair"
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
@@ -232,15 +252,15 @@ export function ApprovalSection({
                 onClick={clearSignature}
                 className="absolute bottom-2 right-2 text-xs text-muted-foreground hover:text-foreground bg-background/80 px-2 py-1 rounded"
               >
-                Clear
+                Clear signature
               </button>
-            </div>
+            </div>)}
           </div>
 
-          {error && <div className="text-sm text-destructive p-2 bg-destructive/10 rounded">{error}</div>}
+          {error && <div role="alert" className="text-sm text-destructive p-2 bg-destructive/10 rounded">{error}</div>}
 
           <div className="flex gap-2">
-            <Button onClick={handleApprove} disabled={loading} className="flex-1">
+            <Button onClick={handleApprove} disabled={loading} className="min-h-11 sm:flex-1">
               {loading ? 'Submitting...' : 'Submit approval'}
             </Button>
             <Button variant="ghost" onClick={() => setMode('idle')} disabled={loading}>
@@ -265,6 +285,8 @@ export function ApprovalSection({
           <Label htmlFor="signerName">Your full name *</Label>
           <Input
             id="signerName"
+              maxLength={200}
+              autoComplete="name"
             value={signerName}
             onChange={(e) => setSignerName(e.target.value)}
             autoFocus
@@ -275,6 +297,7 @@ export function ApprovalSection({
           <Label htmlFor="reason">Reason (optional)</Label>
           <Textarea
             id="reason"
+            maxLength={2000}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
@@ -282,10 +305,10 @@ export function ApprovalSection({
           />
         </div>
 
-        {error && <div className="text-sm text-destructive p-2 bg-destructive/10 rounded">{error}</div>}
+        {error && <div role="alert" className="text-sm text-destructive p-2 bg-destructive/10 rounded">{error}</div>}
 
         <div className="flex gap-2">
-          <Button onClick={handleDecline} disabled={loading} variant="destructive" className="flex-1">
+          <Button onClick={handleDecline} disabled={loading} variant="destructive" className="min-h-11 sm:flex-1">
             {loading ? 'Submitting...' : 'Submit decline'}
           </Button>
           <Button variant="ghost" onClick={() => setMode('idle')} disabled={loading}>

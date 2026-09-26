@@ -20,7 +20,8 @@ const REQUIRED_VARS = [
 const RECOMMENDED_VARS = [
   { name: 'APP_URL', reason: 'Used for redirect URLs in Stripe and portal links' },
   { name: 'STRIPE_SECRET_KEY', reason: 'Required for payment collection' },
-  { name: 'STRIPE_WEBHOOK_SECRET', reason: 'Required for payment webhook verification' },
+  { name: 'STRIPE_WEBHOOK_SECRET', reason: 'Required for platform subscription webhook verification' },
+  { name: 'STRIPE_CONNECT_WEBHOOK_SECRET', reason: 'Required for connected-account payment webhook verification' },
   { name: 'STRIPE_PUBLISHABLE_KEY', reason: 'Required for client-side Stripe integration' },
 ] as const
 
@@ -55,11 +56,12 @@ export function validateEnv(): EnvCheckResult {
 
   // Production-specific checks
   if (process.env.NODE_ENV === 'production') {
-    if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      warnings.push('STRIPE_WEBHOOK_SECRET not set — webhooks will reject in production')
+    if (process.env.STRIPE_WEBHOOK_SECRET?.trim() &&
+        process.env.STRIPE_WEBHOOK_SECRET.trim() === process.env.STRIPE_CONNECT_WEBHOOK_SECRET?.trim()) {
+      warnings.push('Stripe platform and Connect destinations must use distinct webhook signing secrets')
     }
-    if (!process.env.COLLECTIONS_CRON_SECRET) {
-      warnings.push('COLLECTIONS_CRON_SECRET not set — collections API endpoint is unprotected')
+    if (!process.env.CRON_SECRET && !process.env.COLLECTIONS_CRON_SECRET) {
+      warnings.push('CRON_SECRET not set — scheduled task endpoints are disabled until a scheduler secret is configured')
     }
   }
 

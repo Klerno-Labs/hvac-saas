@@ -1,3 +1,6 @@
+import { jobAccessWhere } from '@/lib/mutation-access'
+import { canDo } from '@/lib/permissions'
+import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { auth } from '@/lib/auth'
@@ -18,6 +21,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ invoiceId: 
 
   let organizationId: string | null = null
   let customerIdFilter: string | null = null
+  let assignedJobFilter: Prisma.JobWhereInput | undefined
+  let canReadDrafts = false
 
   if (portalToken) {
     const ctxToken = await validatePortalToken(portalToken)
@@ -29,14 +34,18 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ invoiceId: 
     if (!session?.user?.id) return new NextResponse('Unauthorized', { status: 401 })
     const membership = await db.organizationMember.findFirst({ where: { userId: session.user.id } })
     if (!membership) return new NextResponse('Forbidden', { status: 403 })
+    if (!canDo(membership.role, 'fieldWork')) return new NextResponse('Forbidden', { status: 403 })
+    canReadDrafts = canDo(membership.role, 'editPricing')
     organizationId = membership.organizationId
+    assignedJobFilter = jobAccessWhere({ organizationId, userId: session.user.id, role: membership.role })
   }
 
   const invoice = await db.invoice.findFirst({
     where: {
       id: invoiceId,
       organizationId,
-      ...(customerIdFilter ? { customerId: customerIdFilter } : {}),
+      ...(!canReadDrafts ? { status: { not: 'draft' } } : {}),
+      ...(customerIdFilter ? { customerId: customerIdFilter, status: { not: 'draft' } } : { job: assignedJobFilter }),
     },
     include: {
       customer: true,
@@ -74,6 +83,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ invoiceId: 
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
+      'Cache-Control': 'private, no-store',
+      'Referrer-Policy': 'no-referrer',
       'Content-Disposition': `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`,
     },
   })

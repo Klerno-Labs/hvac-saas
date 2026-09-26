@@ -10,9 +10,12 @@ vi.mock('@/lib/stripe', () => ({
 
 vi.mock('@/lib/db', () => ({
   db: {
+    $transaction: vi.fn(),
     webhookEvent: {
       create: vi.fn(),
+      deleteMany: vi.fn(),
       update: vi.fn(),
+      findUnique: vi.fn(),
     },
     organization: {
       findFirst: vi.fn(),
@@ -51,6 +54,7 @@ function makeSubscriptionEvent(type: string, status: string, customerId = 'cus_t
   return {
     id: `evt_sub_${status}`,
     type,
+    livemode: false,
     data: {
       object: {
         id: 'sub_test',
@@ -66,9 +70,11 @@ function makeInvoiceEvent(type: string, customerId = 'cus_test', attempt_count =
   return {
     id: `evt_inv_${type}`,
     type,
+    livemode: false,
     data: {
       object: {
         id: 'in_test',
+        subscription: 'sub_test',
         customer: customerId,
         attempt_count,
       },
@@ -80,6 +86,7 @@ function makeInvoiceEvent(type: string, customerId = 'cus_test', attempt_count =
 
 const mockStripe = {
   webhooks: { constructEvent: vi.fn() },
+  subscriptions: { retrieve: vi.fn() },
   customers: { create: vi.fn() },
   billingPortal: { sessions: { create: vi.fn() } },
 }
@@ -93,14 +100,22 @@ const stubOrg = {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.resetAllMocks()
+  vi.mocked(db.$transaction).mockImplementation(async (fn: any) => fn(db))
+  vi.mocked(db.webhookEvent.findUnique).mockResolvedValue({processedAt: new Date()} as never)
 
   vi.mocked(getStripe).mockReturnValue(mockStripe as never)
+  mockStripe.subscriptions.retrieve.mockImplementation(async () => {
+    const event = mockStripe.webhooks.constructEvent.mock.results.at(-1)?.value
+    return event.type.startsWith('customer.subscription.') ? event.data.object : {id: 'sub_test', customer: 'cus_test', status: event.type === 'invoice.payment_failed' ? 'past_due' : 'active'}
+  })
   vi.mocked(headers).mockResolvedValue({
     get: (k: string) => (k === 'stripe-signature' ? 'valid-sig' : null),
   } as never)
 
   process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'
+  process.env.STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_connect_test'
+  process.env.STRIPE_SECRET_KEY = 'sk_test_fixture'
 
   vi.mocked(db.webhookEvent.create).mockResolvedValue({} as never)
   vi.mocked(db.webhookEvent.update).mockResolvedValue({} as never)
@@ -112,6 +127,24 @@ beforeEach(() => {
 // --- tests ---
 
 describe('billing webhook', () => {
+  it('rejects connected-account subscription events before retrieving or changing platform billing', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue({
+      ...makeSubscriptionEvent('customer.subscription.updated', 'active'), account: 'acct_other',
+    })
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(400)
+    expect(mockStripe.subscriptions.retrieve).not.toHaveBeenCalled()
+    expect(db.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('acknowledges a signed event in the opposite Stripe mode without billing writes', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue({
+      ...makeSubscriptionEvent('customer.subscription.updated', 'active'), livemode: true,
+    })
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(mockStripe.subscriptions.retrieve).not.toHaveBeenCalled()
+    expect(db.$transaction).not.toHaveBeenCalled()
+  })
+
   it('(a) returns 400 and makes no DB write when signature is invalid', async () => {
     mockStripe.webhooks.constructEvent.mockImplementation(() => {
       throw new Error('No signatures found matching the expected signature for payload')
@@ -204,6 +237,7 @@ describe('billing portal', () => {
 
     expect(mockStripe.customers.create).toHaveBeenCalledWith(
       expect.objectContaining({ metadata: { organizationId: 'org_1' } }),
+      {idempotencyKey: 'fieldclose-customer-org_1'},
     )
     expect(vi.mocked(db.organization.update)).toHaveBeenCalledWith(
       expect.objectContaining({ data: { stripeCustomerId: 'cus_new' } }),
@@ -212,5 +246,49 @@ describe('billing portal', () => {
       expect.objectContaining({ customer: 'cus_new', return_url: expect.stringContaining('/settings/billing') }),
     )
     expect(body).toEqual({ url: 'https://billing.stripe.com/session_test' })
+  })
+})
+
+
+describe('billing security and recovery', () => {
+  it('denies non-owners access to the billing portal without contacting Stripe', async () => {
+    vi.mocked(requireAuth).mockResolvedValue({organizationId: 'org_1', organization: stubOrg, role: 'tech'} as never)
+    expect((await portalPOST()).status).toBe(403)
+    expect(mockStripe.billingPortal.sessions.create).not.toHaveBeenCalled()
+  })
+  it('returns 500 on a database failure so Stripe retries', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue(makeSubscriptionEvent('customer.subscription.updated', 'active'))
+    vi.mocked(db.organization.update).mockRejectedValueOnce(new Error('database temporarily unavailable'))
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expect(db.webhookEvent.update).not.toHaveBeenCalled()
+  })
+  it('never grants an active subscription for an unknown Stripe status', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue(makeSubscriptionEvent('customer.subscription.updated', 'paused'))
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(db.organization.update).toHaveBeenCalledWith(expect.objectContaining({data: expect.objectContaining({subscriptionStatus: 'INCOMPLETE'})}))
+  })
+  it('normalizes metadata plan IDs to the database enum', async () => {
+    const event = makeSubscriptionEvent('customer.subscription.updated', 'active')
+    Object.assign(event.data.object, {metadata: {planId: 'pro', organizationId: 'org_1'}})
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    await webhookPOST(makeWebhookRequest())
+    expect(db.organization.update).toHaveBeenCalledWith(expect.objectContaining({data: expect.objectContaining({plan: 'PRO'})}))
+  })
+})
+
+
+describe('billing event ordering', () => {
+  it('does not reactivate a canceled subscription from an old payment-success event', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue(makeInvoiceEvent('invoice.payment_succeeded'))
+    mockStripe.subscriptions.retrieve.mockResolvedValue({id:'sub_test',customer:'cus_test',status:'canceled'})
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(db.organization.update).toHaveBeenCalledWith(expect.objectContaining({data: expect.objectContaining({subscriptionStatus:'CANCELED'})}))
+  })
+  it('does not grant subscription access for a one-off invoice', async () => {
+    const event = makeInvoiceEvent('invoice.payment_succeeded')
+    Object.assign(event.data.object, {subscription:null})
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(db.organization.update).not.toHaveBeenCalled()
   })
 })

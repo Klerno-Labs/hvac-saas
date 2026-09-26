@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createInventoryItemSchema } from '@/lib/validations/inventory'
@@ -10,21 +10,9 @@ type CreateInventoryItemResult =
   | { success: false; error: string }
 
 export async function createInventoryItem(formData: FormData): Promise<CreateInventoryItemResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('manageInventory')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { userId, organizationId } = access.context
 
   const raw = {
     name: formData.get('name'),

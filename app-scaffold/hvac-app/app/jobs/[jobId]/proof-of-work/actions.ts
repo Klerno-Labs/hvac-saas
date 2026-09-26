@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { recordProofOfWorkSchema } from '@/lib/validations/proof-of-work'
@@ -10,24 +10,12 @@ type RecordResult =
   | { success: false; error: string }
 
 export async function recordProofOfWork(jobId: string, formData: FormData): Promise<RecordResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { userId, organizationId } = access.context
 
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
+    where: { id: jobId, ...jobAccessWhere(access.context) },
   })
   if (!job) {
     return { success: false, error: 'Job not found in your organization' }

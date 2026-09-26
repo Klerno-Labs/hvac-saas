@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { sendCollectionEmail } from '@/lib/email'
@@ -111,7 +112,7 @@ export async function runCollectionsAutomation(): Promise<RunResult> {
                 totalFormatted,
                 orgName: org.name,
                 portalUrl,
-                dueDate: invoice.dueDate?.toLocaleDateString(),
+                dueDate: invoice.dueDate ? formatDateOnly(invoice.dueDate) : undefined,
                 stage,
               })
             }

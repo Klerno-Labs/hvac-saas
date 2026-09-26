@@ -1,11 +1,11 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound, redirect } from 'next/navigation'
 import { EstimateForm } from './form'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
 export default async function NewEstimatePage({ searchParams }: { searchParams: Promise<{ jobId?: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('editPricing')
   const { jobId } = await searchParams
 
   if (!jobId) {

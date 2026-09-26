@@ -63,7 +63,7 @@ export function TerminalCollectSection({
           </Badge>
         </CardTitle>
         <CardDescription>
-          Collect a tap-to-pay card payment on a Stripe Terminal reader. The invoice is marked paid once capture is confirmed.
+          Collect a tap-to-pay card payment on a Stripe Terminal reader. The invoice updates when Stripe confirms the payment.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -287,7 +287,7 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
       )}
 
       {phase === 'success' && (
-        <p className="text-sm text-emerald-600">Payment captured and invoice marked paid.</p>
+        <p className="text-sm text-emerald-600">Payment captured. The invoice will update after Stripe confirms it.</p>
       )}
 
       {message && phase === 'error' && (

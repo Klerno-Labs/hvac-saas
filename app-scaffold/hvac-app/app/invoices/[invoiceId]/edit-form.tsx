@@ -87,6 +87,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
         <div className="space-y-1.5">
           <Label>Description of work *</Label>
           <Textarea
+            aria-label="Description of work"
             value={descriptionOfWork}
             onChange={(e) => setDescriptionOfWork(e.target.value)}
             required
@@ -109,12 +110,14 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
                 <div className="flex flex-col gap-2">
                   <Input
                     placeholder="Item name"
+                    aria-label={`Item name, line ${i + 1}`}
                     value={li.name}
                     onChange={(e) => updateLineItem(i, 'name', e.target.value)}
                     required
                   />
                   <Input
                     placeholder="Description (optional)"
+                    aria-label={`Item description, line ${i + 1}`}
                     value={li.description}
                     onChange={(e) => updateLineItem(i, 'description', e.target.value)}
                   />
@@ -124,7 +127,8 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
                       <Input
                         type="number"
                         min={1}
-                        value={li.quantity}
+                        aria-label={`Quantity, line ${i + 1}`}
+                    value={li.quantity}
                         onChange={(e) => updateLineItem(i, 'quantity', parseInt(e.target.value) || 1)}
                       />
                     </div>
@@ -134,6 +138,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
                         type="number"
                         min={0}
                         step="0.01"
+                        aria-label={`Unit price in dollars, line ${i + 1}`}
                         value={(li.unitPriceCents / 100).toFixed(2)}
                         onChange={(e) => updateLineItem(i, 'unitPriceCents', Math.round(parseFloat(e.target.value || '0') * 100))}
                       />
@@ -143,6 +148,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
                       <Input
                         type="text"
                         readOnly
+                        aria-label={`Line total, line ${i + 1}`}
                         value={formatCents(li.quantity * li.unitPriceCents)}
                         className="bg-muted"
                       />
@@ -155,6 +161,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
                     onClick={() => removeLineItem(i)}
                     className="bg-transparent border-none text-destructive cursor-pointer text-lg px-1"
                     title="Remove item"
+                    aria-label={`Remove line ${i + 1}`}
                   >
                     &times;
                   </button>
@@ -171,6 +178,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
               type="number"
               min={0}
               step="0.01"
+              aria-label="Tax in dollars"
               value={(taxCents / 100).toFixed(2)}
               onChange={(e) => setTaxCents(Math.round(parseFloat(e.target.value || '0') * 100))}
             />
@@ -185,6 +193,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
           <Label>Due date</Label>
           <Input
             type="date"
+            aria-label="Due date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
@@ -193,6 +202,7 @@ export function InvoiceEditForm({ invoiceId, initialData }: { invoiceId: string;
         <div className="space-y-1.5">
           <Label>Notes</Label>
           <Textarea
+            aria-label="Notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}

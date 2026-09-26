@@ -1,12 +1,14 @@
 type RenderEmailParams = {
   title: string
   preheader?: string
+  /** Trusted template HTML. Escape every interpolated value with escapeHtml. */
   body: string
   cta?: { label: string; url: string }
   footer?: string
 }
 
 export function renderEmail({ title, preheader, body, cta, footer }: RenderEmailParams): string {
+  const safeCtaUrl = cta ? httpUrl(cta.url) : null
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -25,13 +27,13 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${escapeH
       <tr><td style="padding:32px;">
         <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">${escapeHtml(title)}</h1>
         <div style="font-size:15px;line-height:1.6;color:#334155;">${body}</div>
-        ${cta ? `
+        ${cta && safeCtaUrl ? `
         <div style="margin:32px 0 8px;">
-          <a href="${escapeAttr(cta.url)}" style="display:inline-block;background-color:#0f766e;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;">${escapeHtml(cta.label)}</a>
+          <a href="${escapeAttr(safeCtaUrl)}" style="display:inline-block;background-color:#0f766e;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;">${escapeHtml(cta.label)}</a>
         </div>` : ''}
       </td></tr>
       <tr><td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;">
-        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">${footer ? escapeHtml(footer) + '<br>' : ''}Sent via FieldClose — the quote-to-payment platform for HVAC pros.</p>
+        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">${footer ? escapeHtml(footer) + '<br>' : ''}Sent via FieldClose — the quote-to-payment platform for service teams.</p>
       </td></tr>
     </table>
   </td></tr>
@@ -40,10 +42,19 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${escapeH
 </html>`
 }
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c))
 }
 
 function escapeAttr(s: string): string {
   return s.replace(/["&<>]/g, (c) => ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] || c))
+}
+
+function httpUrl(value: string): string | null {
+  try {
+    const url = new URL(value)
+    return (url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password ? url.toString() : null
+  } catch {
+    return null
+  }
 }

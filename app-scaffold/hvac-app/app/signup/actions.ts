@@ -5,6 +5,7 @@ import { trackEvent } from '@/lib/events'
 import { signupSchema } from '@/lib/validations/auth'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
+import { isTradeId } from '@/lib/trades'
 
 type SignupResult =
   | { success: true }
@@ -37,7 +38,7 @@ export async function signup(formData: FormData): Promise<SignupResult> {
     })
   }
 
-  const existing = await db.user.findUnique({ where: { email } })
+  const existing = await db.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } })
   if (existing) {
     return { success: false, error: 'An account with this email already exists' }
   }
@@ -50,6 +51,16 @@ export async function signup(formData: FormData): Promise<SignupResult> {
       email,
       hashedPassword,
     },
+  })
+
+  const requestedTrade = formData.get('trade')
+  const cookieStore = await cookies()
+  cookieStore.set('fc_trade', isTradeId(requestedTrade) ? requestedTrade : 'hvac', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
   })
 
   await trackEvent({

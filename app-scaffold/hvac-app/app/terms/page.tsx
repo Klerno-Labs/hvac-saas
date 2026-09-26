@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { NavHeader } from '@/app/components/nav-header'
+import { PublicHeader } from '@/app/components/public-header'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background">
-      <NavHeader />
+      <PublicHeader />
       <article className="max-w-3xl mx-auto px-4 py-16 prose prose-slate dark:prose-invert">
         <h1>Terms of Service</h1>
         <p className="text-sm text-muted-foreground">Last updated: July 22, 2026</p>

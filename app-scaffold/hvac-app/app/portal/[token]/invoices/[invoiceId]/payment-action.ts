@@ -56,9 +56,11 @@ export async function createPortalCheckoutSession(
     return { success: false, error: `This invoice cannot be paid (status: ${invoice.status})` }
   }
 
-  if (invoice.totalCents <= 0) {
+  if (invoice.outstandingCents <= 0) {
     return { success: false, error: 'Invoice total must be greater than zero' }
   }
+
+  if (invoice.outstandingCents !== invoice.totalCents) return {success: false, error: 'This invoice has an adjusted balance. Contact the business to arrange payment.'}
 
   // Reuse existing checkout session if valid
   if (invoice.stripeCheckoutSessionId) {
@@ -68,11 +70,12 @@ export async function createPortalCheckoutSession(
         invoice.stripeCheckoutSessionId,
         { stripeAccount: org.stripeConnectedAccountId },
       )
+      if (existingSession.status === 'complete') return {success: false, error: 'Your payment is processing. Please wait for confirmation before trying again.'}
       if (existingSession.status === 'open' && existingSession.url) {
         return { success: true, checkoutUrl: existingSession.url }
       }
     } catch {
-      // Session expired or invalid
+      return {success: false, error: 'We could not confirm the previous payment session. Please try again shortly.'}
     }
   }
 
@@ -103,7 +106,7 @@ export async function createPortalCheckoutSession(
   }
 
   // Calculate platform fee
-  const feePercent = org.platformFeePercent || 2.9
+  const feePercent = org.platformFeePercent ?? 2.9
   const applicationFeeAmount = Math.round(invoice.totalCents * (feePercent / 100))
 
   const checkoutSession = await stripe.checkout.sessions.create(
@@ -118,7 +121,7 @@ export async function createPortalCheckoutSession(
           invoiceNumber: invoice.invoiceNumber,
         },
       },
-      success_url: `${appUrl}/pay/${invoice.id}?status=success`,
+      success_url: `${appUrl}/portal/${token}/invoices/${invoice.id}?status=processing`,
       cancel_url: `${appUrl}/portal/${token}/invoices/${invoice.id}`,
       metadata: {
         invoiceId: invoice.id,
@@ -128,6 +131,7 @@ export async function createPortalCheckoutSession(
     },
     {
       stripeAccount: org.stripeConnectedAccountId,
+      idempotencyKey: `invoice-checkout-${invoice.id}-${invoice.updatedAt.getTime()}`,
     },
   )
 

@@ -1,4 +1,4 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -6,7 +6,7 @@ import { NewEquipmentForm } from './form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function NewEquipmentPage({ params }: { params: Promise<{ customerId: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('manageCustomers')
   const { customerId } = await params
 
   const customer = await db.customer.findFirst({

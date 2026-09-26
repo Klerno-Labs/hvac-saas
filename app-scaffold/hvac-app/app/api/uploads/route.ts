@@ -1,15 +1,14 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { MAX_PHOTO_BYTES, PHOTO_SIZE_LIMIT, PHOTO_CONTENT_TYPES } from '@/lib/photo-upload'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const EXT_MAP: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
@@ -17,21 +16,9 @@ const EXT_MAP: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return NextResponse.json({ error: 'No organization membership' }, { status: 403 })
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return NextResponse.json({ error: access.error }, { status: access.status })
+  const { session, userId, organizationId, membership } = access.context
 
   let formData: FormData
   try {
@@ -46,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
+    where: { id: jobId, ...jobAccessWhere(access.context) },
   })
   if (!job) {
     return NextResponse.json({ error: 'Job not found in your organization' }, { status: 404 })
@@ -57,16 +44,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 })
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!PHOTO_CONTENT_TYPES.includes(file.type)) {
     return NextResponse.json(
       { error: 'Invalid file type. Accepted: jpg, png, webp' },
       { status: 400 }
     )
   }
 
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > MAX_PHOTO_BYTES) {
     return NextResponse.json(
-      { error: 'File too large. Maximum size is 10 MB.' },
+      { error: `File too large. Maximum size is ${PHOTO_SIZE_LIMIT}.` },
       { status: 400 }
     )
   }
@@ -82,9 +69,15 @@ export async function POST(request: NextRequest) {
     process.env.R2_PUBLIC_BASE_URL
   )
 
+  if (!hasR2Config && process.env.VERCEL === '1') {
+    return NextResponse.json(
+      { error: 'Photo storage is not configured. Contact your administrator.' },
+      { status: 503 },
+    )
+  }
+
   if (hasR2Config) {
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
-    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
 
     const r2Client = new S3Client({
       region: 'auto',
@@ -102,9 +95,15 @@ export async function POST(request: NextRequest) {
       Key: key,
       ContentType: file.type,
       ContentLength: file.size,
+      Body: Buffer.from(await file.arrayBuffer()),
     })
 
-    const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 300 })
+    try {
+      await r2Client.send(command)
+    } catch (error) {
+      console.error('[uploads] Object storage upload failed', error)
+      return NextResponse.json({ error: 'Photo upload failed. Please try again.' }, { status: 503 })
+    }
     const fileUrl = `${process.env.R2_PUBLIC_BASE_URL}/${key}`
 
     const asset = await db.proofOfWorkAsset.create({
@@ -126,7 +125,7 @@ export async function POST(request: NextRequest) {
       metadataJson: { assetId: asset.id, fileType: file.type },
     })
 
-    return NextResponse.json({ presignedUrl, fileUrl, id: asset.id })
+    return NextResponse.json({ fileUrl, id: asset.id })
   }
 
   console.warn('R2 env vars not configured, falling back to local filesystem')

@@ -8,43 +8,54 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getTradeProfile, isTradeId } from '@/lib/trades'
 
 function SignupInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const ref = searchParams.get('ref') || ''
+  const invite = /^[a-f0-9]{64}$/.test(searchParams.get('invite') || '') ? searchParams.get('invite')! : ''
+  const requestedTrade = searchParams.get('trade')
+  const tradeType = isTradeId(requestedTrade) ? requestedTrade : 'hvac'
+  const profile = getTradeProfile(tradeType)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (loading) return
     setError(null)
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const result = await signup(formData)
+    try {
+      const result = await signup(formData)
 
-    if (result.success) {
-      // Fire-and-forget: emit signed `lead.ingest` event to Robert.
-      // Must run AFTER signup() has persisted the user so we never
-      // attribute a lead that was actually a validation failure. Robert
-      // failures are swallowed so the login redirect is never blocked.
-      const email = formData.get('email')
-      if (typeof email === 'string' && email.length > 0) {
-        void fetch('/api/internal/lead-ingest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            plan: 'trial',
-            source: 'fieldclose.app/signup',
-          }),
-          keepalive: true,
-        }).catch(() => null)
+      if (result.success) {
+        // Fire-and-forget: emit signed `lead.ingest` event to Robert.
+        // Must run AFTER signup() has persisted the user so we never
+        // attribute a lead that was actually a validation failure. Robert
+        // failures are swallowed so the login redirect is never blocked.
+        const email = formData.get('email')
+        if (typeof email === 'string' && email.length > 0) {
+          void fetch('/api/internal/lead-ingest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              plan: 'trial',
+              source: 'fieldclose.app/signup',
+            }),
+            keepalive: true,
+          }).catch(() => null)
+        }
+        router.push(`/login?registered=true${invite ? `&invite=${invite}` : ''}`)
+      } else {
+        setError(result.error)
+        setLoading(false)
       }
-      router.push('/login?registered=true')
-    } else {
-      setError(result.error)
+    } catch {
+      setError('We could not finish creating your account. Please try again, or log in if your account was created.')
       setLoading(false)
     }
   }
@@ -54,11 +65,11 @@ function SignupInner() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Get paid faster on every HVAC job.</CardDescription>
+          <CardDescription>Bring your {profile.businessLabel.toLowerCase()} jobs from first estimate to final payment.</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">
+            <div role="alert" className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">
               {error}
             </div>
           )}
@@ -70,6 +81,7 @@ function SignupInner() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <input type="hidden" name="trade" value={tradeType} />
             {ref && <input type="hidden" name="ref" value={ref} />}
             <div className="space-y-2">
               <Label htmlFor="name">Full name</Label>
@@ -90,7 +102,7 @@ function SignupInner() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="text-primary font-medium hover:underline">
+            <Link href={invite ? `/login?invite=${invite}` : "/login"} className="text-primary font-medium hover:underline">
               Log in
             </Link>
           </p>

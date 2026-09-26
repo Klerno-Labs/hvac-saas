@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { NavHeader } from '@/app/components/nav-header'
+import { PublicHeader } from '@/app/components/public-header'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -10,14 +10,14 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <NavHeader />
+      <PublicHeader />
       <article className="max-w-3xl mx-auto px-4 py-16 prose prose-slate dark:prose-invert">
         <h1>Privacy Policy</h1>
         <p className="text-sm text-muted-foreground">Last updated: July 22, 2026</p>
 
         <h2>1. Overview</h2>
         <p>
-          Pegrio LLC (&quot;we&quot;, &quot;us&quot;) operates FieldClose, a quote-to-payment platform for HVAC businesses. This policy explains what data we collect, why we collect it, and how we protect it.
+          Pegrio LLC (&quot;we&quot;, &quot;us&quot;) operates FieldClose, a quote-to-payment platform for service businesses. This policy explains what data we collect, why we collect it, and how we protect it.
         </p>
 
         <h2>2. Data We Collect</h2>
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
         <p>We do not sell your data. We share data only with:</p>
         <ul>
           <li><strong>Stripe</strong> — payment processing. Card data goes directly to Stripe via their secure elements, never touching our servers.</li>
-          <li><strong>OpenAI</strong> — used to generate estimate draft text. We send job title and customer name only; no payment or financial data.</li>
+          <li><strong>OpenAI</strong> — used to generate estimate draft text. When you request a draft, we send the job title, job notes, customer name, and selected trade context. Review job notes before requesting an AI draft; payment card details are not included.</li>
           <li><strong>Hosting provider (Vercel)</strong> — application hosting and database storage.</li>
           <li><strong>Legal authorities</strong> — only when compelled by valid legal process.</li>
         </ul>
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
         <h2>7. Your Rights</h2>
         <ul>
-          <li><strong>Access</strong> — export all your data from Settings → Export at any time</li>
+          <li><strong>Access</strong> — organization owners can export customers, jobs, invoices, and payments as CSV from Settings. Contact support for additional data requests</li>
           <li><strong>Correction</strong> — edit any data within the app</li>
           <li><strong>Deletion</strong> — request complete data deletion via email</li>
           <li><strong>Opt-out</strong> — unsubscribe from non-essential emails at any time</li>

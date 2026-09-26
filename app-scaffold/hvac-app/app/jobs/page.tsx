@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
@@ -114,7 +115,7 @@ export default async function JobsPage({
                     </div>
                     {job.scheduledFor && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Scheduled: {new Date(job.scheduledFor).toLocaleDateString()}
+                        Scheduled: {formatDateOnly(job.scheduledFor)}
                       </p>
                     )}
                   </CardContent>

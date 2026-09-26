@@ -5,7 +5,8 @@ import { getStripe } from '@/lib/stripe'
 
 export async function POST() {
   // requireAuth (not requireActiveSubscription) so frozen orgs can still reach the portal to pay
-  const { organizationId, organization } = await requireAuth()
+  const { organizationId, organization, role } = await requireAuth()
+  if (role !== 'owner') return NextResponse.json({error: 'Only organization owners can manage billing'}, {status: 403})
 
   const stripe = getStripe()
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
@@ -16,7 +17,7 @@ export async function POST() {
     const customer = await stripe.customers.create({
       name: organization.name,
       metadata: { organizationId },
-    })
+    }, {idempotencyKey: `fieldclose-customer-${organizationId}`})
     stripeCustomerId = customer.id
     await db.organization.update({
       where: { id: organizationId },

@@ -1,0 +1,8 @@
+import type { Metadata } from 'next';
+import { PlanCards } from '@/app/(marketing)/_components/plan-cards';
+import { FaqAccordion } from '../_components/faq-accordion';
+import { pricingFaqs, siteUrl, supportEmail } from '@/lib/marketing/site';
+export const metadata: Metadata = {title: 'Pricing', description: 'Compare FieldClose Starter and Pro. Plans from $49 USD per month, with a 14-day trial.', alternates: {canonical: `${siteUrl}/pricing`}};
+export default function PricingPage() {
+ return <main id="marketing-content" tabIndex={-1}><section className="section shell"><div className="page-heading"><p className="eyebrow">Straightforward subscriptions</p><h1>Find the right fit<br />for your shop.</h1><p>Start with a 14-day trial. No credit card required to get started.</p></div><h2 className="sr-only">Compare plans</h2><PlanCards /><p className="pricing-disclosure">Prices shown in USD per month. Payment processing and any applicable platform fees are separate. Review the final price and terms in the app before subscribing.</p><div className="contact-strip"><div><h2>Not sure which plan fits?</h2><p>Tell us about your team and the work you need to manage.</p></div><a className="button secondary" href={`mailto:${supportEmail}?subject=FieldClose%20plan%20question`}>Ask about a plan</a></div><div className="faq-section"><h2>Before you get started</h2><FaqAccordion faqs={pricingFaqs} /></div></section></main>;
+}

@@ -38,7 +38,7 @@ function setupAuth() {
   vi.mocked(db.organizationMember.findFirst).mockResolvedValue({
     organizationId: ORG_ID,
     userId: USER_ID,
-  } as any)
+   role: 'owner', organization: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null },} as any)
 }
 
 /** Wire db.$transaction to execute its callback with a tx proxy that shares the same mocks. */
@@ -232,7 +232,7 @@ describe('previewImport — organizationId cannot be spoofed via payload', () =>
     await previewImport(maliciousInput)
 
     // db.organizationMember.findFirst must have been called to derive the real org
-    expect(db.organizationMember.findFirst).toHaveBeenCalledWith({ where: { userId: USER_ID } })
+    expect(db.organizationMember.findFirst).toHaveBeenCalledWith({ where: { userId: USER_ID }, include: { organization: true } })
 
     // Any findMany call must use the session org, not the spoofed one
     if (vi.mocked(db.customer.findMany).mock.calls.length > 0) {

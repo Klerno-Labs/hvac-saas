@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createPriceBookItemSchema } from '@/lib/validations/pricebook'
@@ -8,11 +8,9 @@ import { createPriceBookItemSchema } from '@/lib/validations/pricebook'
 type CreateResult = { success: true; itemId: string } | { success: false; error: string }
 
 export async function createPriceBookItem(formData: FormData): Promise<CreateResult> {
-  const session = await auth()
-  if (!session?.user?.id) return { success: false, error: 'You must be logged in' }
-
-  const membership = await db.organizationMember.findFirst({ where: { userId: session.user.id } })
-  if (!membership) return { success: false, error: 'You must belong to an organization' }
+  const access = await requireMutationAccess('editPricing')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, membership, userId, organizationId } = access.context
 
   const raw = {
     name: formData.get('name'),

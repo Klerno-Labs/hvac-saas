@@ -1,8 +1,11 @@
 import { requireActiveSubscription } from '@/lib/session'
+import { jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { EstimateStatusForm } from './status-form'
+import { ConvertEstimateButton } from './convert-button'
+import { canDo } from '@/lib/permissions'
 import { EstimateEditForm } from './edit-form'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,14 +14,16 @@ import { cn } from '@/lib/utils'
 import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
 
 export default async function EstimateDetailPage({ params }: { params: Promise<{ estimateId: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
+  const { organizationId, role } = context
   const { estimateId } = await params
 
   const estimate = await db.estimate.findFirst({
-    where: { id: estimateId, organizationId },
+    where: { id: estimateId, organizationId, job: jobAccessWhere(context), ...(!canDo(role, 'editPricing') ? { status: { not: 'draft' } } : {}) },
     include: {
       job: { include: { customer: true } },
       lineItems: { orderBy: { sortOrder: 'asc' } },
+      invoice: { select: { id: true, invoiceNumber: true, status: true } },
     },
   })
 
@@ -26,7 +31,8 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
     notFound()
   }
 
-  const isDraft = estimate.status === 'draft'
+  const canEditPricing = canDo(role, 'editPricing')
+  const isDraft = estimate.status === 'draft' && canEditPricing
 
   const priceBookItems: PriceBookItem[] = isDraft
     ? await db.inventoryItem.findMany({
@@ -48,7 +54,7 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-xl">Estimate #{estimate.estimateNumber}</CardTitle>
+              <h1 className="text-xl font-semibold">Estimate #{estimate.estimateNumber}</h1>
               <CardDescription>
                 Job:{' '}
                 <Link href={`/jobs/${estimate.jobId}` as never} className="text-primary hover:underline">
@@ -138,6 +144,26 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
         </CardContent>
       </Card>
 
+      {(estimate.invoice || (estimate.status === 'accepted' && canEditPricing)) && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>{estimate.invoice ? 'Invoice created' : 'Ready to invoice'}</CardTitle>
+            <CardDescription>
+              {estimate.invoice
+                ? `Invoice ${estimate.invoice.invoiceNumber} is ${estimate.invoice.status}. The accepted estimate is preserved for your records.`
+                : 'Copy the approved scope, line items, and tax into an editable draft. Review it before sending anything to the customer.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {estimate.invoice ? (
+              <Link href={`/invoices/${estimate.invoice.id}` as never} className={cn(buttonVariants(), 'no-underline')}>
+                Open invoice {estimate.invoice.invoiceNumber}
+              </Link>
+            ) : <ConvertEstimateButton estimateId={estimate.id} />}
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="mb-4">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Update status</CardTitle>
@@ -146,7 +172,9 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
           </a>
         </CardHeader>
         <CardContent>
-          <EstimateStatusForm estimateId={estimate.id} currentStatus={estimate.status} />
+          {canEditPricing ? <EstimateStatusForm estimateId={estimate.id} currentStatus={estimate.status} /> : (
+            <p className="text-sm text-muted-foreground">An owner or office administrator can update this estimate.</p>
+          )}
         </CardContent>
       </Card>
 
