@@ -81,3 +81,19 @@ describe('Stripe runtime environment boundary', () => {
     expect(provider.construct).not.toHaveBeenCalled()
   })
 })
+
+
+describe('self-hosted production payments', () => {
+  it('rejects sandbox keys without a Vercel environment marker', async () => {
+    vi.stubEnv('VERCEL_ENV', undefined)
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('STRIPE_SECRET_KEY', 'rk_test_fixture')
+    const { getStripe } = await import('@/lib/stripe')
+    expect(() => getStripe()).toThrow('Online payments are unavailable')
+    expect(provider.construct).not.toHaveBeenCalled()
+  })
+  it('accepts live keys and preserves an existing production boundary', () => {
+    expect(getStripeRuntimeAvailability({ DEPLOYMENT_ENV: 'production', STRIPE_SECRET_KEY: 'rk_live_fixture' }).available).toBe(true)
+    expect(getStripeRuntimeAvailability({ DEPLOYMENT_ENV: 'preview', VERCEL_ENV: 'production', STRIPE_SECRET_KEY: 'rk_test_fixture' }).available).toBe(false)
+  })
+})

@@ -1,3 +1,4 @@
+import { requiresRemotePhotoStorage } from '@/lib/deployment-runtime'
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { readFile } from 'fs/promises'
 import path from 'path'
@@ -49,7 +50,7 @@ export async function privatePhotoResponse(asset: StoredPhoto) {
   const config = r2PhotoConfig()
   const local = asset.fileUrl.startsWith('local-private://photos/')
   const prefix = local ? 'local-private://photos/' : config ? `r2://${config.bucket}/` : null
-  if (!prefix || (local && process.env.VERCEL === '1')) return photoError('Photo storage is unavailable', 503)
+  if (!prefix || (local && requiresRemotePhotoStorage())) return photoError('Photo storage is unavailable', 503)
 
   const keyPrefix = photoObjectKey(asset.organizationId, asset.jobId, '')
   const fullPrefix = `${prefix}${keyPrefix}`

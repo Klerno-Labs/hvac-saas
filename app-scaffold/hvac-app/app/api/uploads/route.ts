@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { requiresRemotePhotoStorage } from '@/lib/deployment-runtime'
 import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
   const storage = r2PhotoConfig()
   const key = photoObjectKey(organizationId, jobId, uniqueName)
 
-  if (!storage && process.env.VERCEL === '1') {
+  if (!storage && requiresRemotePhotoStorage()) {
     return NextResponse.json(
       { error: 'Photo storage is not configured. Contact your administrator.' },
       { status: 503 },

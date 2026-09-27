@@ -24,7 +24,7 @@ Existing login sessions do not carry the new credential version. Users will need
 
 ## Runtime and self-hosting
 
-For a conventional Node.js host, run the production build using `npm start`, behind HTTPS. Install dependencies with the lockfile, generate Prisma Client, and apply migrations through the same controlled release sequence. There is no maintained Dockerfile in this repository.
+For a conventional Node.js host, run the production build using `npm start`, behind HTTPS. Install dependencies with the lockfile, generate Prisma Client, and apply migrations through the same controlled release sequence. There is no maintained Dockerfile in this repository. [OVHcloud preparation templates](../deploy/ovh/README.md) provide a loopback-only systemd service and staged migration runbook; they are not yet validated on a provisioned Linux host. Set `DEPLOYMENT_ENV=production` on a non-Vercel production host to preserve live-payment and remote-photo-storage safeguards; use `preview` only for isolated staging.
 
 Configure an external scheduler to call the three authenticated routes listed in [the Vercel runbook](deploy-vercel.md). Both GET and POST are supported; send `Authorization: Bearer <configured secret>`. Do not enable two schedulers for the same work. App and database logs should be retained by the hosting platform, with credentials redacted.
 

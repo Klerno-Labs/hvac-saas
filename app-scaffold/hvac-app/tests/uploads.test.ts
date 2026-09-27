@@ -142,3 +142,14 @@ describe('POST /api/uploads multipart storage', () => {
     expect(db.proofOfWorkAsset.create).not.toHaveBeenCalled()
   })
 })
+
+
+it('self-hosted production never falls back to local disk when R2 is missing', async () => {
+  vi.stubEnv('VERCEL', undefined)
+  vi.stubEnv('DEPLOYMENT_ENV', 'production')
+  for (const key of Object.keys(R2_ENV)) vi.stubEnv(key, '')
+  const response = await POST(request() as never)
+  expect(response.status).toBe(503)
+  expect(writeFile).not.toHaveBeenCalled()
+  expect(db.proofOfWorkAsset.create).not.toHaveBeenCalled()
+})

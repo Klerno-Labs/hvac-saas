@@ -220,3 +220,13 @@ describe('private object boundaries and legacy URLs', () => {
     expect(photoReadUrl({ ...asset, fileUrl: 'javascript:alert(1)' })).toBe('')
   })
 })
+
+
+it('self-hosted production refuses local photo references before reading disk', async () => {
+  vi.stubEnv('VERCEL', undefined)
+  vi.stubEnv('DEPLOYMENT_ENV', 'production')
+  const response = await privatePhotoResponse({ ...asset, fileUrl: `local-private://photos/private/org1/job1/${filename}` })
+  expect(response.status).toBe(503)
+  expect(readFile).not.toHaveBeenCalled()
+  expect(mockSend).not.toHaveBeenCalled()
+})

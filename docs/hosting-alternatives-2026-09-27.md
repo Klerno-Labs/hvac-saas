@@ -1,5 +1,10 @@
 # Hosting alternatives — September 27, 2026
 
+## Updated owner decision
+
+The owner subsequently rejected Railway as well, citing unpredictable extra charges, and authorized preparing an OVHcloud VPS-2 test. The reviewed month-to-month checkout is **$10 before tax**, not the advertised $8.50 (which requires twelve months). Prepared: one US-EAST-VA VPS, Ubuntu 24.04, no paid options. Account sign-in is pending; tax and backup-promotion renewal treatment still need review. Nothing was purchased or provisioned. See [OVH preparation](../deploy/ovh/README.md). The comparison below is retained as historical research, not the current recommendation.
+
+
 The owner explicitly rejected paying Vercel and authorized comparison of lower-cost hosting. No replacement purchase, deployment, DNS change, credential transfer or spending-limit change is authorized by this comparison alone. Existing production remains available while a replacement is evaluated.
 
 ## Verified existing account
@@ -13,7 +18,7 @@ Railway CLI access works. Read-only API inspection confirms Christopher’s Proj
 - **Render:** current pricing lists a 2 GB/1-CPU instance at $25/month, before other applicable charges. Its free tier sleeps after inactivity and is unsuitable for the intended always-available workflow. It is not the leading cost-saving choice for the measured app footprint. Sources: https://render.com/pricing and https://render.com/docs/free.
 - **Cloudflare Workers:** paid plan starts at $5/month plus applicable usage, but this is an adapter migration, not a standard Node deployment. The current app uses Prisma 5 with native client behavior, PDF rendering and local-storage fallbacks; compatibility needs a separate spike. The free 10 ms CPU allowance is not a sensible assumed fit for credential hashing and server-rendered application work. Sources: https://developers.cloudflare.com/workers/platform/pricing/, https://developers.cloudflare.com/workers/platform/limits/ and https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/.
 
-## Recommended next decision
+## Earlier comparison recommendation (superseded)
 
 Test Railway first if lower operational effort matters most, with an explicit approved test budget and cost alerts. Prefer a fixed-price VM if predictable base compute cost matters more and ongoing server administration is accepted. No final monthly total can be certified from local load tests.
 
