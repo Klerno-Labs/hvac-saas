@@ -1,98 +1,35 @@
-# Known Issues and Launch Risks
+# Known issues and release gates
 
-Updated assessment as of the completion of all pre-launch work.
+Status recorded on September 26, 2026. Local implementation and a successful build do not establish production readiness. The current self-service work is described in [self-service-launch.md](self-service-launch.md); earlier checks remain historical evidence for their recorded revisions.
 
-## Launch Blockers
+## Production blockers
 
-### Stripe Webhook Must Be Configured
-- **Risk**: High (payment flow)
-- **Status**: Webhook endpoint exists at `/api/stripe/webhook` but requires Stripe Dashboard configuration.
-- **Action required**: Create webhook in Stripe Dashboard pointing to `https://yourdomain.com/api/stripe/webhook` with events: `checkout.session.completed`, `checkout.session.expired`, `account.updated`. Set the signing secret as `STRIPE_WEBHOOK_SECRET`.
+| Area | Last observed state | Required before release |
+| --- | --- | --- |
+| Database | Production `/api/health` returned 503. The configured host `db.kcrwvvxhcncbemgvtodl.supabase.co` returned NXDOMAIN/ENOTFOUND. The project was not accessible from the authenticated Supabase account. | Locate the existing project and its owner, restore access/connectivity, establish a recoverable backup, and inspect actual schema and migration history. Do not replace or seed the production database as a shortcut. |
+| Deployment | `fieldclose.app` still serves the earlier production deployment. A protected candidate based on commit `decec78` previously reached Vercel Ready without promotion; it predates the current self-service changes. | Validate the final revision against the intended environment and complete the release gates before assigning production traffic. |
+| Payments | Configured Stripe credentials and subscription prices are test mode. No FieldClose webhook endpoint was registered during preflight. | Configure matching live account/price credentials, separately signed platform and Connect endpoints, and verify the relevant subscription and customer-payment events. Test-mode success does not certify live collection. |
+| Email | Resend integration exists; delivery to a real authorized recipient has not been verified for this release. | Verify sender/domain configuration and reset, invitation, estimate, invoice, and reminder delivery. Establish failure/bounce monitoring. |
+| Photos | R2 was not configured in the inspected production project. | Configure storage and verify upload, retrieval, access policy, and failure behavior. Production uploads fail clearly when storage is unavailable. |
+| Scheduled work and SMS | New production candidates are configured with `SCHEDULED_TASKS_ENABLED=false`. Twilio was not configured during preflight. | Keep scheduled work paused until database and delivery checks pass. Verify cron authorization and real outcomes, configure SMS if offered, and assign someone to investigate failures. |
 
-### Production Environment Variables
-- **Risk**: High
-- **Status**: `.env` is configured for local development. Production deployment requires setting `AUTH_URL`, `APP_URL`, and switching Stripe keys to live mode.
-- **Action required**: See `docs/deploy-vercel.md` for the full checklist.
+Environment values were cleaned up during the prior release preparation, but environment changes only affect newly created deployments. They do not repair the missing database. See [the deployment sequence](deployment-guide.md), [Vercel configuration](deploy-vercel.md), and [the recorded release](release-2026-09-26.md).
 
-## Resolved (Previously Blockers)
+## Current product boundaries
 
-### ~~Database Migrations Not Applied~~
-- **Resolved**: Baseline migration created at `prisma/migrations/0001_initial_schema/` and marked as applied. Future schema changes use `prisma migrate dev` / `prisma migrate deploy`.
+- **Payment amounts:** portal checkout collects a full invoice amount. Adjusted balances, deposits, and existing estimate payments require deliberate reconciliation; automatic estimate conversion stops when those amounts are present. There is no self-service refund flow in the app.
+- **Accounting:** direct QuickBooks and Xero connections are unavailable. Owner CSV exports cover customer, job, invoice, and payment summaries. They are not a complete workspace backup; exports over 50,000 records fail rather than silently truncate.
+- **Offline work:** only supported job-status and proof-of-work text updates queue locally. Photos, signatures, approvals, payments, and field-view quick actions require connectivity. Verify saved changes after reconnecting; browser storage is not a backup.
+- **Files:** proof-of-work photos support JPG, PNG, and WebP up to 4 MB per file. Storage configuration and access-policy review remain deployment responsibilities.
+- **Membership:** an account uses one workspace context. Invitation acceptance rejects a different recipient email and ambiguous membership in another business. Starter permits one team member; plan and role restrictions still apply.
+- **Trades:** reusable trade profiles personalize examples, wording, and drafts. They do not provide specialized inspection, permit, refrigerant, pesticide, or other regulatory workflows. Representative trade pilots remain necessary.
+- **AI:** generated scope and unpriced draft items require human review and business-set prices. OpenAI was unconfigured in the production preflight; local template fallback is available.
+- **Automation:** provider acceptance is not proof that a message reached an inbox or phone. Appointment reminder recovery does not promise exactly-once external delivery. Keep an operational owner for retries, partial delivery, and provider uncertainty; see [delivery guarantees](auth-entry-hardening.md).
 
-### ~~AUTH_SECRET Must Be Changed~~
-- **Resolved**: A secure secret is set in `.env`. Production deployment should generate a new one.
+## Implemented locally, still requiring release verification
 
-### ~~No Email Delivery~~
-- **Resolved**: Email delivery wired into estimate sending, invoice sending, collections automation, and password reset via Resend.
+The original scaffold gaps for auth/onboarding, password reset, customer/job workflows, search and pagination on core lists, proof-of-work uploads, scoped access, and estimate-to-invoice conversion have implementation and regression coverage. Document numbers now use organization locking and collision-aware allocation rather than the old unguarded count-based approach. Email status actions and team invitations expose delivery failure and explicit retry.
 
-### ~~No Password Reset Flow~~
-- **Resolved**: Full forgot-password → email → reset-password flow implemented and working.
+The new public tour, searchable Help Center, plan chooser, paperwork calculator, persistent setup guide, customer import screen, and service-price creation screen are present in the working application. None of these statements certifies the deployed integrations or all possible tenant-access paths. Retain targeted access, concurrency, browser, and operational verification for each release.
 
-### ~~No Customer Edit/Delete~~
-- **Resolved**: Customer edit page and soft-delete (with `deletedAt` field) implemented. Deleted customers are hidden from all listings.
-
-### ~~No CI/CD Pipeline~~
-- **Resolved**: GitHub Actions workflow at `.github/workflows/ci.yml` runs type-check, build, and tests on push/PR to main.
-
-### ~~No Automated Tests~~
-- **Resolved**: Vitest test suite with 24 tests covering validation schemas (customer, estimate, invoice) and portal utilities.
-
-## Non-Blockers (Accept for Beta)
-
-### Invoice Number Race Condition
-- **Risk**: Low (single-user MVP)
-- **Status**: Invoice and estimate numbers generated via `count + 1` which could race under concurrent requests.
-- **Recommendation**: Acceptable for single-user beta. Switch to database sequence or atomic increment for scale.
-
-### Portal Tokens Not Rate-Limited
-- **Risk**: Low
-- **Status**: Portal token validation has no rate limiting. Brute-force on 64-character hex tokens is computationally infeasible but rate limiting would be defense in depth.
-- **Recommendation**: Add rate limiting to portal routes if traffic warrants it.
-
-### Accounting Sync Is Placeholder
-- **Risk**: Low
-- **Status**: Accounting sync creates local tracking records but does not call real QuickBooks/Xero APIs.
-- **Recommendation**: Implement real provider API integration when a customer needs it.
-
-### No Pagination on List Pages
-- **Risk**: Low
-- **Status**: Customer, job, estimate, and invoice lists load all records. Fine for beta.
-- **Recommendation**: Add pagination when any list exceeds ~100 records.
-
-### No Search/Filter
-- **Risk**: Low
-- **Status**: No search or filter functionality on list pages.
-- **Recommendation**: Add as usage grows and users need to find specific records.
-
-### No IP Address in Audit Logs
-- **Risk**: Low
-- **Status**: Audit log model accepts `ipAddress` but server actions don't capture it.
-- **Recommendation**: Extract from request headers in middleware if needed.
-
-### Single Organization Per User
-- **Risk**: Low
-- **Status**: Users can only belong to one organization. Team invite flow exists but is basic.
-- **Recommendation**: Sufficient for target market (1-5 technician shops).
-
-## Architecture Notes
-
-### What's Solid
-- Multi-tenant isolation enforced on every query (organizationId scoping)
-- Webhook-confirmed payment truth (never optimistic)
-- Server-side validation on all writes (Zod)
-- Admin role enforcement on sensitive actions
-- Audit trail for admin/security events
-- Security headers via middleware
-- Portal token-based access with expiration and revocation
-- AI draft with graceful fallback when no API key configured
-- Email delivery for estimates, invoices, collections, and password reset
-- Soft-delete for customers preserving referential integrity
-- CI/CD pipeline with type-check, build, and test
-- Proper migration history for database schema
-
-### Post-Launch Improvements
-- Real accounting provider integration (QuickBooks/Xero)
-- Pagination and search on list pages
-- Rate limiting on portal and auth routes
-- File upload for proof-of-work photos
-- SMS notifications for collections
+Custom public funnel events are disabled unless `NEXT_PUBLIC_ENABLE_FUNNEL_EVENTS=true`. The current Vercel account is Hobby; custom-event collection requires an eligible plan and explicit enablement. Public page views are separate from custom events. No paid acquisition or outbound marketing campaign was launched as part of this work.

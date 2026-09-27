@@ -1,0 +1,71 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+const mocks = vi.hoisted(() => ({ admin: vi.fn(), find: vi.fn(), update: vi.fn(), transaction: vi.fn(), updateMany: vi.fn(), stripe: vi.fn(), create: vi.fn(), retrieve: vi.fn(), link: vi.fn(), event: vi.fn(), audit: vi.fn() }))
+vi.mock('@/lib/require-admin', () => ({ requireAdmin: mocks.admin }))
+vi.mock('@/lib/db', () => ({ db: { organization: { findUnique: mocks.find, update: mocks.update }, $transaction: mocks.transaction } }))
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('@/lib/stripe', () => ({ getStripe: mocks.stripe }))
+vi.mock('@/lib/events', () => ({ trackEvent: mocks.event }))
+vi.mock('@/lib/audit', () => ({ logAudit: mocks.audit }))
+import { startStripeOnboarding, refreshStripeStatus } from '@/app/settings/stripe/actions'
+
+beforeEach(() => {
+  vi.resetAllMocks()
+  vi.stubEnv('STRIPE_SECRET_KEY', 'sk_live_fixture')
+  mocks.admin.mockResolvedValue({ authorized: true, context: { userId: 'owner', organizationId: 'server-org' } })
+  mocks.find.mockResolvedValue({ id: 'server-org', stripeConnectedAccountId: 'acct_one', stripeChargesEnabled: false })
+  mocks.stripe.mockReturnValue({ accounts: { create: mocks.create, retrieve: mocks.retrieve }, accountLinks: { create: mocks.link } })
+  mocks.audit.mockResolvedValue({})
+  mocks.updateMany.mockResolvedValue({ count: 1 })
+  mocks.transaction.mockImplementation(fn => fn({ organization: { updateMany: mocks.updateMany } }))
+})
+afterEach(() => vi.unstubAllEnvs())
+describe('recoverable customer payment setup failures', () => {
+  it.each([startStripeOnboarding, refreshStripeStatus])('handles missing provider configuration without throwing or recording success', async action => {
+    mocks.stripe.mockImplementation(() => { throw new Error('missing provider key') })
+    const result = await action()
+    expect(result).toMatchObject({ success: false, error: expect.stringContaining('Customer payments are not configured') })
+    expect(mocks.update).not.toHaveBeenCalled()
+    expect(mocks.event).not.toHaveBeenCalled()
+    expect(mocks.audit).not.toHaveBeenCalled()
+  })
+  it('handles provider account creation failure without exposing raw provider details', async () => {
+    mocks.find.mockResolvedValue({ id: 'server-org', stripeConnectedAccountId: null })
+    mocks.create.mockRejectedValue(new Error('Invalid API key sk_example_do_not_echo'))
+    expect(await startStripeOnboarding()).toEqual({ success: false, error: 'We could not start customer payment setup. Please try again.' })
+    expect(mocks.update).not.toHaveBeenCalled()
+  })
+  it('does not tell a business owner to configure the platform Stripe account', async () => {
+    mocks.find.mockResolvedValue({ id: 'server-org', stripeConnectedAccountId: null })
+    mocks.create.mockRejectedValue(new Error('Connect is not enabled'))
+    expect(await startStripeOnboarding()).toEqual({ success: false, error: 'Online payment connections are not available yet. You can continue setting up the rest of your workspace.' })
+  })
+  it('returns a retryable result when the onboarding link cannot be created', async () => {
+    mocks.link.mockRejectedValue(new Error('provider unreachable'))
+    expect(await startStripeOnboarding()).toEqual({ success: false, error: 'We could not open Stripe payment setup. Please try again.' })
+    expect(mocks.event).not.toHaveBeenCalled()
+  })
+  it('does not replace saved capabilities when Stripe status is unavailable', async () => {
+    mocks.retrieve.mockRejectedValue(new Error('provider unreachable'))
+    expect(await refreshStripeStatus()).toEqual({ success: false, error: 'We could not refresh your Stripe status. Please try again.' })
+    expect(mocks.update).not.toHaveBeenCalled()
+    expect(mocks.audit).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'stripe_account_verification_failed', metadata: { mode: 'live', accountId: 'acct_one' } }))
+  })
+  it('records live account verification with capabilities in the same transaction as the status update', async () => {
+    mocks.retrieve.mockResolvedValue({ id: 'acct_one', charges_enabled: true, payouts_enabled: true })
+    expect(await refreshStripeStatus()).toEqual({ success: true, chargesEnabled: true, payoutsEnabled: true })
+    expect(mocks.updateMany).toHaveBeenCalledWith({ where: { id: 'server-org', stripeConnectedAccountId: 'acct_one' }, data: { stripeChargesEnabled: true, stripePayoutsEnabled: true } })
+    expect(mocks.audit).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 'server-org', eventType: 'stripe_account_verified', metadata: { mode: 'live', accountId: 'acct_one', chargesEnabled: true, payoutsEnabled: true } }), expect.anything())
+  })
+  it('records test verification as test even when the account allows charges', async () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fixture')
+    mocks.retrieve.mockResolvedValue({ id: 'acct_one', charges_enabled: true, payouts_enabled: true })
+    expect((await refreshStripeStatus()).success).toBe(true)
+    expect(mocks.audit).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'stripe_account_verified', metadata: expect.objectContaining({ mode: 'test' }) }), expect.anything())
+  })
+  it('does not save verification after the organization changes its connected account', async () => {
+    mocks.retrieve.mockResolvedValue({ id: 'acct_one', charges_enabled: true, payouts_enabled: true })
+    mocks.updateMany.mockResolvedValue({ count: 0 })
+    expect((await refreshStripeStatus()).success).toBe(false)
+    expect(mocks.audit).not.toHaveBeenCalled()
+  })
+})

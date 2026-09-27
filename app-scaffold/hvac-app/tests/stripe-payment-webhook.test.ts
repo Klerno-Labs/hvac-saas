@@ -63,7 +63,13 @@ describe('Stripe settlement boundary', () => {
     signedEvent(event('checkout.session.async_payment_succeeded'))
     expect((await POST(request())).status).toBe(200)
     expect(reconcileConfirmedPayment).toHaveBeenCalledWith({ invoiceId: 'invoice_1', organizationId: 'org_1',
-      connectedAccountId: 'acct_fixture', paymentIntentId: 'pi_fixture', amountCents: 12500, currency: 'usd', method: 'checkout' })
+      connectedAccountId: 'acct_fixture', paymentIntentId: 'pi_fixture', amountCents: 12500, currency: 'usd', method: 'checkout', livemode: false })
+  })
+  it('passes verified live mode through to the durable settlement audit', async () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_live_fixture')
+    signedEvent({ ...event(), livemode: true })
+    expect((await POST(request())).status).toBe(200)
+    expect(reconcileConfirmedPayment).toHaveBeenCalledWith(expect.objectContaining({ livemode: true, connectedAccountId: 'acct_fixture' }))
   })
   it('rejects an invalid signature before invoking accounting', async () => {
     constructEvent.mockImplementation(() => { throw new Error('bad signature') })

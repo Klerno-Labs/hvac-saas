@@ -13,7 +13,7 @@ export default function RefundPolicyPage() {
       <PublicHeader />
       <article className="max-w-3xl mx-auto px-4 py-16 prose prose-slate dark:prose-invert">
         <h1>Refund Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: July 22, 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: September 26, 2026</p>
 
         <h2>30-Day Satisfaction Guarantee</h2>
         <p>
@@ -35,7 +35,7 @@ export default function RefundPolicyPage() {
 
         <h2>Payment Processing Fees</h2>
         <p>
-          Payments collected through FieldClose on behalf of your business (customer invoice payments) are processed by Stripe. Stripe&apos;s processing fees (2.9% + $0.30 per transaction) are non-refundable once the payment has been settled to your bank account. Chargeback and dispute handling follows Stripe&apos;s standard dispute process.
+          Customer invoice payments are processed by Stripe. Processing fees depend on the payment method and your Stripe pricing. Stripe generally does not return original processing fees when a successful payment is refunded; a bank payout is not required for that rule to apply. See <a href="https://docs.stripe.com/refunds">Stripe&apos;s refund documentation</a> for details. Customer invoice refunds are separate from FieldClose subscription refunds.
         </p>
 
         <h2>How to Request a Refund</h2>
@@ -47,7 +47,7 @@ export default function RefundPolicyPage() {
 
         <h2>Account Data After Cancellation</h2>
         <p>
-          After cancellation, your data is retained for 90 days to allow for reactivation. During this window, you can request a data export by emailing support. After 90 days, all data is permanently deleted. See our <a href="/privacy">Privacy Policy</a> for details.
+          Canceling a subscription does not automatically delete business records. Contact support to request an export or deletion, and see our <a href="/privacy">Privacy Policy</a> for the request process.
         </p>
 
         <hr className="my-8" />

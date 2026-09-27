@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next'
+import { helpArticles } from '@/lib/help/articles'
 
 const SITE_URL = process.env.APP_URL || 'https://fieldclose.app'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()
   return [
+    ...['/demo', '/help', '/tools/paperwork-calculator', ...helpArticles.map(article => `/help/${article.slug}`)].map(path => ({url: `${SITE_URL}${path}`, changeFrequency: 'monthly' as const, priority: 0.7})),
     {
       url: `${SITE_URL}/`,
       lastModified: now,

@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/pricing', '/faq', '/terms', '/privacy', '/refund-policy'],
+        allow: ['/', '/pricing', '/faq', '/terms', '/privacy', '/refund-policy', '/demo', '/help', '/tools/paperwork-calculator'],
         disallow: [
           '/dashboard',
           '/customers',
@@ -18,6 +18,8 @@ export default function robots(): MetadataRoute.Robots {
           '/reports',
           '/settings',
           '/onboarding',
+          '/setup',
+          '/field',
           '/inventory',
           '/recurring',
           '/calendar',

@@ -33,7 +33,7 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
   const from = getFromNumber()
 
   if (!client || !from) {
-    console.log(`[sms-skipped] Twilio not configured — would send to ${to}: ${body}`)
+    console.log('[sms-skipped] SMS delivery is not configured')
     return { success: false, error: 'SMS delivery not configured (Twilio env vars missing)' }
   }
 
@@ -45,8 +45,9 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
     })
 
     return { success: true, sid: message.sid }
-  } catch (error) {
-    console.error('[sms-error]', error)
+  } catch {
+    // Provider errors can contain phone numbers, message text and request data.
+    console.error('[sms-error] SMS provider request failed')
     return { success: false, error: 'Failed to send SMS' }
   }
 }

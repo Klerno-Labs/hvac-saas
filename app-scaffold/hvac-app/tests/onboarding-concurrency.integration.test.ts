@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
 
-const context = vi.hoisted(() => ({ userId: '', referralCode: '', organizationId: '' }))
+const context = vi.hoisted(() => ({ userId: '', referralCode: '', organizationId: '', plan: 'pro' }))
 vi.mock('@/lib/auth', () => ({ auth: async () => ({ user: { id: context.userId, email: 'onboarding@example.test' } }) }))
-vi.mock('next/headers', () => ({ cookies: async () => ({ get: (key: string) => key === 'fc_ref' ? { value: context.referralCode } : undefined, delete: vi.fn() }) }))
+vi.mock('next/headers', () => ({ cookies: async () => ({ get: (key: string) => key === 'fc_ref' ? { value: context.referralCode } : key === 'fc_plan' ? { value: context.plan } : undefined, delete: vi.fn() }) }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/require-admin', () => ({ requireAdmin: async () => ({ authorized: true, context: { userId: context.userId, organizationId: context.organizationId, userEmail: 'onboarding@example.test' } }) }))
 
@@ -41,6 +41,11 @@ describe('onboarding and trade changes against PostgreSQL', () => {
     const ids = results.map(result => result.success ? result.organizationId : '')
     expect(new Set(ids).size).toBe(1)
     context.organizationId = ids[0]
+    const trial = await db.organization.findUniqueOrThrow({ where: { id: context.organizationId } })
+    expect(trial.plan).toBe('PRO')
+    expect(trial.subscriptionStatus).toBe('TRIALING')
+    expect(trial.stripeSubscriptionId).toBeNull()
+    expect(trial.trialEndsAt!.getTime()).toBeGreaterThan(Date.now())
     expect(await db.organizationMember.count({ where: { userId: context.userId } })).toBe(1)
     expect(await db.organization.count({ where: { referredByOrgId: referringOrgId } })).toBe(1)
     expect((await db.organization.findUniqueOrThrow({ where: { id: referringOrgId } })).referralCredits).toBe(1)
@@ -48,8 +53,11 @@ describe('onboarding and trade changes against PostgreSQL', () => {
   })
 
   it('reuses a completed onboarding attempt without changing its trade or creating new records', async () => {
+    context.plan = 'starter'
     expect(await createOrganization(form('electrical'))).toEqual({ success: true, organizationId: context.organizationId })
-    expect((await db.organization.findUniqueOrThrow({ where: { id: context.organizationId } })).tradeType).toBe('plumbing')
+    const unchanged = await db.organization.findUniqueOrThrow({ where: { id: context.organizationId } })
+    expect(unchanged.tradeType).toBe('plumbing')
+    expect(unchanged.plan).toBe('PRO')
     expect((await db.organization.findUniqueOrThrow({ where: { id: referringOrgId } })).referralCredits).toBe(1)
   })
 

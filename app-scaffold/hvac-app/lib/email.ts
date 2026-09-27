@@ -24,7 +24,7 @@ export async function sendEmail(params: {
 }): Promise<SendResult> {
   const resend = getResend()
   if (!resend) {
-    console.log(`[email-skipped] No RESEND_API_KEY — would send to ${params.to}: ${params.subject}`)
+    console.log('[email-skipped] Email delivery is not configured')
     return { success: false, error: 'Email delivery not configured (RESEND_API_KEY missing)' }
   }
 
@@ -37,13 +37,14 @@ export async function sendEmail(params: {
     }, params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined)
 
     if (result.error) {
-      console.error('[email-error]', result.error)
+      console.error('[email-error] Email provider rejected the request')
       return { success: false, error: result.error.message }
     }
 
     return { success: true, id: result.data?.id || '' }
-  } catch (error) {
-    console.error('[email-error]', error)
+  } catch {
+    // Never log provider payloads: they can contain addresses or private links.
+    console.error('[email-error] Email provider request failed')
     return { success: false, error: 'Failed to send email' }
   }
 }

@@ -51,9 +51,9 @@ export default async function CustomersPage({
     <main className="max-w-[1200px] mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-        {canDo(context.role, 'manageCustomers') && <Link href="/customers/new" className={cn(buttonVariants(), 'no-underline')}>
+        {canDo(context.role, 'manageCustomers') && <div className="flex gap-3 flex-wrap"><Link href="/settings/import" className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}>Import CSV</Link><Link href="/customers/new" className={cn(buttonVariants(), 'no-underline')}>
           Add customer
-        </Link>}
+        </Link></div>}
       </div>
 
       <SearchInput

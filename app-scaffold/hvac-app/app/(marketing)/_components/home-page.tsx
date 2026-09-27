@@ -18,12 +18,13 @@ export function HomePageContent({ statsBar }: { statsBar?: React.ReactNode }) {
         <div className="hero-copy">
           <h1>Less paperwork.<br />More paid work.</h1>
           <p className="hero-description">Get from estimate to paid without losing the details.<br className="desktop-break" /> Customers, jobs, estimates, and invoices together.</p>
+          <div className="hero-actions"><Link href="/demo" className="button secondary">Try the product tour <ArrowRight size={20} aria-hidden="true" /></Link></div>
         </div>
         <div className="hero-aside">
           <p className="eyebrow">A connected workflow<br />for {serviceTrade.audience}.</p>
           <p className="hero-promise">Keep customers, jobs,<br className="desktop-break" /> estimates, and invoices<br className="desktop-break" /> together.</p>
           <a href={signupUrl} className="button">Start free trial <ArrowUpRight size={22} aria-hidden="true" /></a>
-          <p className="hero-note">14-day trial. No credit card required.</p>
+          <p className="hero-note">14-day trial. No card. No sales call.</p>
         </div>
       </section>
 
@@ -49,6 +50,7 @@ export function HomePageContent({ statsBar }: { statsBar?: React.ReactNode }) {
         </div>
       </section>
       {statsBar}
+      <section className="section shell self-service-section"><div><p className="eyebrow">Start on your schedule</p><h2>Take a look.<br />Make it your own.</h2><p>Explore an example job, then set up your own shop with a clear next step at every stage.</p></div><div className="self-service-links"><Link href="/demo"><span>01 / Explore</span><h3>Walk through a sample job</h3><p>See the steps from an estimate to a confirmed payment. No account needed.</p><ArrowUpRight aria-hidden="true" /></Link><Link href="/help/getting-started"><span>02 / Set up</span><h3>Bring your business along</h3><p>Follow the setup guide for customers, service prices and payments.</p><ArrowUpRight aria-hidden="true" /></Link><Link href="/tools/paperwork-calculator"><span>03 / Decide</span><h3>Put a number on paperwork</h3><p>Use your own workload to explore a goal for reducing admin time.</p><ArrowUpRight aria-hidden="true" /></Link></div></section>
       <section className="section shell benefit-inner">
         <div><p className="eyebrow">Built around the work</p><h2>Your office and your field crew.<br />On the same page.</h2></div>
         <ul>{[serviceTrade.recordLabel, 'Estimates, jobs, and invoices connected', 'Online customer approval and payment'].map(text => <li key={text}><CheckCircle2 size={20} aria-hidden="true" />{text}</li>)}</ul>

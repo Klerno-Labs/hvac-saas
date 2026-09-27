@@ -11,7 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
+import { getEstimateCatalog } from '@/lib/estimate-catalog'
 
 export default async function EstimateDetailPage({ params }: { params: Promise<{ estimateId: string }> }) {
   const context = await requireActiveSubscription()
@@ -34,13 +34,7 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
   const canEditPricing = canDo(role, 'editPricing')
   const isDraft = estimate.status === 'draft' && canEditPricing
 
-  const priceBookItems: PriceBookItem[] = isDraft
-    ? await db.inventoryItem.findMany({
-        where: { organizationId },
-        select: { id: true, name: true, description: true, category: true, sellPriceCents: true },
-        orderBy: { name: 'asc' },
-      })
-    : []
+  const priceBookItems = isDraft ? await getEstimateCatalog(context) : []
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">

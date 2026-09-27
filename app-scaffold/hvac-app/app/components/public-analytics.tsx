@@ -1,17 +1,45 @@
-
-'use client'
-import { Analytics } from '@vercel/analytics/react'
-import { usePathname } from 'next/navigation'
+"use client";
+import { Analytics } from "@vercel/analytics/react";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import {
+  isPublicFunnelPath,
+  sanitizedPublicEventUrl,
+} from "@/lib/public-funnel";
+import { trackPublicFunnel } from "@/lib/track-public-funnel";
 
 // Portal URLs are bearer credentials. Never transmit them to analytics.
 export function PublicAnalytics() {
-  const pathname = usePathname()
-  const isPublic = pathname === '/' || pathname === '/pricing' || pathname === '/faq' || pathname === '/blog' || pathname.startsWith('/blog/')
-  if (!isPublic) return null
-  return <Analytics beforeSend={event => {
-    const url = new URL(event.url)
-    if (!(url.pathname === '/' || url.pathname === '/pricing' || url.pathname === '/faq' || url.pathname === '/blog' || url.pathname.startsWith('/blog/'))) return null
-    url.search = ''; url.hash = ''
-    return {...event, url: url.toString()}
-  }} />
+  const pathname = usePathname();
+  const isPublic = isPublicFunnelPath(pathname);
+  useEffect(() => {
+    if (!isPublic) return;
+    function click(event: MouseEvent) {
+      if (!(event.target instanceof Element)) return;
+      const anchor = event.target.closest("a[href]");
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      const destination = new URL(anchor.href);
+      if (destination.origin !== window.location.origin) return;
+      if (destination.pathname === "/signup")
+        trackPublicFunnel("signup_clicked");
+      if (destination.pathname === "/demo") trackPublicFunnel("demo_opened");
+    }
+    document.addEventListener("click", click);
+    return () => document.removeEventListener("click", click);
+  }, [isPublic, pathname]);
+  if (!isPublic) return null;
+  return (
+    <Analytics
+      beforeSend={(event) => {
+        if (
+          navigator.doNotTrack === "1" ||
+          (navigator as Navigator & { globalPrivacyControl?: boolean })
+            .globalPrivacyControl
+        )
+          return null;
+        const url = sanitizedPublicEventUrl(event.url);
+        return url ? { ...event, url } : null;
+      }}
+    />
+  );
 }

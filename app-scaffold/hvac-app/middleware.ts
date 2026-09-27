@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
   // Authentication and portal responses can contain personalized data or tokens.
   // Let Next.js control public-page caching; never force shared caching over auth.
   if (pathname.startsWith('/portal/') || pathname.startsWith('/pay/') || pathname.startsWith('/invite/') || pathname.startsWith('/api/auth/') ||
-      ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname)) {
+      ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname) || pathname === '/setup' || pathname.startsWith('/setup/')) {
     response.headers.set('Cache-Control', 'private, no-store')
     response.headers.set('Referrer-Policy', 'no-referrer')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow')

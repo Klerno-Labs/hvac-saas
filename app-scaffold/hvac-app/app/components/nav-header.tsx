@@ -28,6 +28,7 @@ const NAV_ITEMS: { href: string; label: string; capability?: Capability }[] = [
   { href: "/reminders", label: "Reminders", capability: "manageJobs" },
   { href: "/recurring", label: "Recurring", capability: "manageJobs" },
   { href: "/settings", label: "Settings" },
+  { href: "/setup", label: "Setup", capability: "manageBilling" },
 ];
 export function NavHeader({ role }: { role: string | null }) {
   const pathname = usePathname();
@@ -82,7 +83,7 @@ export function NavHeader({ role }: { role: string | null }) {
                   aria-label="Mobile navigation"
                   className="app-nav flex-col! items-stretch! w-full! px-4!"
                 >
-                  {items}
+                  {items}<Link href="/help" onClick={() => setOpen(false)}>Help Center</Link>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -110,7 +111,7 @@ export function NavHeader({ role }: { role: string | null }) {
         </div>
       </div>
       <nav aria-label="Main navigation" className="app-nav hidden! lg:flex!">
-        {items}
+        {items}<Link href="/help">Help Center</Link>
       </nav>
     </header>
   );

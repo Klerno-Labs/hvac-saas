@@ -133,3 +133,23 @@ background:var(--color-background);color:var(--color-foreground);font-family:var
 @media (prefers-reduced-motion: reduce) { .fieldclose-marketing { scroll-behavior: auto; } .fieldclose-marketing *, .fieldclose-marketing *::before, .fieldclose-marketing *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 
 .fieldclose-marketing .button:hover { opacity: 1; }
+
+.fieldclose-marketing .self-service-section { display:grid;grid-template-columns:1fr 1.5fr;gap:70px;border-bottom:1px solid var(--color-border); }
+.fieldclose-marketing .self-service-section > div > p:last-child { font-size:18px;line-height:1.65;color:var(--color-muted);margin-top:24px;max-width:400px; }
+.fieldclose-marketing .self-service-links { display:grid; }
+.fieldclose-marketing .self-service-links > a { display:block;position:relative;border-top:1px solid var(--color-border);padding:28px 42px 28px 0; }
+.fieldclose-marketing .self-service-links span { font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--color-muted); }
+.fieldclose-marketing .self-service-links h3 { font-size:23px;font-weight:600;letter-spacing:-.6px;margin:12px 0; }
+.fieldclose-marketing .self-service-links p { font-size:15px;line-height:1.6;color:var(--color-muted); }
+.fieldclose-marketing .self-service-links svg { position:absolute;right:0;top:28px; }
+.fieldclose-marketing .plan-chooser { max-width:1000px;margin:56px auto;border-block:1px solid var(--color-border);padding-block:36px;display:grid;grid-template-columns:1fr 1fr;gap:40px; }
+.fieldclose-marketing .plan-chooser h2 { font-size:28px;letter-spacing:-.8px;margin-bottom:18px; }
+.fieldclose-marketing .plan-chooser p { color:var(--color-muted);line-height:1.65; }
+.fieldclose-marketing .plan-chooser label { display:flex;gap:12px;align-items:flex-start;min-height:44px;margin:12px 0;line-height:1.5;cursor:pointer; }
+.fieldclose-marketing .plan-chooser input { width:20px;height:20px;margin-top:2px;accent-color:#526000;flex:none; }
+.fieldclose-marketing .plan-recommendation { background:white;border:1px solid var(--color-border);border-radius:10px;padding:28px; }
+.fieldclose-marketing .plan-recommendation strong { font-size:26px;display:block;margin-block:10px; }
+.fieldclose-marketing .plan-recommendation .button { margin-top:20px;min-height:50px;font-size:16px; }
+.fieldclose-marketing .plan-actions { display:flex;flex-wrap:wrap;gap:0 12px; }
+@media(max-width:850px) { .fieldclose-marketing .self-service-section {grid-template-columns:1fr;gap:36px;} }
+@media(max-width:600px) { .fieldclose-marketing .plan-chooser {grid-template-columns:1fr;gap:24px;} .fieldclose-marketing .header-inner nav {gap:12px;} .fieldclose-marketing .footer-top nav {max-width:650px;} }

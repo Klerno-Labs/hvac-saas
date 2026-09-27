@@ -37,7 +37,7 @@ export default async function SettingsPage() {
       <TradeSettingsSection initialTradeType={organization.tradeType} canEdit={role === 'owner'} />
 
       {isOwner ? <>
-      <Card className="mb-6">
+      <Card id="team" className="mb-6 scroll-mt-24">
         <CardHeader>
           <CardTitle>Team</CardTitle>
           <CardDescription>Manage your organization members and invitations.</CardDescription>
@@ -47,12 +47,14 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
+      <section id="payments" className="scroll-mt-24">
       <StripeConnectSection
         accountId={organization.stripeConnectedAccountId}
         chargesEnabled={organization.stripeChargesEnabled}
         payoutsEnabled={organization.stripePayoutsEnabled}
         terminalEnabled={organization.stripeTerminalEnabled}
       />
+      </section>
 
       <CollectionsSettingsSection
         initialEnabled={organization.collectionsEnabled}

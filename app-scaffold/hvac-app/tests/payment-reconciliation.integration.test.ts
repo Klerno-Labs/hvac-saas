@@ -25,6 +25,14 @@ async function fixture() {
   return {invoiceId: invoice.id, organizationId, connectedAccountId: 'acct_fixture', paymentIntentId: `pi_${randomUUID()}`, amountCents: 12500, currency: 'usd', method: 'checkout'}
 }
 describe('settled payments against PostgreSQL', () => {
+  it.each([true, false, undefined])('stores only explicit webhook mode as durable payment evidence: %s', async livemode => {
+    const input = { ...await fixture(), ...(typeof livemode === 'boolean' ? { livemode } : {}) }
+    await reconcileConfirmedPayment(input)
+    const record = await db.auditLog.findFirstOrThrow({ where: { organizationId, eventType: 'payment.recorded', targetId: input.invoiceId } })
+    expect(record.metadata).toMatchObject({ connectedAccountId: 'acct_fixture', paymentIntentId: input.paymentIntentId, amountCents: 12500 })
+    if (typeof livemode === 'boolean') expect(record.metadata).toMatchObject({ livemode })
+    else expect(record.metadata).not.toHaveProperty('livemode')
+  })
   it('serializes simultaneous duplicate deliveries into one ledger entry', async () => {
     const input = await fixture()
     await Promise.all([reconcileConfirmedPayment(input), reconcileConfirmedPayment(input)])

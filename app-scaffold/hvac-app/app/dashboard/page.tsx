@@ -8,6 +8,7 @@ import { GettingStartedChecklist } from "@/app/components/getting-started-checkl
 import { getBusinessSummary, formatMoney } from "@/lib/business-summary";
 import { canDo } from "@/lib/permissions";
 import { isDueDatePast } from "@/lib/format";
+import { getActivationReadiness } from "@/lib/activation-readiness";
 
 export default async function DashboardPage() {
   const { organization, organizationId, role } =
@@ -15,7 +16,7 @@ export default async function DashboardPage() {
   if (!canDo(role, "viewAllJobs")) redirect("/field");
   const canViewMoney = canDo(role, "editPricing");
   const now = new Date();
-  const [summary, upcomingJobs] = await Promise.all([
+  const [summary, upcomingJobs, readiness] = await Promise.all([
     canViewMoney
       ? getBusinessSummary(organizationId, now, organization.timezone)
       : null,
@@ -34,7 +35,11 @@ export default async function DashboardPage() {
       ],
       take: 6,
     }),
+    canDo(role, "manageBilling")
+      ? getActivationReadiness({ organizationId, organization, role }, now)
+      : null,
   ]);
+  const paymentSetup = readiness?.steps.find((step) => step.id === "payments");
   return (
     <main className="workspace-page">
       <div className="workspace-heading">
@@ -50,9 +55,9 @@ export default async function DashboardPage() {
           </Link>
         )}
       </div>
-      {canDo(role, "manageBilling") &&
+      {readiness &&
         organization.onboardingStatus !== "completed" && (
-          <GettingStartedChecklist organizationId={organizationId} />
+          <GettingStartedChecklist readiness={readiness} />
         )}
       {summary && (
         <section className="business-metrics" aria-label="Business overview">
@@ -82,16 +87,16 @@ export default async function DashboardPage() {
           </Link>
         </section>
       )}
-      {!organization.stripeChargesEnabled && canDo(role, "manageBilling") && (
+      {paymentSetup && !paymentSetup.complete && organization.onboardingStatus === "completed" && (
         <div className="workspace-notice">
           <div>
-            <strong>Set up online payments</strong>
+            <strong>Customer payments · {paymentSetup.status}</strong>
             <p>
-              Connect your Stripe account before collecting customer payments.
+              {paymentSetup.description}
             </p>
           </div>
           <Link
-            href="/settings"
+            href="/setup#payments"
             className="inline-flex items-center gap-2 font-semibold underline underline-offset-4"
           >
             Payment settings

@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed':
       case 'checkout.session.async_payment_succeeded':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, event.account)
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, event.account, event.livemode)
         break
 
       case 'checkout.session.expired':
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         break
 
       case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent, event.account)
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent, event.account, event.livemode)
         break
 
       case 'account.updated':
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session, account: string | undefined) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session, account: string | undefined, livemode: boolean) {
   // ACH and other delayed methods can complete checkout before settling.
   if (session.mode !== 'payment' || session.payment_status !== 'paid') return
   const invoiceId = session.metadata?.invoiceId
@@ -73,7 +73,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session, account
   const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
   if (!invoiceId || !organizationId || !paymentIntentId) throw new Error('Missing payment identity')
   await reconcileConfirmedPayment({invoiceId, organizationId, connectedAccountId: account,
-    paymentIntentId, amountCents: session.amount_total ?? 0, currency: session.currency ?? '', method: 'checkout'})
+    paymentIntentId, amountCents: session.amount_total ?? 0, currency: session.currency ?? '', method: 'checkout', livemode})
 }
 
 async function handleCheckoutExpired(session: Stripe.Checkout.Session, account: string) {
@@ -177,12 +177,12 @@ async function recordPaymentFailure(input: {
   })
 }
 
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent, account: string | undefined) {
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent, account: string | undefined, livemode: boolean) {
   if (paymentIntent.metadata?.method !== TERMINAL_PAYMENT_METHOD) return
   if (paymentIntent.status !== 'succeeded') return
   const {invoiceId, organizationId} = paymentIntent.metadata
   if (!invoiceId || !organizationId) throw new Error('Missing Terminal payment identity')
   await reconcileConfirmedPayment({invoiceId, organizationId, connectedAccountId: account,
     paymentIntentId: paymentIntent.id, amountCents: paymentIntent.amount_received,
-    currency: paymentIntent.currency, method: TERMINAL_PAYMENT_METHOD})
+    currency: paymentIntent.currency, method: TERMINAL_PAYMENT_METHOD, livemode})
 }

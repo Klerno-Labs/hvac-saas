@@ -26,6 +26,7 @@ export async function createOrganization(formData: FormData): Promise<Onboarding
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message }
   const { name, tradeType, phone, email, timezone } = parsed.data
   const cookieStore = await cookies()
+  const requestedPlan = cookieStore.get('fc_plan')?.value === 'pro' ? 'PRO' : 'STARTER'
   const refCode = cookieStore.get('fc_ref')?.value
 
   try {
@@ -51,6 +52,7 @@ export async function createOrganization(formData: FormData): Promise<Onboarding
           email: email || null,
           timezone: timezone || null,
           onboardingStatus: 'not_started',
+          plan: requestedPlan,
           trialEndsAt,
           referralCode: randomBytes(6).toString('hex'),
           referredByOrgId,
@@ -76,6 +78,7 @@ export async function createOrganization(formData: FormData): Promise<Onboarding
     if (result.success) {
       if (refCode) cookieStore.delete('fc_ref')
       cookieStore.delete('fc_trade')
+      cookieStore.delete('fc_plan')
     }
     return result
   } catch (error) {

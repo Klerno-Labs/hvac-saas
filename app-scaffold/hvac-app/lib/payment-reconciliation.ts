@@ -8,6 +8,9 @@ export type ConfirmedPayment = {
   amountCents: number
   currency: string
   method: string
+  // Only verified webhook callers provide mode. Legacy/direct calls do not
+  // establish live-payment evidence by inheriting the environment's key mode.
+  livemode?: boolean
 }
 
 /** Only called after a signed Stripe event confirms settlement. Row-level lock
@@ -41,6 +44,10 @@ export async function reconcileConfirmedPayment(payment: ConfirmedPayment): Prom
     })
     await tx.invoice.update({where: {id: invoice.id}, data: {status: 'paid', outstandingCents: 0, paidAt}})
     await tx.collectionAttempt.updateMany({where: {invoiceId: invoice.id, status: 'created'}, data: {status: 'skipped'}})
-    await tx.auditLog.create({data: {organizationId: invoice.organizationId, actorEmail: 'stripe-webhook', eventType: 'payment.recorded', targetType: 'invoice', targetId: invoice.id, metadata: {amountCents: payment.amountCents, currency: payment.currency, method: payment.method}}})
+    await tx.auditLog.create({data: {organizationId: invoice.organizationId, actorEmail: 'stripe-webhook', eventType: 'payment.recorded', targetType: 'invoice', targetId: invoice.id, metadata: {
+      amountCents: payment.amountCents, currency: payment.currency, method: payment.method,
+      connectedAccountId: payment.connectedAccountId, paymentIntentId: payment.paymentIntentId,
+      ...(typeof payment.livemode === 'boolean' ? { livemode: payment.livemode } : {}),
+    }}})
   })
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ findFirst: vi.fn(), create: vi.fn(), setCookie: vi.fn(), hash: vi.fn(), trackEvent: vi.fn() }))
-vi.mock('@/lib/db', () => ({ db: { user: { findFirst: mocks.findFirst, create: mocks.create } } }))
+const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findFirst: vi.fn(), create: vi.fn(), setCookie: vi.fn(), hash: vi.fn(), trackEvent: vi.fn() }))
+vi.mock('@/lib/db', () => ({ db: { $transaction: mocks.transaction, user: { findFirst: mocks.findFirst, create: mocks.create } } }))
 vi.mock('@/lib/events', () => ({ trackEvent: mocks.trackEvent }))
 vi.mock('next/headers', () => ({ cookies: async () => ({ set: mocks.setCookie }) }))
 vi.mock('bcryptjs', () => ({ default: { hash: mocks.hash } }))
@@ -18,6 +18,7 @@ const form = (trade: string) => {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  mocks.transaction.mockImplementation(async fn => fn({ user: { create: mocks.create } }))
   mocks.findFirst.mockResolvedValue(null)
   mocks.create.mockResolvedValue({ id: 'user-1' })
   mocks.hash.mockResolvedValue('hashed-test-password')
@@ -35,6 +36,27 @@ describe('signup trade handoff', () => {
   it('preserves a supported selected trade for onboarding with a bounded HttpOnly cookie', async () => {
     expect(await signup(form('plumbing'))).toEqual({ success: true })
     expect(mocks.setCookie).toHaveBeenCalledWith('fc_trade', 'plumbing', expect.objectContaining({ httpOnly: true, sameSite: 'lax', maxAge: 604800, path: '/' }))
+  })
+
+  it('preserves Pro trial intent without starting a paid subscription', async () => {
+    const input = form('hvac'); input.set('plan', 'pro')
+    expect(await signup(input)).toEqual({ success: true })
+    expect(mocks.setCookie).toHaveBeenCalledWith('fc_plan', 'pro', expect.objectContaining({ httpOnly: true, sameSite: 'lax' }))
+  })
+
+  it('uses Starter for invalid plan values and keeps account events inside the transaction', async () => {
+    const input = form('hvac'); input.set('plan', 'enterprise')
+    expect(await signup(input)).toEqual({ success: true })
+    expect(mocks.setCookie).toHaveBeenCalledWith('fc_plan', 'starter', expect.any(Object))
+    expect(mocks.trackEvent).toHaveBeenCalledWith(expect.objectContaining({ eventName: 'user_signed_up' }), expect.objectContaining({ user: expect.any(Object) }))
+  })
+
+  it('returns a recoverable failure and no preference cookies if account creation fails', async () => {
+    mocks.create.mockRejectedValue(new Error('sensitive database error'))
+    const result = await signup(form('hvac'))
+    expect(result).toMatchObject({ success: false })
+    expect(JSON.stringify(result)).not.toContain('sensitive')
+    expect(mocks.setCookie).not.toHaveBeenCalled()
   })
 
   it('does not persist arbitrary query values as trade configuration', async () => {

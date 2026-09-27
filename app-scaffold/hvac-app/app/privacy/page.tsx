@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <PublicHeader />
       <article className="max-w-3xl mx-auto px-4 py-16 prose prose-slate dark:prose-invert">
         <h1>Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: July 22, 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: September 26, 2026</p>
 
         <h2>1. Overview</h2>
         <p>
@@ -53,35 +53,40 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Stripe</strong> — payment processing. Card data goes directly to Stripe via their secure elements, never touching our servers.</li>
           <li><strong>OpenAI</strong> — used to generate estimate draft text. When you request a draft, we send the job title, job notes, customer name, and selected trade context. Review job notes before requesting an AI draft; payment card details are not included.</li>
-          <li><strong>Hosting provider (Vercel)</strong> — application hosting and database storage.</li>
+          <li><strong>Vercel</strong> — application hosting and the public-page analytics described below.</li>
+          <li><strong>Supabase</strong> — storage of account and business records in the configured database.</li>
+          <li><strong>Resend</strong> — recipient addresses and message content for transactional email, such as invitations, password recovery and customer documents.</li>
+          <li><strong>Twilio</strong> — phone numbers and message content when SMS delivery is configured and used.</li>
+          <li><strong>Cloudflare R2</strong> — uploaded job photos and other supported files when file storage is configured.</li>
+          <li><strong>Sentry</strong> — application error diagnostics when error monitoring is configured.</li>
           <li><strong>Legal authorities</strong> — only when compelled by valid legal process.</li>
         </ul>
 
         <h2>5. Data Security</h2>
         <ul>
-          <li>All data is encrypted in transit (TLS 1.3) and at rest (database-level encryption)</li>
+          <li>The hosted application uses HTTPS to protect browser connections</li>
           <li>Passwords are hashed with bcrypt (never reversible)</li>
-          <li>Multi-tenant architecture — your data is isolated from other organizations via row-level access controls</li>
-          <li>Regular security audits and dependency vulnerability scanning</li>
-          <li>Access to production data is restricted and logged via an audit trail</li>
+          <li>Server-side organization and role checks restrict access to business records</li>
+          <li>Dependency vulnerability scanning is part of the release checks</li>
+          <li>Selected security, administrative and payment actions are recorded in an application audit trail</li>
         </ul>
 
         <h2>6. Data Retention</h2>
         <p>
-          Your data is retained for as long as your account is active. After account cancellation, we retain data for 90 days to allow for reactivation, after which it is permanently deleted. You may request earlier deletion by emailing support@fieldclose.app.
+          Account and business records are retained while your account is active. Canceling a subscription does not automatically delete those records. Email support@fieldclose.app to request deletion or to ask about retained records and backups. Deletion requests require account verification and review of records that must be retained; we will confirm the scope and timing of the request.
         </p>
 
         <h2>7. Your Rights</h2>
         <ul>
           <li><strong>Access</strong> — organization owners can export customers, jobs, invoices, and payments as CSV from Settings. Contact support for additional data requests</li>
-          <li><strong>Correction</strong> — edit any data within the app</li>
-          <li><strong>Deletion</strong> — request complete data deletion via email</li>
+          <li><strong>Correction</strong> — edit supported records within the app, subject to your role and the record&apos;s status; contact support for other corrections</li>
+          <li><strong>Deletion</strong> — request deletion via email as described above</li>
           <li><strong>Opt-out</strong> — unsubscribe from non-essential emails at any time</li>
         </ul>
 
         <h2>8. Cookies</h2>
         <p>
-          We use essential cookies for authentication (session token) and security (CSRF protection). We do not use third-party tracking cookies or advertising networks. Analytics are collected via privacy-respecting first-party methods.
+          We use essential cookies for authentication (session token) and security (CSRF protection). We do not use third-party tracking cookies or advertising networks. On public product, pricing, tour, calculator and help pages, Vercel Analytics may collect page views and fixed interaction events, such as opening the tour or clicking signup. Our event payloads exclude form entries, help search text, customer records and URL queries or fragments. These events are disabled when the browser signals Do Not Track or Global Privacy Control.
         </p>
 
         <h2>9. Children&apos;s Privacy</h2>

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { PriceBookPicker } from '../_components/pricebook-picker'
-import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
+import { type EstimateCatalogItem, addEstimateLineItem } from '@/lib/pricebook-to-lineitem'
 
 type LineItem = {
   name: string
@@ -25,7 +25,7 @@ export function EstimateForm({
 }: {
   jobId: string
   jobTitle: string
-  priceBookItems: PriceBookItem[]
+  priceBookItems: EstimateCatalogItem[]
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -156,7 +156,7 @@ export function EstimateForm({
 
         <PriceBookPicker
           items={priceBookItems}
-          onPick={(li) => setLineItems([...lineItems, li])}
+          onPick={(li) => setLineItems(current => addEstimateLineItem(current, li))}
         />
 
         <div className="mt-2">

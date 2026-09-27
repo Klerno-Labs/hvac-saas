@@ -21,7 +21,7 @@ export function OnboardingForm({ initialTradeType = 'hvac' }: { initialTradeType
     try {
       const result = await createOrganization(formData)
       if (result.success) {
-        window.location.assign('/dashboard')
+        window.location.assign('/setup')
       } else {
         setError(result.error)
         setLoading(false)
