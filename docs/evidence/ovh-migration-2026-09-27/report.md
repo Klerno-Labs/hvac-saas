@@ -38,3 +38,11 @@ Raw fixture and pressure summaries accompany this report. A full host reboot pas
 `staging.fieldclose.app` resolves directly to the OVH host. A Let’s Encrypt certificate is installed, with an enabled renewal timer and nginx reload hook. A certificate-renewal dry run passed against Let’s Encrypt staging. HTTP redirects to HTTPS. Staging requires an additional authentication gate and sends no-index headers. Production apex and www DNS remain unchanged.
 
 Five external HTTPS boundary/health checks passed. Twelve synthetic-user authentication and protected-route checks passed, including a secure session cookie, correct session identity, dashboard, jobs, customers, estimates, invoices, calendar, field, reports and settings. These are HTTP/session checks, not a complete interactive browser acceptance test. Provider credentials remain absent and outbound provider HTTP remains blocked in this synthetic environment.
+
+## Request-scoped session optimization
+
+The page, navigation and trial banner now share authentication and membership reads within one React server render. No cross-request session or role cache is introduced. Type checking, all 1,459 unit tests, and the Linux production build passed.
+
+A second actual-VPS run completed 11,673/11,673 expected HTTP outcomes without tenant leaks or detected provider/pool errors. Sustained-100 throughput was 39.38 requests/second versus 30.61 before (about 29% higher); P95 was 3.67 seconds versus 4.44 (about 17% lower). These sequential runs are directional evidence, not a controlled statistical benchmark; warmed database caches and accumulated synthetic records can affect results. Heavy-load latency remains a launch constraint.
+
+The new role-revocation assertion initially expected a direct redirect to Field, while the app correctly redirects via Dashboard. That assertion was corrected to verify both hops. A focused follow-up passed all 11 requests, including role revocation and password-change session invalidation on the next request. The original result retains this failed test expectation for transparency; see ovh-session-revocation.json for the corrected check. The pressure runner now exits unsuccessfully when any check fails, even if expected HTTP statuses pass.

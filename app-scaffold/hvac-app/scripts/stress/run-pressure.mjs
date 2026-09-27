@@ -146,12 +146,37 @@ try {
     const rows=await db.$queryRawUnsafe(`SELECT count(*)::int AS bad FROM "Invoice" i WHERE i.id LIKE 'sim-inv-%' AND ((i.status='paid' AND i."outstandingCents"<>0) OR i."outstandingCents"<0 OR i."totalCents"<>i."subtotalCents"+i."taxCents")`)
     assert.equal(rows[0].bad,0)
   })
+  await check('role changes take effect on the next request',async()=>{
+    const where={organizationId_userId:{organizationId:companyId(0),userId:employeeId(0,0)}}
+    const original=await db.organizationMember.findUniqueOrThrow({where})
+    try {
+      await db.organizationMember.update({where,data:{role:'technician'}})
+      assert.equal((await sessions[0].request('/api/analytics/owner?period=ytd',{},403,'revoked-owner-access')).status,403)
+      const page=await sessions[0].request('/reports',{},307,'revoked-owner-page')
+      assert.equal(page.status,307)
+      assert.equal(page.headers.get('location'),'/dashboard')
+      const dashboard=await sessions[0].request('/dashboard',{},307,'revoked-owner-dashboard')
+      assert.equal(dashboard.headers.get('location'),'/field')
+    } finally { await db.organizationMember.update({where,data:{role:original.role}}) }
+  })
+  await check('password changes invalidate an existing session on the next request',async()=>{
+    const where={id:employeeId(9,9)}
+    const original=await db.user.findUniqueOrThrow({where,select:{hashedPassword:true}})
+    try {
+      await db.user.update({where,data:{hashedPassword:await bcrypt.hash(randomBytes(32).toString('hex'),12)}})
+      const response=await sessions[99].request('/api/auth/session',{},200,'revoked-session')
+      assert.equal(response.json()?.user,undefined)
+      assert.equal((await sessions[99].request('/jobs',{},307,'revoked-session-page')).status,307)
+    } finally { await db.user.update({where,data:original}) }
+  })
   report.leakedResponses=report.samples.filter(s=>s.leak).length
   report.finishedAt=new Date().toISOString();report.completed=true
 } catch(e){report.fatal=String(e.message).slice(0,240);report.completed=false;process.exitCode=1}
 finally {
   clearInterval(monitor);server?.kill('SIGTERM')
   if(server&&server.exitCode===null){await Promise.race([new Promise(r=>server.once('exit',r)),sleep(3000)]);if(server.exitCode===null)server.kill('SIGKILL')}
-  report.total=summarize(report.samples);report.peakServerRssMiB=Math.max(0,...report.resources.map(r=>r.rssMiB));report.localOnly=true
+  report.total=summarize(report.samples)
+  if (!report.completed || report.total.failed || report.checks.some(check => !check.passed)) process.exitCode=1
+  report.peakServerRssMiB=Math.max(0,...report.resources.map(r=>r.rssMiB));report.localOnly=true
   await save();await db.$disconnect();console.log(JSON.stringify({run,completed:report.completed,checks:report.checks,total:report.total,peakRss:report.peakServerRssMiB,fatal:report.fatal}))
 }
