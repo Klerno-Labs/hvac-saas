@@ -2,6 +2,28 @@
 
 Recorded September 27, 2026 (UTC). This is the source of truth for the **limited restricted-test-key API probes** below. It does not establish completed customer payment flows or live readiness. Credentials, client secrets, bearer URLs, and raw provider messages are excluded.
 
+## Public deployment and implemented safeguard
+
+A separate owner-authorized SEO workflow promoted deployment `dpl_EDUtYCYk46GJUnWRnUSPJhCamz3A` to `fieldclose.app`. That deployment still has test Stripe configuration. The safeguard described here is implemented in the working application and validated locally; its deployment to the public alias has **not yet been confirmed**. Do not describe live billing or the hosted safeguard as operational on this evidence alone.
+
+When `VERCEL_ENV=production`, the shared Stripe client now rejects test, missing, and malformed keys before any provider operation, including reuse of an existing client. A key change recreates the client. Subscription billing, invoice Checkout, Connect actions, and Terminal operations use this shared boundary; blocked payment actions return friendly errors, and the billing screen disables unavailable payment controls. Cached invoice Checkout sessions must still be retrieved through the guarded provider client rather than returning a stored URL directly.
+
+Webhook verification returns 503 for unavailable production payment configuration before application data is read or changed. With live configuration, a correctly signed test event is acknowledged and ignored before application writes. Preview/development test mode remains available for isolated verification. This safeguard does not revoke already-issued Stripe-hosted links, erase earlier test records, verify live permissions, or configure live webhooks and prices.
+
+The read-only production aggregate check at `2026-09-27T03:46:22Z` found:
+
+| Record group | Count |
+| --- | ---: |
+| Organizations | 1 |
+| `subscription_checkout_attempt` activity events | 0 |
+| Invoices with a Checkout session | 0 |
+| Connected accounts | 0 |
+| Payments | 0 |
+
+These are point-in-time application database counts, not an inventory of Stripe-hosted synthetic resources. They do not imply that the application contains no invoices or other internal verification records.
+
+The safeguard was committed as `2bd9b01`; its production build, 1,162 unit tests, and 96 integration tests across 16 integration files passed. Integration checks ran only against the verified disposable loopback database, with all ten migrations current. A protected production deployment has started; public-alias promotion and hosted verification are not yet confirmed. Live keys, coherent price/portal/webhook configuration, and completed signed live flows are still required.
+
 ## Scope and permission configuration
 
 The approved sandbox run was `fc-permissions-20260927-1` against Pegrio sandbox `acct_1TMx2eBqF8hjPLwn`, using API version `2025-02-24.acacia`. The Dashboard form contained eight resource rows across nine scopes, with no additional automatic selections:

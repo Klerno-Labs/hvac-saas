@@ -143,9 +143,14 @@ describe('durable collection channel outcomes', () => {
     const invoices = Array.from({ length: 501 }, (_, index) => ({ id: `${organizationId}-batch-${String(index).padStart(4, '0')}`, organizationId, customerId, jobId, invoiceNumber: `batch-${index}`, status: 'sent', totalCents: 12000, outstandingCents: 12000, dueDate: new Date('2026-09-24T00:00:00Z') }))
     await db.invoice.createMany({ data: invoices })
     await db.collectionAttempt.createMany({ data: invoices.slice(0, 500).map(invoice => ({ organizationId, invoiceId: invoice.id, stage: 'overdue_1', status: 'sent' })) })
-    await runCollectionsAutomation(now)
+    const result = await runCollectionsAutomation(now)
+    expect(result).toMatchObject({ attemptsCreated: 1, attemptsSkipped: 1000, channelsAccepted: 2, errors: 0, needsReview: 0 })
     expect(mocks.email).toHaveBeenCalledTimes(1)
     expect(mocks.sms).toHaveBeenCalledTimes(1)
     expect(await db.collectionAttempt.findUniqueOrThrow({ where: { invoiceId_stage: { invoiceId: invoices[500].id, stage: 'overdue_1' } } })).toMatchObject({ status: 'sent' })
-  })
+    expect(await db.collectionAttempt.count({ where: { organizationId, stage: 'overdue_1', status: 'sent' } })).toBe(501)
+    // Keep the real 500-row page boundary: 501 invoices require 1,002 sequential
+    // claim transactions, even for completed stages. Allow containerized CI's
+    // database latency here without relaxing any concurrency test's deadline.
+  }, 30_000)
 })
