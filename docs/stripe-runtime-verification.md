@@ -4,7 +4,7 @@ Recorded September 27, 2026 (UTC). This is the source of truth for the **limited
 
 ## Public deployment and implemented safeguard
 
-A separate owner-authorized SEO workflow promoted deployment `dpl_EDUtYCYk46GJUnWRnUSPJhCamz3A` to `fieldclose.app`. That deployment still has test Stripe configuration. The safeguard described here is implemented in the working application and validated locally; its deployment to the public alias has **not yet been confirmed**. Do not describe live billing or the hosted safeguard as operational on this evidence alone.
+After the separate owner-authorized SEO deployment, the verified safeguard deployment `dpl_84a73xxfUyx6ntFaTSa13Sc5ovNw` (application `2bd9b01`) was promoted to `fieldclose.app`. The alias and public health were confirmed at `2026-09-27T05:24:41Z`. Both public webhook endpoints return 503 configuration-unavailable for a synthetic invalid-signature probe under the current test-key production configuration. The production guard is active; live billing remains unavailable.
 
 When `VERCEL_ENV=production`, the shared Stripe client now rejects test, missing, and malformed keys before any provider operation, including reuse of an existing client. A key change recreates the client. Subscription billing, invoice Checkout, Connect actions, and Terminal operations use this shared boundary; blocked payment actions return friendly errors, and the billing screen disables unavailable payment controls. Cached invoice Checkout sessions must still be retrieved through the guarded provider client rather than returning a stored URL directly.
 
@@ -22,7 +22,7 @@ The read-only production aggregate check at `2026-09-27T03:46:22Z` found:
 
 These are point-in-time application database counts, not an inventory of Stripe-hosted synthetic resources. They do not imply that the application contains no invoices or other internal verification records.
 
-The safeguard was committed as `2bd9b01`; its production build, 1,162 unit tests, and 96 integration tests across 16 integration files passed. Integration checks ran only against the verified disposable loopback database, with all ten migrations current. A protected production deployment has started; public-alias promotion and hosted verification are not yet confirmed. Live keys, coherent price/portal/webhook configuration, and completed signed live flows are still required.
+The safeguard was committed as `2bd9b01`; its production build, 1,162 unit tests, and 96 integration tests across 16 integration files passed. Integration checks ran only against the verified disposable loopback database, with all ten migrations current. The first cloud run timed out on the existing 501-invoice integration test. Test-only follow-up `538056a` retained the complete fixture, strengthened its assertions and set a documented per-case 30-second budget; full GitHub CI then passed. Production application code is identical to the promoted `2bd9b01` build. All 24 hosted page/access checks, seven metadata/support checks and deployment protection passed before promotion. Live keys, coherent price/portal/webhook configuration, and completed signed live flows are still required.
 
 ## Scope and permission configuration
 
