@@ -29,3 +29,7 @@ Run historical validation only once per seeded dataset because the recurring sce
 The original baseline classified legitimate technician dashboard redirects as request failures. Its raw rows are retained. The analysis must separate those expected 307 responses from the actual analytics authorization defect; the corrected workload sends technicians to their field view.
 
 Raw JSON/CSV retain every request's route label, status, timing, response bytes and tenant-marker result. Compare per-route tail latency, not only aggregate averages. Local application and database share a machine: results exclude WAN latency, serverless cold starts, production pooling, distributed rate limits, actual providers, physical readers, historical photo bytes, browser rendering and years of reliability.
+
+## Analyze retained results
+
+Install matplotlib in a separate Python environment, then run `python scripts/stress/analyze.py --source /path/to/results --output /path/to/report`. It preserves raw request CSVs, separates the original harness redirect misclassification from actual authorization failures, and emits HTML/Markdown, charts, phase CSV, JSON summary and SHA-256 hashes. `query-probes.mjs` captures read-only warm-cache query plans after load has stopped; those timings are not concurrent HTTP measurements.

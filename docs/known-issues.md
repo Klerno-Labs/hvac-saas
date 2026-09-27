@@ -2,6 +2,10 @@
 
 Payment, deployment, recovery, email, reminder and photo status updated on September 27, 2026 (UTC); other rows retain their last observed evidence. Local implementation and a successful build do not establish production readiness. The current self-service work is described in [self-service-launch.md](self-service-launch.md); earlier checks remain historical evidence for their recorded revisions.
 
+## September 27 pressure-test follow-up
+
+The isolated 10-company / 100-employee, three-year data experiment completed 83,522 HTTP requests. A company financial-role authorization defect was fixed in `139de1a` and published as `dpl_BQRjQ3wwSJmmsutkpatewjRRTk97`; this supersedes the deployment row below. Candidate and public checks each passed 24 routes plus eight metadata/access checks; public database health is OK. Full CI, 1,427 unit tests, type checking and build passed. Corrected pressure checks passed, including all 90 restricted employees. Calendar P95 reached 11.41 seconds at 200 simultaneous requests and remains a performance priority. Local testing does not establish hosted capacity or unattended readiness. See [full simulation report](evidence/three-year-simulation-2026-09-27/report.md). Earlier provider evidence and remaining operating gates below remain applicable.
+
 ## Release evidence and remaining operating gates
 
 | Area | Last observed state | Remaining operating checks |
