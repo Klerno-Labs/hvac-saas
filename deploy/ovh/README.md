@@ -1,8 +1,8 @@
 # OVHcloud test deployment
 
-Prepared order: one VPS-2 2027, US-EAST-VA, 4 vCore, 8 GB RAM, 75 GB NVMe, Ubuntu 24.04, no commitment and no paid options. The checkout summary on September 27, 2026 is **$10/month before tax**. The $8.50 headline uses a 12-month commitment. Tax requires account identification. Standard daily backup is included as a displayed $0.60 promotion; verify its renewal treatment before purchase. No purchase or server provisioning has occurred.
+Order **8987764** was paid by the owner and delivered on September 27, 2026: one VPS-2 2027 in US-EAST-VA, 4 vCore, 8 GB RAM, 75 GB NVMe, Ubuntu 24.04, no commitment and no paid extras. Checkout total was **$10.66/month including $0.66 tax**. The $8.50 headline requires twelve months. Standard backup is shown as a $0.60 promotional discount; renewal treatment remains unconfirmed, so allow approximately $11.30/month at the current tax rate if that discount ends. This is the host bill, not the total cost of database, email, storage and payment services.
 
-These are preparation templates, not evidence that an OVH server is running. Do not install the service before the prerequisites below are met.
+The delivered host is `vps-13d8030c.vps.ovh.us` (`40.160.36.160`). The owner completed the forced initial password change and approved a dedicated SSH key on their Mac. Its host fingerprint was verified against the provider console before key-based access. Remote root/password login is disabled; console recovery remains available. The firewall permits SSH only during isolated testing, PostgreSQL listens only on loopback, automatic OS security updates are enabled, and journal storage is bounded. Production traffic has not moved.
 
 ## Isolated candidate
 
@@ -27,4 +27,4 @@ No automated host purchase, OS install, secret transfer, DNS modification or pro
 
 ## Local preparation verification
 
-The host-independent payment/storage changes passed 1,459 unit tests, type checking and an isolated production build. Four added cases verify test-key rejection, live-key acceptance, preservation of the Vercel production boundary and refusal of local photo reads/writes on a declared non-Vercel production host. The service unit still needs validation on the actual Ubuntu host; no hosted test or migration has occurred.
+The host-independent payment/storage changes passed 1,459 unit tests, type checking and an isolated production build. Four added cases verify test-key rejection, live-key acceptance, preservation of the Vercel production boundary and refusal of local photo reads/writes on a declared non-Vercel production host. The service unit also passed `systemd-analyze verify` on the delivered Ubuntu host. All 134 database integration tests and the optimized Linux build passed there. A restricted loopback-only staging service responds successfully to health checks. Hosted pressure completed with 9,132 expected HTTP outcomes passing and all nine integrity/workflow checks passing. Full host reboot recovery passed. Sustained 100-user P95 was 4.44 seconds and a 200-concurrent burst reached 11.48 seconds: high-concurrency latency remains a launch constraint. Cloudflare sign-in, staging HTTPS, production-provider verification and controlled cutover remain outstanding. See [hosted evidence](../../docs/evidence/ovh-migration-2026-09-27/report.md). Production migration has not occurred.

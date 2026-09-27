@@ -1,0 +1,34 @@
+# FieldClose OVH staging verification — September 27, 2026
+
+Production traffic has **not moved**. Cloudflare sign-in, staging HTTPS, provider validation on the new host, production secret transfer, single-scheduler cutover, backup/rollback validation and final DNS promotion remain outstanding. High-concurrency latency is a launch constraint, despite no functional failures in this run.
+
+## Host
+
+OVH order 8987764, VPS-2 2027, US-EAST-VA, Ubuntu 24.04, 4 vCore, 8 GB RAM, 75 GB NVMe. Checkout $10.66/month including tax; standard-backup discount is promotional. Possible renewal without that discount is about $11.30 at the current tax rate. Other service bills remain separate.
+
+Owner completed initial password change and approved persistent deployment-key access. Server fingerprint verified via provider console. SSH key works; remote password/root login disabled. Firewall exposes SSH only. PostgreSQL and app ports are loopback-only. Automatic security updates and fail2ban enabled. Journals limited to 256 MB persisted, 64 MB runtime, 14-day retention. App runs as non-login fieldclose account with read-only system protection and 6 GiB process-group memory cap. Environment is root-owned/group-readable only, outside the release directory.
+
+## Code and checks
+
+Application revision 725b07c95d48fbf16dc650499e2777ef113ce289. Node 24.21.0 downloaded from official Node distribution and checksum verified; npm 11.9.0; PostgreSQL 16.15. Linux lockfile installation and optimized production build passed. All **134 database integration tests** passed. Service unit passed systemd validation and private health returned 200 with database/auth/environment healthy. Stripe is deliberately not configured in persistent private staging.
+
+## Pressure methodology
+
+Separate synthetic database with ten organizations, 100 employees, 180,000 historical jobs spanning three years, plus current synthetic work. This is generated history and a short pressure test, not three years of uptime. Compiled Next server and database run together on the actual OVH VPS. Requests originate on the VPS, so these times exclude user Internet latency and the future HTTPS proxy. Outbound provider HTTP is blocked. Payment events are locally signed synthetic fixtures, not actual Stripe charges or delivery verification. No production secrets or customer records were copied.
+
+**9,132/9,132 expected HTTP outcomes passed; all 9 workflow/integrity checks passed.** No detected tenant marker leaks, historical balance corruption, duplicate collection, pool/OOM markers, or process crash. Peak Next process resident memory was **1166 MiB** (not whole-machine usage).
+
+| Phase | Requests | Failures | P95 | P99 |
+|---|---:|---:|---:|---:|
+| warmup | 224 | 0 | 0.46 s | 0.50 s |
+| burst-10 | 558 | 0 | 0.73 s | 0.93 s |
+| burst-25 | 619 | 0 | 1.66 s | 2.09 s |
+| burst-50 | 660 | 0 | 2.84 s | 3.10 s |
+| burst-100 | 689 | 0 | 5.20 s | 5.51 s |
+| burst-200 | 676 | 0 | 11.48 s | 11.93 s |
+| sustained-100 | 3,751 | 0 | 4.44 s | 5.33 s |
+| recovery-10 | 475 | 0 | 0.30 s | 0.72 s |
+
+At 100 sustained concurrent simulated employees, requests ran continuously with 500 ms think time. The 200-request burst deliberately exceeds that workload. Throughput plateaued around 30–33 requests/second, indicating saturation. Passing integrity tests does not establish acceptable speed at arbitrary load; high-concurrency performance must improve or launch traffic must be constrained. Do not call this unrestricted production readiness.
+
+Raw fixture and pressure summaries accompany this report. A full host reboot passed: FieldClose, PostgreSQL and fail2ban restarted automatically, health returned 200 with the database healthy, the firewall remained active, and systemd reported no failed units. Recovery output is in recovery.log.

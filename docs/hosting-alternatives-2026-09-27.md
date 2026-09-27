@@ -2,7 +2,7 @@
 
 ## Updated owner decision
 
-The owner subsequently rejected Railway as well, citing unpredictable extra charges, and authorized preparing an OVHcloud VPS-2 test. The reviewed month-to-month checkout is **$10 before tax**, not the advertised $8.50 (which requires twelve months). Prepared: one US-EAST-VA VPS, Ubuntu 24.04, no paid options. Account sign-in is pending; tax and backup-promotion renewal treatment still need review. Nothing was purchased or provisioned. See [OVH preparation](../deploy/ovh/README.md). The comparison below is retained as historical research, not the current recommendation.
+The owner subsequently rejected Railway as well, citing unpredictable extra charges, and authorized preparing an OVHcloud VPS-2 test. The reviewed month-to-month checkout is **$10 before tax**, not the advertised $8.50 (which requires twelve months). Prepared: one US-EAST-VA VPS, Ubuntu 24.04, no paid options. The owner purchased order 8987764 at $10.66 including tax, and OVH delivered the server. The backup discount is promotional; allow about $11.30 including current tax if it ends. Isolated host testing is in progress; production traffic has not moved. See [OVH preparation](../deploy/ovh/README.md). The comparison below is retained as historical research, not the current recommendation.
 
 
 The owner explicitly rejected paying Vercel and authorized comparison of lower-cost hosting. No replacement purchase, deployment, DNS change, credential transfer or spending-limit change is authorized by this comparison alone. Existing production remains available while a replacement is evaluated.
