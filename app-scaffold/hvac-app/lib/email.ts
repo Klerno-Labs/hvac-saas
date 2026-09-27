@@ -54,15 +54,17 @@ export async function sendInvoiceEmail(params: {
   customerName: string
   invoiceNumber: string
   totalFormatted: string
+  outstandingCents: number
   orgName: string
   portalUrl?: string
   dueDate?: string
 }): Promise<SendResult> {
+  const paymentDue = params.outstandingCents > 0
   const body = `
     <p>Hi ${escapeHtml(params.customerName)},</p>
     <p><strong>${escapeHtml(params.orgName)}</strong> has sent you an invoice for <strong>${escapeHtml(params.totalFormatted)}</strong>.</p>
-    ${params.dueDate ? `<p style="color:#64748b;">Payment due: <strong>${escapeHtml(params.dueDate)}</strong></p>` : ''}
-    <p>You can view and pay this invoice securely online.</p>
+    ${paymentDue && params.dueDate ? `<p style="color:#64748b;">Payment due: <strong>${escapeHtml(params.dueDate)}</strong></p>` : ''}
+    <p>${paymentDue ? 'You can view and pay this invoice securely online.' : 'No payment is due. You can view this invoice online for your records.'}</p>
   `
 
   return sendEmail({
@@ -72,7 +74,7 @@ export async function sendInvoiceEmail(params: {
       title: `Invoice #${params.invoiceNumber}`,
       preheader: `${params.totalFormatted} invoice from ${params.orgName}`,
       body,
-      cta: params.portalUrl ? { label: 'View & Pay Invoice', url: params.portalUrl } : undefined,
+      cta: params.portalUrl ? { label: paymentDue ? 'View & Pay Invoice' : 'View Invoice', url: params.portalUrl } : undefined,
       footer: `Questions? Contact ${params.orgName} directly.`,
     }),
   })

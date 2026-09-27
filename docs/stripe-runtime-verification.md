@@ -1,8 +1,21 @@
 # Stripe runtime verification evidence
 
-Recorded September 27, 2026 (UTC). This is the source of truth for the **limited restricted-test-key API probes** below. It does not establish completed customer payment flows or live readiness. Credentials, client secrets, bearer URLs, and raw provider messages are excluded.
+Recorded September 27, 2026 (UTC). The initial restricted-key probes are historical; the later completed sandbox workflows below supersede their incomplete-account and uncompleted-checkout results. Sandbox evidence does not establish live settlement. Credentials, client secrets, bearer URLs, and raw provider messages are excluded.
 
-## Public deployment and implemented safeguard
+## Completed sandbox workflows — September 27, 2026
+
+The authorized `fc-complete-20260927-1` run used the same restricted sandbox runtime grant and synthetic local organizations. It never accessed the production application database or charged real money.
+
+- Both $49 Starter and $99 Pro hosted subscription Checkouts completed and Stripe reported paid/active with matching organization and plan metadata. Signed subscription notifications reconciled the isolated local organizations to their respective plans. Both subscriptions were then canceled at period end through the hosted customer portal; Stripe confirmed `cancel_at_period_end=true`.
+- The owner approved submitting Stripe's test-account agreement. Hosted Connect onboarding used only Stripe's synthetic identity and bank test data. The test merchant reported submitted details, active card-payment/transfer capabilities, and enabled charges/payouts, with no currently due fields.
+- A connected-account $125 test invoice Checkout completed. Its provider-originated, signature-verified notification produced one succeeded payment and a paid invoice with zero outstanding balance. The browser return URL alone was not used as payment evidence.
+- One concurrent Pro subscription notification returned the intended retryable 500 after another event changed the billing snapshot. A provider-GET replay of that exact event succeeded, followed by a duplicate returning 200 with one durable processed event and unchanged financial state.
+
+The official Stripe CLI verified provider signatures before a local relay forwarded exact payloads with separate local platform/Connect signing secrets. The CLI used the sandbox account's `2026-03-25.dahlia` event version; production destinations remain pinned to `2025-02-24.acacia`. The relay is local verification, not evidence that a live destination received a real financial event. Provider-read replays are explicitly distinguished from original signed deliveries in the receipts. The initial connected-checkout replay checker incorrectly expected a billing WebhookEvent record; Connect instead deduplicates the payment ledger. Its HTTP response succeeded, and the corrected ledger-level duplicate check requires its own recorded result.
+
+Sanitized local evidence: `stripe-completed-sandbox.json`, `stripe-event-e2e.json`, and `stripe-event-e2e-v2.json` in `/tmp/fieldclose-release`. No credentials, client secrets or hosted bearer links are included. Terminal collection/capture and final deployment verification remain separate pending checks at this checkpoint. No live charge or bank payout was tested.
+
+## Historical production safeguard checkpoint
 
 After the separate owner-authorized SEO deployment, the verified safeguard deployment `dpl_84a73xxfUyx6ntFaTSa13Sc5ovNw` (application `2bd9b01`) was promoted to `fieldclose.app`. The alias and public health were confirmed at `2026-09-27T05:24:41Z`. Both public webhook endpoints return 503 configuration-unavailable for a synthetic invalid-signature probe under the current test-key production configuration. The production guard is active; live billing remains unavailable.
 
@@ -75,7 +88,7 @@ The retry's sanitized message classifier returned `account_onboarding_or_busines
 
 The local supporting receipts are `/tmp/fieldclose-release/stripe-sandbox-validation-run-1-summary.json` and `/tmp/fieldclose-release/stripe-connected-checkout-diagnostic.json`. They contain sanitized evidence only. The helper's result field now remains `status: failed`, with the HTTP code stored separately as `httpStatus`; the original field collision did not change the provider outcome.
 
-## Remaining verification
+## Remaining verification at the initial probe checkpoint (historical)
 
 Do not label all scopes or payments ready. Actual subscription retrieval after completed checkout, hosted Checkout and portal completion, connected-account Checkout success, Terminal collection/capture, signed webhook reconciliation, and all live flows remain unverified. No real charge, legal-terms acceptance, completed account onboarding, or automatic permission expansion was performed as part of these probes.
 

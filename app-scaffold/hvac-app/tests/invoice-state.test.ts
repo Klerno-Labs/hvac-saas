@@ -9,7 +9,6 @@ vi.mock('@/lib/stripe',()=>({getStripe:vi.fn()}))
 import {auth} from '@/lib/auth'
 import {db} from '@/lib/db'
 import {updateInvoiceStatus} from '@/app/invoices/[invoiceId]/actions'
-import {getStripe} from '@/lib/stripe'
 const form = (status:string) => {const data=new FormData();data.set('status',status);return data}
 beforeEach(()=>{
  vi.resetAllMocks()
@@ -23,5 +22,4 @@ describe('invoice state controls',()=>{
  it('denies technicians pricing controls',async()=>{vi.mocked(db.organizationMember.findFirst).mockResolvedValue({organizationId:'org1',role:'technician', organization: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null },} as never);expect((await updateInvoiceStatus('invoice1',form('void'))).success).toBe(false);expect(db.invoice.findFirst).not.toHaveBeenCalled()})
  it.each(['paid','void'])('does not reopen %s invoices',async status=>{vi.mocked(db.invoice.findFirst).mockResolvedValue({status} as never);expect((await updateInvoiceStatus('invoice1',form('sent'))).success).toBe(false);expect(db.invoice.updateMany).not.toHaveBeenCalled()})
  it('detects concurrent changes before reporting success',async()=>{vi.mocked(db.invoice.updateMany).mockResolvedValue({count:0});expect((await updateInvoiceStatus('invoice1',form('overdue'))).success).toBe(false)})
- it('does not void while checkout has a payment in progress',async()=>{vi.mocked(db.invoice.findFirst).mockResolvedValue({status:'sent',stripeCheckoutSessionId:'cs1'} as never);vi.mocked(db.organization.findUnique).mockResolvedValue({stripeConnectedAccountId:'acct1'} as never);vi.mocked(getStripe).mockReturnValue({checkout:{sessions:{retrieve:vi.fn(async()=>({status:'complete'}))}}} as never);expect((await updateInvoiceStatus('invoice1',form('void'))).success).toBe(false);expect(db.invoice.updateMany).not.toHaveBeenCalled()})
 })

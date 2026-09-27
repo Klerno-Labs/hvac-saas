@@ -18,7 +18,7 @@ Set values in the Vercel project environment settings. Preserve the exact value 
 | Authentication | `AUTH_SECRET`, `AUTH_URL` | Strong random signing secret; canonical HTTPS application origin. Keep the secret stable across routine releases. |
 | Application links | `APP_URL` | Canonical HTTPS origin used for portal, payment, and email links. |
 | Scheduled work | `CRON_SECRET` | Strong random bearer secret, at least 32 characters. Vercel sends it automatically. |
-| Release pause | `SCHEDULED_TASKS_ENABLED` | Set exactly `false` before building a production candidate to prevent scheduled execution until database migration and release checks are complete. Unset or `true` enables execution. Changing the value requires redeployment. |
+| Release pause | `SCHEDULED_TASKS_ENABLED` | Scheduled work runs only when the value is exactly `true`. Unset, `false`, whitespace and other values remain paused. Set `false` before building a production candidate; explicitly enable only after database and release checks pass. Changing the value requires redeployment. |
 | Legacy scheduler migration | `COLLECTIONS_CRON_SECRET` | Optional compatibility token accepted by all three cron routes. Prefer the same value as `CRON_SECRET` during migration. Remove or rotate both values to fully revoke an old token. |
 | Stripe API | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` | Matching account/mode keys. Test keys cannot collect live payments. |
 | Platform subscription webhook | `STRIPE_WEBHOOK_SECRET` | Signing secret for the platform endpoint described below. |
@@ -63,7 +63,7 @@ These expressions satisfy Hobby's once-per-day frequency restriction. Hobby exec
 
 Deploy after changing secrets or schedules, and confirm the jobs appear in Vercel's cron settings. Avoid a second external scheduler running the same work. An authenticated manual trigger executes real work and may notify customers; it is not a harmless connectivity check.
 
-Set `SCHEDULED_TASKS_ENABLED=false` before creating a staged production candidate, including one created without assigning the production domain. Do not assume domain assignment alone prevents scheduled execution. The shared guard authenticates first, then returns 503 without invoking any engine while this flag is false. Enable with `true` only after the intended database is migrated and release checks pass, and create a new deployment so the setting takes effect. This flag does not change an already-running deployment's environment.
+Set `SCHEDULED_TASKS_ENABLED=false` before creating a staged production candidate, including one created without assigning the production domain. Do not assume domain assignment alone prevents scheduled execution. The shared guard authenticates first, then returns 503 without invoking any engine unless this flag is exactly `true`; missing or misspelled values cannot enable delivery. Enable with `true` only after the intended database is migrated and release checks pass, and create a new deployment so the setting takes effect. This flag does not change an already-running deployment's environment.
 
 ## Promotion checks
 

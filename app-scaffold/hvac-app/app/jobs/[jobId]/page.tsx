@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { JobStatusForm } from './status-form'
 import { PartsUsedSection } from './parts-used'
 import { ReviewSection } from './review-section'
+import { getStripeRuntimeAvailability } from '@/lib/stripe-runtime'
 import { TerminalCollectSection } from './terminal-collect-section'
 import { getTerminalEligibility } from '@/lib/terminal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -271,6 +272,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
 
       {/* In-field card payment (Stripe Terminal) */}
       <TerminalCollectSection
+        allowSimulation={getStripeRuntimeAvailability().mode === 'test'}
         eligible={terminalEligibility.eligible}
         ineligibleReason={terminalEligibility.reason}
         invoices={job.invoices.map((inv) => ({

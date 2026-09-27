@@ -17,7 +17,7 @@ const customer = { id: 'customer1', firstName: 'Alex', email: 'customer@example.
 beforeEach(() => {
   vi.clearAllMocks()
   vi.spyOn(console, 'error').mockImplementation(() => {})
-  const document = { id: 'document1', status: 'draft', updatedAt: new Date(), totalCents: 10000, customer, job: { customer }, notes: 'Private supplier margin discussion' }
+  const document = { id: 'document1', status: 'draft', updatedAt: new Date(), totalCents: 10000, outstandingCents: 10000, customer, job: { customer }, notes: 'Private supplier margin discussion' }
   vi.mocked(db.estimate.findFirst).mockResolvedValue(document as never)
   vi.mocked(db.invoice.findFirst).mockResolvedValue(document as never)
   vi.mocked(db.estimate.updateMany).mockResolvedValue({ count: 1 })
@@ -27,6 +27,12 @@ beforeEach(() => {
   vi.mocked(sendInvoiceEmail).mockResolvedValue({ success: true, id: 'message1' })
   vi.mocked(trackEvent).mockResolvedValue({} as never)
   vi.mocked(getOrCreatePortalUrl).mockResolvedValue('https://example.test/portal/customer')
+})
+
+it('passes the current balance to invoice email wording independently of the original total', async () => {
+  vi.mocked(db.invoice.findFirst).mockResolvedValue({ id: 'document1', status: 'sent', updatedAt: new Date(), totalCents: 10000, outstandingCents: 0, customer } as never)
+  expect(await updateInvoiceStatus('document1', form())).toEqual({ success: true })
+  expect(sendInvoiceEmail).toHaveBeenCalledWith(expect.objectContaining({ totalFormatted: '$100.00', outstandingCents: 0 }))
 })
 afterEach(() => { vi.restoreAllMocks() })
 describe.each([

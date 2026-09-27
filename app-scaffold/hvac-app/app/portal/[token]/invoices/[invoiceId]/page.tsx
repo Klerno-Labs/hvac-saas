@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { customerInvoiceStatus, isInvoiceCollectible } from '@/lib/invoice-presentation'
 
 export default async function PortalInvoiceDetailPage({
   params,
@@ -62,7 +63,7 @@ export default async function PortalInvoiceDetailPage({
     entityId: invoiceId,
   })
 
-  const canPay = invoice.status !== 'paid' && invoice.status !== 'void'
+  const canPay = isInvoiceCollectible(invoice)
 
   return (
     <main className="px-4 py-6 sm:py-10">
@@ -84,7 +85,7 @@ export default async function PortalInvoiceDetailPage({
                 variant="secondary"
                 className={cn(statusClasses(invoice.status))}
               >
-                {customerFriendlyStatus(invoice.status)}
+                {customerInvoiceStatus(invoice)}
               </Badge>
             </div>
           </CardHeader>
@@ -104,7 +105,7 @@ export default async function PortalInvoiceDetailPage({
               </div>
             </div>
 
-            {invoice.outstandingCents > 0 && (
+            {canPay && (
               <div className="rounded-lg bg-amber-50 px-4 py-3">
                 <span className="font-bold text-amber-800">
                   Amount due: {formatCents(invoice.outstandingCents)}
@@ -187,16 +188,6 @@ export default async function PortalInvoiceDetailPage({
 
 function formatCents(cents: number): string {
   return '$' + (cents / 100).toFixed(2)
-}
-
-function customerFriendlyStatus(status: string): string {
-  switch (status) {
-    case 'sent': return 'Awaiting payment'
-    case 'overdue': return 'Overdue'
-    case 'paid': return 'Paid'
-    case 'void': return 'Cancelled'
-    default: return status
-  }
 }
 
 function statusClasses(status: string): string {

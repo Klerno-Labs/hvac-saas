@@ -18,7 +18,7 @@ afterEach(() => vi.unstubAllEnvs())
 
 describe('email templates treat business data as text', () => {
   it.each([
-    ['invoice', () => sendInvoiceEmail({ ...common, invoiceNumber: value, dueDate: value })],
+    ['invoice', () => sendInvoiceEmail({ ...common, invoiceNumber: value, dueDate: value, outstandingCents: 10000 })],
     ['estimate', () => sendEstimateEmail({ ...common, estimateNumber: value })],
     ['collection', () => sendCollectionEmail({ ...common, invoiceNumber: value, dueDate: value, stage: 'overdue_1' })],
     ['appointment', () => sendAppointmentReminderEmail({ ...common, jobTitle: value, scheduledFor: new Date('2026-09-26T12:00:00Z') })],

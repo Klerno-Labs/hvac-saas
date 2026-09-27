@@ -36,7 +36,7 @@ import { POST as billingPortal } from '@/app/api/billing/portal/route'
 import { startStripeOnboarding, refreshStripeStatus } from '@/app/settings/stripe/actions'
 import { createCheckoutSession } from '@/app/invoices/[invoiceId]/payment-actions'
 import { createPortalCheckoutSession } from '@/app/portal/[token]/invoices/[invoiceId]/payment-action'
-import { createTerminalPaymentIntent, captureTerminalPayment, createTerminalConnectionToken } from '@/app/jobs/[jobId]/terminal-payment-actions'
+import { createTerminalPaymentIntent, captureTerminalPayment, cancelTerminalPaymentAttempt, createTerminalConnectionToken } from '@/app/jobs/[jobId]/terminal-payment-actions'
 import BillingPage from '@/app/settings/billing/page'
 
 beforeEach(() => {
@@ -105,6 +105,7 @@ describe('production payment entry points fail closed with sandbox configuration
     ['create intent', () => createTerminalPaymentIntent('invoice_fixture')],
     ['capture intent', () => captureTerminalPayment('pi_fixture')],
     ['connection token', () => createTerminalConnectionToken()],
+    ['cancel attempt', () => cancelTerminalPaymentAttempt('pi_fixture')],
   ] as const)('blocks Terminal %s without recording a payment or capture', async (_name, action) => {
     expect(await action()).toMatchObject({ success: false, error: expect.stringContaining('Card payments are temporarily unavailable') })
     expectNoProviderOrFinancialWrite()

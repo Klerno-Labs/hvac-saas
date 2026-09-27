@@ -2,6 +2,12 @@
 
 The original inventory below was recorded on September 26, 2026. It was read-only; subsequent authorized activation work is recorded separately here. Neither provider configuration nor a successful read proves completed payment settlement.
 
+## Follow-up verification — September 27, 2026
+
+Live configuration remains deployed. Subsequent authorized sandbox work completed both paid subscription Checkouts, self-service period-end cancellation, test Connect onboarding and a connected-account invoice payment reconciled by a signed provider notification. See [the exact sandbox evidence and remaining limits](stripe-runtime-verification.md#completed-sandbox-workflows--september-27-2026). These results supersede the initial sandbox probes' incomplete-account/failed-checkout findings, without claiming a live charge or payout.
+
+Production owner recovery, private photo persistence, document delivery and a controlled reminder are recorded in [launch verification](launch-verification-2026-09-27.md). Final payment retry/cancellation changes and the scheduler-enabled public deployment require their final recorded checks. Historical configuration snapshots below describe their stated timestamps and must not be used to overwrite the current setup.
+
 ## Public activation — September 27, 2026, 13:09 UTC
 
 Deployment `dpl_GkUyXefERdVdNsQ9EBsrR9E3xMvj`, application revision `992dcf3`, now serves **https://fieldclose.app** with the complete live configuration described below. GitHub CI passed. The protected candidate passed 24 page/access checks, seven page metadata/support checks plus deployment protection, and nine signed webhook boundary checks. Public alias, health, page, support and authentication checks passed after promotion. The same nine signed webhook checks passed publicly: invalid signatures and wrong account scopes are rejected; signed sandbox events and unassociated live events are acknowledged without processing.

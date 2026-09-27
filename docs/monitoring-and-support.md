@@ -46,9 +46,17 @@ The saved monitor's built-in read-only GET test displayed **“Uptime check pass
 
 Review provider delivery failures, stored webhook/collection exceptions, private-storage failures, and scheduler outcomes independently. Assign an operator and escalation contact for unresolved items. Do not use authenticated cron endpoints as passive health checks: they can perform work and notify customers. The read-only readiness scripts report configuration/backlog evidence without replaying jobs.
 
+## Scheduled-work verification — September 27, 2026
+
+Runtime revision `beae275` reports genuine scheduled-route failures and partial outcomes through fixed privacy-filtered error events, with a bounded flush before completion. Recipient data, customer names, tokens and raw provider errors are excluded. Missing or malformed enablement values remain paused.
+
+An unpromoted scheduler-enabled production candidate delivered one approved internal appointment reminder. Resend confirmed delivery, the database retained one email-only reminder event, and a deliberate second execution sent zero. Collections and recurring generation returned zero work, and a post-cleanup repeat of all three routes also returned zero. The fixture was returned to an unscheduled draft. Exact timestamps and candidate identity are in [launch verification](launch-verification-2026-09-27.md).
+
+This proves a controlled authenticated execution and duplicate suppression, not future calendar invocation or missed-run alerts. No outage was induced and no hosted error route was deliberately added. Keep availability monitoring separate from delivery/payment readiness and retain an operator for unresolved exceptions.
+
 ## Support inbox setup
 
-1. Save `NEXT_PUBLIC_SUPPORT_EMAIL=pegriollc@gmail.com` in Vercel production, then rebuild and deploy. It is a public contact address, not a credential. Confirm the live footer, Help Center, policies, and billing recovery messages show the approved address. Preview deployments can use a separate approved address.
+1. The approved `NEXT_PUBLIC_SUPPORT_EMAIL=pegriollc@gmail.com` is deployed and public support links were checked. Preserve this public contact setting in subsequent releases and verify footer, Help Center, policies and billing recovery links after configuration changes. Preview deployments can use a separate approved address.
 2. Confirm who monitors the existing inbox and the coverage/escalation process. Send one authorized support-verification message from a different mailbox, confirm arrival with the designated recipient, and verify the intended reply path. Provider acceptance or an outbound sender-domain verification does not prove human receipt or replies.
 3. Branded forwarding is an optional later improvement. In the DNS account that owns `fieldclose.app`, configure `support@fieldclose.app` to reach the approved inbox before switching the public configuration back. Cloudflare can [route email to an existing verified destination](https://developers.cloudflare.com/email-service/get-started/route-emails/). Verify the recipient, required DNS records, MX route, and receipt; preserve unrelated domain records and services. Review the mail authentication policy separately: inbound routing does not itself authorize replies as the branded address.
 4. Configure each critical-alert provider's destination separately and verify a received alert. The public support setting does not configure monitoring notifications.

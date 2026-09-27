@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { limit, RL, extractIp } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
+import { customerInvoiceStatus, isInvoiceCollectible } from '@/lib/invoice-presentation'
 
 export default async function PortalDashboardPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -53,7 +54,7 @@ export default async function PortalDashboardPage({ params }: { params: Promise<
     }),
   ])
 
-  const outstandingInvoices = invoices.filter((i) => i.status !== 'paid' && i.status !== 'void')
+  const outstandingInvoices = invoices.filter(isInvoiceCollectible)
 
   return (
     <main className="px-4 py-6 sm:py-10">
@@ -125,7 +126,7 @@ export default async function PortalDashboardPage({ params }: { params: Promise<
                           invoiceStatusClasses(inv.status),
                         )}
                       >
-                        {customerFriendlyStatus(inv.status)}
+                        {customerInvoiceStatus(inv)}
                       </Badge>
                     </div>
                   </div>
@@ -177,16 +178,6 @@ export default async function PortalDashboardPage({ params }: { params: Promise<
 
 function formatCents(cents: number): string {
   return '$' + (cents / 100).toFixed(2)
-}
-
-function customerFriendlyStatus(status: string): string {
-  switch (status) {
-    case 'sent': return 'Awaiting payment'
-    case 'overdue': return 'Overdue'
-    case 'paid': return 'Paid'
-    case 'void': return 'Cancelled'
-    default: return status
-  }
 }
 
 function invoiceStatusClasses(status: string): string {

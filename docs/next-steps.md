@@ -1,22 +1,21 @@
-# Next steps
+# Next steps after integration verification
 
-This is a release and operating sequence for the existing application, not a plan to rebuild the original scaffold. See [current blockers](known-issues.md) and [self-service release scope](self-service-launch.md).
+Use [current release gates](known-issues.md), [launch evidence](launch-verification-2026-09-27.md), and [payment verification](stripe-runtime-verification.md). Older unpromoted-candidate, unavailable-database and pending-owner-signup notes have been superseded.
 
-## Before promotion
+## Finish the controlled release
 
-1. **Verify deployed owner workflows on the new database.** New `fieldclose` project `lcdammkhivlabinxmzja` connects with all ten migrations, no schema drift and SSL enforcement enabled. Production settings contain its working connection; a new deployment must capture it. No synthetic users were seeded. Verify signup and tenant workflows with an owner-authorized business identity; see [activation](production-activation.md).
-2. **Maintain the recovery path.** The new empty application's post-migration backup restored successfully into an isolated local database; retain the private archive and repeat recovery verification as real data is introduced. The original Supabase project's records remain unknown and unrecovered, with its old connection preserved as encrypted `LEGACY_DATABASE_URL`. Do not reset or reconcile that original project using the fresh-install procedure.
-3. **Validate the final revision.** Run the repository's clean install, typecheck, unit and disposable-database integration suites, production build, and dependency review. Exercise the public tour/Help search, signup choices, setup recovery states, imports, pricing, invitation retry, and owner/technician flows on desktop and mobile. Record results against the exact final commit rather than reusing older test totals.
-4. **Complete integration checks.** Configure and validate live Stripe credentials/prices and both webhook scopes, verified email delivery, and photo storage. Verify SMS only if it will be offered. Confirm live account status and payment evidence through the actual app; a checkout redirect or test transaction is insufficient.
-5. **Complete environment verification of the current candidate.** Protected candidate `7878c6f` is Ready with the new database; all 24 hosted checks pass, including health 200. The first-owner signup form is prepared, with account creation and authenticated business setup awaiting the owner. See [the release receipt](release-2026-09-26.md). Keep the candidate unpromoted and scheduled work paused until protected workflows and remaining integrations pass the documented checks. Follow [deployment-guide.md](deployment-guide.md) and [deploy-vercel.md](deploy-vercel.md).
+1. Verify the final payment and customer-document changes against unit, disposable PostgreSQL and browser/provider checks. Pin evidence to the actual application revision.
+2. Promote the scheduler-enabled final candidate only after the controlled reminder delivery, duplicate suppression and zero-work checks pass. Verify public health, access guards, private portal display and scheduler authorization after promotion.
+3. Keep the unavailable original database's recovery trail. Continue periodic production backup and restore verification; a new workspace did not recover the old records.
 
-## Controlled launch
+## First real customer operation
 
-- Assign an owner for database recovery, payment failures, email/SMS delivery, storage issues, and failed scheduled work. Confirm the support mailbox is monitored.
-- Promote the verified revision, check public and protected routes, and review production logs. Enable scheduled work only after the prerequisites pass and a deployment includes the enabled environment value. Keep one scheduler per workflow.
-- Leave `NEXT_PUBLIC_ENABLE_FUNNEL_EVENTS` disabled on the current Hobby account. If an eligible analytics plan is chosen, explicitly enable the flag, redeploy, and verify sanitized events. Signup clicks are not completed accounts; tour simulation is not product activation.
-- Observe a limited operator pilot from customer creation through confirmed live payment. Record blocked steps, errors, completion rates, and support requests before expanding to another trade or buying traffic.
+- A business owner must complete their own live Stripe connection. Sandbox onboarding and payments do not satisfy live account readiness or first-payment evidence. Any real charge requires the customer's authorized purchase; no real charge was part of this verification.
+- Monitor payment reconciliation, delivery failures, support, uptime and scheduled execution. The designated support inbox receives critical alerts, but someone still must act on exceptions.
+- Confirm actual scheduled invocation and missed-run/outage notification behavior. An authenticated route check does not prove future calendar execution.
+- Keep SMS, direct accounting integrations and optional AI claims aligned with the configured product. SMS and OpenAI remain unconfigured; accounting currently uses CSV exports.
+- Run a limited operator pilot before trade expansion or buying traffic. Measure account activation, completed jobs/payments, support requests and retention. No acquisition campaign or advertising budget was launched.
 
-## Improvements after measured use
+## Growth and product improvements
 
-Prioritize from actual failures and operator feedback: durable message delivery/recovery, deposits and partial-balance reconciliation, fuller exports, and real accounting integrations. Add specialized trade workflows only after discovery with operators in that trade. Public self-service content reduces avoidable questions; it does not eliminate incident handling, support ownership, or prove growth and retention.
+Prioritize from measured failures: deposits and partial-balance reconciliation, self-service refunds, direct accounting connections and specialized trade workflows. Public self-service pages reduce routine sales/support work; they cannot guarantee growth or eliminate incident handling. Custom funnel events remain disabled on the current Hobby analytics plan until eligible service and explicit activation are arranged.

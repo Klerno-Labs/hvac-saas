@@ -1,6 +1,6 @@
 # Self-service release scope and launch gates
 
-Status: September 26, 2026. The features below are implemented in the local application at `app-scaffold/hvac-app`. Final combined validation and the staged deployment receipt are recorded in [release-2026-09-26.md](release-2026-09-26.md).
+Status updated September 27, 2026. The self-service journey is deployed. Historical releases are recorded in [release-2026-09-26.md](release-2026-09-26.md); current verification and limits are in [launch verification](launch-verification-2026-09-27.md) and [known issues](known-issues.md).
 
 ## Implemented user journey
 
@@ -32,19 +32,20 @@ When enabled, the fixed events cover signup clicks, tour opening/start/completio
 
 ## Production status and gates
 
-The following is the last recorded production preflight, not a fresh claim of service recovery:
+Current evidence is split by environment:
 
-- `https://fieldclose.app` remains on its previous production deployment. The protected self-service candidate at `3e766a6` is Ready, with its URL, access checks and remaining health failure recorded in [the release receipt](release-2026-09-26.md). It has not been promoted.
-- Existing deployments captured the unavailable original database and returned health 503. The owner's separate `fieldclose` project `lcdammkhivlabinxmzja` now connects, has all ten migrations and no schema drift, and requires SSL. A post-migration backup restored successfully into an isolated local database; all application tables remain empty and no seed has occurred. Production settings now contain the new connection, which requires a new deployment. The original connection remains preserved as encrypted `LEGACY_DATABASE_URL`; its records are unknown and unrecovered.
-- Stripe is test-only in the inspected environment, with no sandbox webhook endpoints. The separate live account is active and has the intended prices, but its existing FieldClose destinations have the wrong scope/version. Use separate platform and Connect signing secrets and a dedicated FieldClose billing portal; see [live payment activation](live-payments-activation.md).
-- `SCHEDULED_TASKS_ENABLED=false` is configured for new production candidates. Keep scheduled execution paused until database and delivery checks pass. Changing a project environment setting does not alter the environment of an already-running deployment.
-- Email sender/delivery, SMS if offered, and R2 photo storage remain release gates. Code paths and mocked tests are not evidence of deployed delivery or file persistence.
+- The new separate database is deployed, SSL-enforced, migrated and restore-tested, including a populated internal-workspace snapshot. Owner sign-in and business setup are complete. The original unavailable database remains unknown and unrecovered; its connection is preserved as encrypted `LEGACY_DATABASE_URL`.
+- Live restricted Stripe configuration, prices, separate platform/Connect webhook secrets and the dedicated customer billing portal are deployed. Completed Starter/Pro subscription and connected-invoice sandbox workflows are recorded in [runtime verification](stripe-runtime-verification.md). They do not prove a real charge or bank payout.
+- One estimate and one zero-balance invoice were sent once to the explicitly approved internal test inbox; Resend reported both delivered. An authorized appointment-reminder check also delivered once and a deliberate rerun sent zero. No customer outreach campaign was started.
+- The scheduler-enabled candidate passed the controlled reminder and zero-work route checks while public traffic remained on the paused release. Final candidate identity and activation must be verified after the payment follow-up changes.
+- A private production photo persisted and rendered after reload; anonymous access was denied. Separate isolated real-authentication tests cover roles, organizations, portal tokens, deleted customers, storage failure and reset-session invalidation. These local tests are not hosted cross-tenant evidence.
+- SMS is not configured. Support and critical alerts route to the designated support inbox. A monitoring test notification reached that inbox; actual incident response coverage remains an operating responsibility.
 
 Follow [the deployment sequence](deployment-guide.md) and [production checklist](launch-checklist.md). The build generates Prisma Client but does not migrate the database. In particular, inspect the actual history before applying or resolving migration `0005`; prepare a compatible rollback or forward recovery. Validate the final revision and deployed services before assigning traffic.
 
-## Policy corrections before promotion
+## Policy and operating boundaries
 
-The candidate corrects unsupported automatic 90-day deletion and blanket security claims, identifies the configured database/email/SMS/storage/monitoring providers, and distinguishes a free trial from an owner-initiated paid checkout. These edits do not implement a deletion service or change the existing production policy. Before promotion, reconcile existing customer commitments and the published change-notice requirements, establish a retention/deletion operating process, and review the final policy wording. The existing refund guarantee is preserved; refunds still require operational handling.
+The published wording corrects unsupported automatic 90-day deletion and blanket security claims, identifies the configured database/email/SMS/storage/monitoring providers, and distinguishes a free trial from an owner-initiated paid checkout. These edits do not implement a deletion service. Reconcile customer commitments and published change-notice requirements, and establish a retention/deletion operating process. The existing refund guarantee is preserved; refunds still require operational handling.
 
 ## Operating handoff
 
