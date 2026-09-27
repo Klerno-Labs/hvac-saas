@@ -1,6 +1,7 @@
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { NextResponse } from 'next/server'
 import { runAppointmentReminders } from '@/lib/appointment-reminders'
+import { reportScheduledFailure } from '@/lib/scheduled-monitoring'
 
 export const runtime = 'nodejs'
 
@@ -19,9 +20,14 @@ export async function GET(req: Request) {
 
   try {
     const result = await runAppointmentReminders()
-    return NextResponse.json({ success: true, ...result }, { headers: { 'Cache-Control': 'no-store' } })
-  } catch (error) {
-    console.error('Appointment reminders error:', error)
+    const success = result.errors === 0
+    if (!success) await reportScheduledFailure('appointments', true)
+    // Keep completed/partial runs inspectable without instructing a caller to
+    // replay the whole batch after some recipients already accepted delivery.
+    return NextResponse.json({ success, ...result }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch {
+    console.error('Appointment reminders failed')
+    await reportScheduledFailure('appointments')
     return NextResponse.json({ error: 'Appointment reminders failed' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
 }

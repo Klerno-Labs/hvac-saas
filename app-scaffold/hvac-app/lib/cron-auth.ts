@@ -24,7 +24,9 @@ export function rejectUnauthorizedCron(request: Request): NextResponse | null {
       status: 401, headers: { 'Cache-Control': 'no-store' },
     })
   }
-  if (process.env.SCHEDULED_TASKS_ENABLED === 'false') {
+  // External delivery must be explicitly enabled. Missing or misspelled
+  // configuration must never turn a paused scheduler into an active one.
+  if (process.env.SCHEDULED_TASKS_ENABLED !== 'true') {
     return NextResponse.json({ error: 'Scheduled tasks are paused' }, {
       status: 503, headers: { 'Cache-Control': 'no-store' },
     })

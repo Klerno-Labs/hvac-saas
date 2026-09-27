@@ -16,7 +16,7 @@ const inviteSchema = z.object({
 })
 
 type ActionResult = { success: true } | { success: false; error: string }
-type InviteResult = { success: true; delivery: 'sent' | 'failed' } | { success: false; error: string }
+type InviteResult = { success: true; delivery: 'sent' | 'failed' | 'unconfirmed' } | { success: false; error: string }
 type InvitationToSend = { id: string; email: string; token: string }
 
 async function deliverInvitation(invite: InvitationToSend, orgName: string, inviterName: string): Promise<InviteResult> {
@@ -26,12 +26,12 @@ async function deliverInvitation(invite: InvitationToSend, orgName: string, invi
       to: invite.email, orgName, inviterName,
       signupUrl: `${appUrl}/invite/${invite.token}`,
     })
-    return { success: true, delivery: delivery.success ? 'sent' : 'failed' }
+    return { success: true, delivery: delivery.success ? 'sent' : delivery.retryable === true ? 'failed' : 'unconfirmed' }
   } catch {
     // The invitation still exists. Keep its recipient, role, token and expiry
     // intact so an owner can explicitly retry, without logging a private link.
     console.error('Team invitation email delivery failed')
-    return { success: true, delivery: 'failed' }
+    return { success: true, delivery: 'unconfirmed' }
   }
 }
 

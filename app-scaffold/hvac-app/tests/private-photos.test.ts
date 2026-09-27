@@ -44,7 +44,7 @@ beforeEach(() => {
   vi.mocked(db.portalToken.findUnique).mockResolvedValue({
     token, customerId: 'customer1', organizationId: 'org1', revokedAt: null,
     expiresAt: new Date(Date.now() + 86_400_000),
-    customer: { id: 'customer1', firstName: 'Customer', lastName: null },
+    customer: { id: 'customer1', organizationId: 'org1', deletedAt: null, firstName: 'Customer', lastName: null },
     organization: { id: 'org1', name: 'Business' },
   } as never)
   currentAsset = { ...asset }

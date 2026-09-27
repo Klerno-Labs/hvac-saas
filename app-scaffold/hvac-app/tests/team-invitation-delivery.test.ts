@@ -46,7 +46,7 @@ afterEach(() => vi.unstubAllEnvs())
 
 describe('team invitation delivery', () => {
   it('reports provider failure while preserving a saved invitation for explicit retry', async () => {
-    vi.mocked(sendTeamInviteEmail).mockResolvedValue({ success: false, error: 'Email unavailable' } as never)
+    vi.mocked(sendTeamInviteEmail).mockResolvedValue({ success: false, error: 'Email unavailable', retryable: true })
     expect(await inviteTeamMember(form())).toEqual({ success: true, delivery: 'failed' })
     expect(db.teamInvite.create).toHaveBeenCalledOnce()
     expect(db.teamInvite.update).not.toHaveBeenCalled()
@@ -54,7 +54,7 @@ describe('team invitation delivery', () => {
   it('reports a thrown delivery error without logging the token or fabricating email success', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(sendTeamInviteEmail).mockRejectedValue(new Error(`provider failed for ${invitation.token}`))
-    expect(await inviteTeamMember(form())).toEqual({ success: true, delivery: 'failed' })
+    expect(await inviteTeamMember(form())).toEqual({ success: true, delivery: 'unconfirmed' })
     expect(JSON.stringify(log.mock.calls)).not.toContain(invitation.token)
     log.mockRestore()
   })
@@ -122,8 +122,17 @@ describe('retrying an existing pending invitation', () => {
   })
   it('reports a retry delivery failure truthfully', async () => {
     vi.mocked(db.teamInvite.findFirst).mockResolvedValue(invitation as never)
-    vi.mocked(sendTeamInviteEmail).mockResolvedValue({ success: false } as never)
+    vi.mocked(sendTeamInviteEmail).mockResolvedValue({ success: false, error: 'Email unavailable', retryable: true })
     expect(await resendTeamInvitation('invite_1')).toEqual({ success: true, delivery: 'failed' })
+  })
+  it.each([false, undefined])('preserves an uncertain provider outcome on creation and retry (retryable=%s)', async (retryable) => {
+    vi.mocked(sendTeamInviteEmail).mockResolvedValue({ success: false, error: 'Acceptance unknown', retryable })
+    expect(await inviteTeamMember(form())).toEqual({ success: true, delivery: 'unconfirmed' })
+    vi.mocked(db.teamInvite.findFirst).mockResolvedValue(invitation as never)
+    expect(await resendTeamInvitation('invite_1')).toEqual({ success: true, delivery: 'unconfirmed' })
+    expect(db.teamInvite.create).toHaveBeenCalledTimes(1)
+    expect(db.teamInvite.update).not.toHaveBeenCalled()
+    expect(sendTeamInviteEmail).toHaveBeenCalledTimes(2)
   })
   it('shows an accessible resend control only for active pending invitations', () => {
     const html = renderToStaticMarkup(React.createElement(TeamSection, { currentUserId: 'owner_1', members: [], invites: [

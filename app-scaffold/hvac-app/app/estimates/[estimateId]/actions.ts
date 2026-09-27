@@ -150,14 +150,17 @@ export async function updateEstimateStatus(
   // Status and customer delivery are distinct outcomes. Never report an
   // email as sent when the delivery provider rejected it or is unavailable.
   let warning: string | undefined
+  const unconfirmedDelivery = 'The estimate is marked sent, but email submission could not be confirmed. Check email delivery status and the recipient\'s inbox before retrying to avoid sending it twice.'
   if (status === 'sent') {
     const customer = estimate.job.customer
     if (!customer.email) {
       warning = 'The estimate is marked sent, but no email was sent because this customer has no email address. Add an email address, then choose Sent again to send it.'
     } else {
+      let emailAttempted = false
       try {
         const org = await db.organization.findUniqueOrThrow({ where: { id: organizationId } })
         const portalUrl = await getOrCreatePortalUrl(organizationId, customer.id)
+        emailAttempted = true
         const delivery = await sendEstimateEmail({
           to: customer.email,
           customerName: [customer.firstName, customer.lastName].filter(Boolean).join(' '),
@@ -166,22 +169,30 @@ export async function updateEstimateStatus(
           orgName: org.name,
           portalUrl,
         })
-        if (!delivery.success) warning = 'The estimate is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
-      } catch (error) {
-        console.error('Estimate delivery failed after status update', error)
-        warning = 'The estimate is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
+        if (!delivery.success) warning = delivery.retryable === true
+          ? 'The estimate is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
+          : unconfirmedDelivery
+      } catch {
+        console.error('Estimate delivery failed after status update')
+        warning = emailAttempted ? unconfirmedDelivery : 'The estimate is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
       }
     }
   }
 
-  await trackEvent({
-    organizationId,
-    userId,
-    eventName: 'estimate_status_updated',
-    entityType: 'estimate',
-    entityId: estimateId,
-    metadataJson: { from: estimate.status, to: status },
-  })
+  try {
+    await trackEvent({
+      organizationId,
+      userId,
+      eventName: 'estimate_status_updated',
+      entityType: 'estimate',
+      entityId: estimateId,
+      metadataJson: { from: estimate.status, to: status },
+    })
+  } catch {
+    // A telemetry outage must not turn an already submitted email into a
+    // failed action that encourages the user to send it again.
+    console.error('Estimate status activity could not be recorded')
+  }
 
   return { success: true, ...(warning ? { warning } : {}) }
 }

@@ -8,6 +8,7 @@ import { runAppointmentReminders } from '@/lib/appointment-reminders'
 vi.mock('@/lib/collections', () => ({ runCollectionsAutomation: vi.fn() }))
 vi.mock('@/lib/recurring-generation', () => ({ generateDueRecurringJobs: vi.fn() }))
 vi.mock('@/lib/appointment-reminders', () => ({ runAppointmentReminders: vi.fn() }))
+vi.mock('@/lib/scheduled-monitoring', () => ({ reportScheduledFailure: vi.fn() }))
 const vercelSecret = 'vercel-fixture-secret-at-least-32-characters'
 const legacySecret = 'legacy-fixture-secret-at-least-32-characters'
 const paths = [
@@ -19,8 +20,8 @@ beforeEach(() => {
   vi.resetAllMocks()
   vi.stubEnv('CRON_SECRET', vercelSecret)
   vi.stubEnv('COLLECTIONS_CRON_SECRET', legacySecret)
-  vi.stubEnv('SCHEDULED_TASKS_ENABLED', undefined)
-  vi.mocked(runCollectionsAutomation).mockResolvedValue({ sent: 0 } as never)
+  vi.stubEnv('SCHEDULED_TASKS_ENABLED', 'true')
+  vi.mocked(runCollectionsAutomation).mockResolvedValue({ organizationsProcessed: 0, attemptsCreated: 0, attemptsSkipped: 0, channelsAccepted: 0, errors: 0, needsReview: 0 })
   vi.mocked(generateDueRecurringJobs).mockResolvedValue({ generated: 0, generatedMembershipVisits: 0 })
   vi.mocked(runAppointmentReminders).mockResolvedValue({ sent: 0, errors: 0 })
 })
@@ -28,12 +29,12 @@ afterEach(() => vi.unstubAllEnvs())
 for (const [path, get, post, engine] of paths) {
   describe(`${path} authenticated scheduled execution`, () => {
     it.each([
-      ['false', 503], ['true', 200], [undefined, 200],
-    ] as const)('respects the optional execution flag %s', async (enabled, expectedStatus) => {
+      ['false', 503], ['true', 200], [undefined, 503], ['', 503], ['FALSE', 503], ['TRUE', 503], [' true ', 503], ['0', 503],
+    ] as const)('requires explicit execution permission %s', async (enabled, expectedStatus) => {
       vi.stubEnv('SCHEDULED_TASKS_ENABLED', enabled)
       const response = await get(new Request(`http://localhost${path}`, { headers: { authorization: `Bearer ${vercelSecret}` } }))
       expect(response.status).toBe(expectedStatus)
-      if (enabled === 'false') {
+      if (enabled !== 'true') {
         expect(await response.json()).toEqual({ error: 'Scheduled tasks are paused' })
         expect(engine).not.toHaveBeenCalled()
       } else {

@@ -13,6 +13,7 @@ process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
 const { db } = await import('@/lib/db')
 const { GET: teamPhoto } = await import('@/app/api/photos/[assetId]/route')
 const { GET: portalPhoto } = await import('@/app/api/portal/[token]/photos/[assetId]/route')
+const { validatePortalToken, getOrCreatePortalUrl } = await import('@/lib/portal')
 
 const organizationIds: string[] = []
 const userIds: string[] = []
@@ -28,6 +29,8 @@ let otherCustomerToken: string
 let otherOrganizationToken: string
 let revokedToken: string
 let expiredToken: string
+let mismatchedCustomerToken: string
+let customerId: string
 const request = new Request('https://fieldclose.example.test/api/photos/fixture')
 
 beforeAll(async () => {
@@ -46,6 +49,7 @@ beforeAll(async () => {
   unassignedId = await member(org.id, 'technician')
   otherOwnerId = await member(otherOrg.id, 'owner')
   const customer = await db.customer.create({ data: { organizationId: org.id, firstName: 'Photo customer' } })
+  customerId = customer.id
   const otherCustomer = await db.customer.create({ data: { organizationId: org.id, firstName: 'Other customer' } })
   const outsideCustomer = await db.customer.create({ data: { organizationId: otherOrg.id, firstName: 'Other organization customer' } })
   const job = await db.job.create({ data: { organizationId: org.id, customerId: customer.id, title: 'Private photo', assignedUserId: assignedId } })
@@ -74,6 +78,7 @@ beforeAll(async () => {
   otherOrganizationToken = await portal(otherOrg.id, outsideCustomer.id)
   revokedToken = await portal(org.id, customer.id, 'revoked')
   expiredToken = await portal(org.id, customer.id, 'expired')
+  mismatchedCustomerToken = await portal(otherOrg.id, customer.id)
 })
 
 beforeEach(() => {
@@ -141,5 +146,24 @@ describe('private photo authorization against PostgreSQL', () => {
     expect((await readPortal(revokedToken)).status).toBe(404)
     expect((await readPortal(expiredToken)).status).toBe(404)
     expect(mocks.send).not.toHaveBeenCalled()
+  })
+
+  it('rejects an inconsistent token/customer organization at the shared portal boundary', async () => {
+    expect(await validatePortalToken(mismatchedCustomerToken)).toBeNull()
+    expect((await readPortal(mismatchedCustomerToken)).status).toBe(404)
+    await expect(getOrCreatePortalUrl(organizationIds[1], customerId)).rejects.toThrow('Customer not found')
+    expect(mocks.send).not.toHaveBeenCalled()
+  })
+
+  it('invalidates an existing portal capability when its customer is soft-deleted', async () => {
+    await db.customer.update({ where: { id: customerId }, data: { deletedAt: new Date() } })
+    try {
+      expect(await validatePortalToken(customerToken)).toBeNull()
+      expect((await readPortal(customerToken)).status).toBe(404)
+      await expect(getOrCreatePortalUrl(organizationIds[0], customerId)).rejects.toThrow('Customer not found')
+      expect(mocks.send).not.toHaveBeenCalled()
+    } finally {
+      await db.customer.update({ where: { id: customerId }, data: { deletedAt: null } })
+    }
   })
 })

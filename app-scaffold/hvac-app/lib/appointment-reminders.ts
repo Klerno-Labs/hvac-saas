@@ -6,6 +6,7 @@ import { sendAppointmentReminderSms } from '@/lib/sms'
 import { isSubscriptionActive } from '@/lib/billing'
 
 type RunResult = { sent: number; errors: number }
+const REMINDABLE_STATUSES = ['booked', 'scheduled']
 
 /**
  * Send day-ahead reminders in the business time zone. A locked job and fresh
@@ -22,7 +23,9 @@ export async function runAppointmentReminders(): Promise<RunResult> {
     where: {
       scheduledFor: { gte: windowStart, lt: windowEnd },
       appointmentReminderSentAt: null,
-      status: { notIn: ['completed', 'cancelled'] },
+      status: { in: REMINDABLE_STATUSES },
+      customer: { deletedAt: null },
+      organization: { readOnlyAt: null },
     },
     select: { id: true },
   })
@@ -38,11 +41,12 @@ export async function runAppointmentReminders(): Promise<RunResult> {
         const job = await tx.job.findUnique({
           where: { id: candidate.id },
           include: {
-            customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
-            organization: { select: { id: true, name: true, smsEnabled: true, subscriptionStatus: true, trialEndsAt: true, timezone: true } },
+            customer: { select: { firstName: true, lastName: true, email: true, phone: true, deletedAt: true } },
+            organization: { select: { id: true, name: true, smsEnabled: true, subscriptionStatus: true, trialEndsAt: true, timezone: true, readOnlyAt: true } },
           },
         })
-        if (!job || job.appointmentReminderSentAt || !job.scheduledFor || ['completed', 'cancelled'].includes(job.status) || !isSubscriptionActive(job.organization)) return { sent: 0, errors: 0 }
+        if (!job || job.appointmentReminderSentAt || !job.scheduledFor || !REMINDABLE_STATUSES.includes(job.status) ||
+            job.customer.deletedAt || job.organization.readOnlyAt || !isSubscriptionActive(job.organization)) return { sent: 0, errors: 0 }
         const tomorrow = startOfBusinessDayAsUtcDate(now, job.organization.timezone)
         tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
         if (job.scheduledFor.toISOString().slice(0, 10) !== tomorrow.toISOString().slice(0, 10)) return { sent: 0, errors: 0 }

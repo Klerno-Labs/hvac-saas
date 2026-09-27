@@ -25,6 +25,33 @@ afterAll(async () => {
   await db.$disconnect()
 })
 describe('appointment worker concurrency', () => {
+  it('excludes unconfirmed jobs, archived customers, and read-only workspaces from real database selection', async () => {
+    const existing = await db.job.findUniqueOrThrow({ where: { id: jobId } })
+    const archived = await db.customer.create({ data: { organizationId, firstName: 'Archived fixture', email: 'archived@example.test', deletedAt: new Date() } })
+    const fixtures = await Promise.all([
+      ...['draft', 'in_progress', 'completed', 'cancelled'].map(status => db.job.create({ data: {
+        organizationId, customerId: existing.customerId, title: 'Ineligible fixture', status, scheduledFor: existing.scheduledFor,
+      } })),
+      db.job.create({ data: { organizationId, customerId: archived.id, title: 'Archived fixture', status: 'scheduled', scheduledFor: existing.scheduledFor } }),
+    ])
+    vi.mocked(sendAppointmentReminderEmail).mockResolvedValue({ success: true, id: 'eligible-message' })
+    await db.organization.update({ where: { id: organizationId }, data: { readOnlyAt: new Date() } })
+    try {
+      expect(await runAppointmentReminders()).toEqual({ sent: 0, errors: 0 })
+      expect(sendAppointmentReminderEmail).not.toHaveBeenCalled()
+    } finally {
+      await db.organization.update({ where: { id: organizationId }, data: { readOnlyAt: null } })
+    }
+    // Hide the separate concurrency fixture for this selection test.
+    await db.job.update({ where: { id: jobId }, data: { appointmentReminderSentAt: new Date() } })
+    try {
+      expect(await runAppointmentReminders()).toEqual({ sent: 0, errors: 0 })
+      expect(sendAppointmentReminderEmail).not.toHaveBeenCalled()
+      expect(await db.job.count({ where: { id: { in: fixtures.map(job => job.id) }, appointmentReminderSentAt: { not: null } } })).toBe(0)
+    } finally {
+      await db.job.update({ where: { id: jobId }, data: { appointmentReminderSentAt: null } })
+    }
+  })
   it('skips a locked job while another worker is delivering it, then skips the committed reminder', async () => {
     let notifyStarted!: () => void
     let releaseDelivery!: () => void

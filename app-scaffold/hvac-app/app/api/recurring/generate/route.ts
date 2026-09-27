@@ -1,6 +1,7 @@
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { NextResponse } from 'next/server'
 import { generateDueRecurringJobs } from '@/lib/recurring-generation'
+import { reportScheduledFailure } from '@/lib/scheduled-monitoring'
 
 export const runtime = 'nodejs'
 
@@ -20,8 +21,9 @@ export async function GET(req: Request) {
   try {
     const result = await generateDueRecurringJobs()
     return NextResponse.json({ success: true, ...result }, { headers: { 'Cache-Control': 'no-store' } })
-  } catch (error) {
-    console.error('Recurring job generation error:', error)
+  } catch {
+    console.error('Recurring job generation failed')
+    await reportScheduledFailure('recurring')
     return NextResponse.json({ error: 'Recurring job generation failed' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
 }

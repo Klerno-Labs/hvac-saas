@@ -166,14 +166,17 @@ export async function updateInvoiceStatus(
   // Status and customer delivery are distinct outcomes. Never report an
   // email as sent when the delivery provider rejected it or is unavailable.
   let warning: string | undefined
+  const unconfirmedDelivery = 'The invoice is marked sent, but email submission could not be confirmed. Check email delivery status and the recipient\'s inbox before retrying to avoid sending it twice.'
   if (status === 'sent') {
     const customer = invoice.customer
     if (!customer.email) {
       warning = 'The invoice is marked sent, but no email was sent because this customer has no email address. Add an email address, then choose Sent again to send it.'
     } else {
+      let emailAttempted = false
       try {
         const org = await db.organization.findUniqueOrThrow({ where: { id: organizationId } })
         const portalUrl = await getOrCreatePortalUrl(organizationId, customer.id)
+        emailAttempted = true
         const delivery = await sendInvoiceEmail({
           to: customer.email,
           customerName: [customer.firstName, customer.lastName].filter(Boolean).join(' '),
@@ -183,22 +186,30 @@ export async function updateInvoiceStatus(
           portalUrl,
           dueDate: invoice.dueDate ? formatDateOnly(invoice.dueDate) : undefined,
         })
-        if (!delivery.success) warning = 'The invoice is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
-      } catch (error) {
-        console.error('Invoice delivery failed after status update', error)
-        warning = 'The invoice is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
+        if (!delivery.success) warning = delivery.retryable === true
+          ? 'The invoice is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
+          : unconfirmedDelivery
+      } catch {
+        console.error('Invoice delivery failed after status update')
+        warning = emailAttempted ? unconfirmedDelivery : 'The invoice is marked sent, but its email could not be delivered. Check email delivery settings, then choose Sent again to retry.'
       }
     }
   }
 
-  await trackEvent({
-    organizationId,
-    userId,
-    eventName: 'invoice_status_updated',
-    entityType: 'invoice',
-    entityId: invoiceId,
-    metadataJson: { from: invoice.status, to: status },
-  })
+  try {
+    await trackEvent({
+      organizationId,
+      userId,
+      eventName: 'invoice_status_updated',
+      entityType: 'invoice',
+      entityId: invoiceId,
+      metadataJson: { from: invoice.status, to: status },
+    })
+  } catch {
+    // A telemetry outage must not turn an already submitted email into a
+    // failed action that encourages the user to send it again.
+    console.error('Invoice status activity could not be recorded')
+  }
 
   // Audit log for high-impact status changes
   if (status === 'void') {

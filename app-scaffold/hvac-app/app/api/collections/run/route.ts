@@ -1,6 +1,7 @@
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { NextResponse } from 'next/server'
 import { runCollectionsAutomation } from '@/lib/collections'
+import { reportScheduledFailure } from '@/lib/scheduled-monitoring'
 
 /**
  * GET or POST /api/collections/run
@@ -17,9 +18,12 @@ export async function GET(req: Request) {
 
   try {
     const result = await runCollectionsAutomation()
-    return NextResponse.json({ success: true, ...result }, { headers: { 'Cache-Control': 'no-store' } })
-  } catch (error) {
-    console.error('Collections automation error:', error)
+    const success = result.errors === 0 && result.needsReview === 0
+    if (!success) await reportScheduledFailure('collections', true)
+    return NextResponse.json({ success, ...result }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch {
+    console.error('Collections automation failed')
+    await reportScheduledFailure('collections')
     return NextResponse.json({ error: 'Collections automation failed' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
 }

@@ -8,6 +8,12 @@ const facts: DatabaseFacts = { connected: true, columns: expected.tables[0].colu
 const config = (overrides = {}) => configurationGates({ ...env, ...overrides })
 
 describe('redacted operational configuration gates', () => {
+  it.each([undefined, '', 'false'])('reports absent or disabled scheduler permission as paused: %s', value => {
+    expect(config({ SCHEDULED_TASKS_ENABLED: value }).find(gate => gate.id === 'scheduler.execution')?.status).toBe('paused')
+  })
+  it('treats explicit scheduler permission as configured, not a verified completed run', () => {
+    expect(config({ SCHEDULED_TASKS_ENABLED: 'true' }).find(gate => gate.id === 'scheduler.execution')?.status).toBe('unverified')
+  })
   it('never promotes configured provider fields into verified readiness', () => {
     expect(config().filter(gate => gate.id.includes('configuration') && gate.id !== 'configuration.whitespace').every(gate => gate.status !== 'pass')).toBe(true)
     expect(config().find(gate => gate.id === 'scheduler.execution')?.status).toBe('paused')

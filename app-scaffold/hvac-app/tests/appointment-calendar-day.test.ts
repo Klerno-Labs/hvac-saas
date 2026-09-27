@@ -13,7 +13,7 @@ beforeEach(() => {
   vi.mocked(db.job.findUnique).mockImplementation((async ({where}: {where: {id: string}}) => (await db.job.findMany()).find(job => job.id === where.id)) as never)
 })
 afterEach(() => vi.useRealTimers())
-const job = (id: string, date: string, timezone: string) => ({ id, title: 'Inspection', scheduledFor: new Date(`${date}T00:00:00Z`),
+const job = (id: string, date: string, timezone: string) => ({ id, title: 'Inspection', status: 'scheduled', scheduledFor: new Date(`${date}T00:00:00Z`),
   customer: { firstName: 'Customer', lastName: null, email: `${id}@example.test`, phone: null },
   organization: { id: 'org1', name: 'Fixture', timezone, subscriptionStatus: 'ACTIVE', trialEndsAt: null, smsEnabled: false },
 })

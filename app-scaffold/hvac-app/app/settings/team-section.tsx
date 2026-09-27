@@ -34,8 +34,9 @@ export function TeamSection({ members, invites, currentUserId }: {
   const [loading, setLoading] = useState(false)
   const [resendingId, setResendingId] = useState<string | null>(null)
 
-  function showDelivery(delivery: 'sent' | 'failed') {
+  function showDelivery(delivery: 'sent' | 'failed' | 'unconfirmed') {
     if (delivery === 'sent') setSuccess('Invitation email submitted. Ask the recipient to check their inbox and spam folder.')
+    else if (delivery === 'unconfirmed') setWarning('The invitation is saved, but email submission could not be confirmed. Check email delivery status and the recipient\'s inbox before resending to avoid sending it twice.')
     else setWarning('The invitation is saved, but its email was not sent. Use Resend invitation below to try again. If delivery keeps failing, contact support.')
   }
 
@@ -73,7 +74,7 @@ export function TeamSection({ members, invites, currentUserId }: {
       else setError(result.error)
       router.refresh()
     } catch {
-      setError('We could not confirm email delivery. Please try again.')
+      setError('We could not confirm email delivery. Check email delivery status and the recipient\'s inbox before resending to avoid sending it twice.')
     } finally {
       setResendingId(null)
     }

@@ -8,9 +8,9 @@ import { sendAppointmentReminderEmail } from '@/lib/email'
 import { sendAppointmentReminderSms } from '@/lib/sms'
 import { trackEvent } from '@/lib/events'
 import { runAppointmentReminders } from '@/lib/appointment-reminders'
-const job = () => ({ id: 'job1', title: 'Inspection', scheduledFor: new Date('2026-09-27T00:00:00Z'),
-  customer: { firstName: 'Alex', lastName: null, email: 'customer@example.test', phone: '+15555550123' },
-  organization: { id: 'org1', name: 'Fixture', timezone: 'America/Chicago', subscriptionStatus: 'ACTIVE', trialEndsAt: null, smsEnabled: true },
+const job = () => ({ id: 'job1', title: 'Inspection', status: 'scheduled', scheduledFor: new Date('2026-09-27T00:00:00Z'),
+  customer: { firstName: 'Alex', lastName: null, email: 'customer@example.test', phone: '+15555550123', deletedAt: null },
+  organization: { id: 'org1', name: 'Fixture', timezone: 'America/Chicago', subscriptionStatus: 'ACTIVE', trialEndsAt: null, smsEnabled: true, readOnlyAt: null },
 })
 beforeEach(() => {
   vi.resetAllMocks()
@@ -25,6 +25,30 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 describe('appointment reminder delivery truth', () => {
+  it.each(['draft', 'in_progress', 'completed', 'cancelled', 'unknown'])('rechecks status after locking and never reminds a %s job', async status => {
+    vi.mocked(db.job.findUnique).mockResolvedValue({ ...job(), status } as never)
+    expect(await runAppointmentReminders()).toEqual({ sent: 0, errors: 0 })
+    expect(sendAppointmentReminderEmail).not.toHaveBeenCalled()
+    expect(sendAppointmentReminderSms).not.toHaveBeenCalled()
+    expect(db.job.update).not.toHaveBeenCalled()
+  })
+  it.each(['archived customer', 'read-only workspace'])('rechecks %s before contacting providers', async change => {
+    const fixture = job()
+    const current = change === 'archived customer'
+      ? { ...fixture, customer: { ...fixture.customer, deletedAt: new Date() } }
+      : { ...fixture, organization: { ...fixture.organization, readOnlyAt: new Date() } }
+    vi.mocked(db.job.findUnique).mockResolvedValue(current as never)
+    expect(await runAppointmentReminders()).toEqual({ sent: 0, errors: 0 })
+    expect(sendAppointmentReminderEmail).not.toHaveBeenCalled()
+    expect(sendAppointmentReminderSms).not.toHaveBeenCalled()
+    expect(trackEvent).not.toHaveBeenCalled()
+  })
+  it.each(['booked', 'scheduled'])('allows a confirmed %s appointment', async status => {
+    vi.mocked(db.job.findUnique).mockResolvedValue({ ...job(), status } as never)
+    vi.mocked(sendAppointmentReminderEmail).mockResolvedValue({ success: true, id: 'message1' })
+    expect(await runAppointmentReminders()).toEqual({ sent: 1, errors: 1 })
+    expect(sendAppointmentReminderEmail).toHaveBeenCalledOnce()
+  })
   it('does not mark failed email or SMS as sent, leaving it retryable', async () => {
     expect(await runAppointmentReminders()).toEqual({ sent: 0, errors: 2 })
     expect(db.job.update).not.toHaveBeenCalled()

@@ -36,8 +36,9 @@ export async function startStripeOnboarding(): Promise<ConnectResult> {
     try {
       const account = await stripe.accounts.create({
         type: 'express',
+        capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
         metadata: { organizationId },
-      })
+      }, { idempotencyKey: `fieldclose-connect:${organizationId}` })
       accountId = account.id
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to create Stripe account'
@@ -47,10 +48,21 @@ export async function startStripeOnboarding(): Promise<ConnectResult> {
       return { success: false, error: 'We could not start customer payment setup. Please try again.' }
     }
 
-    await db.organization.update({
-      where: { id: organizationId },
-      data: { stripeConnectedAccountId: accountId },
-    })
+    try {
+      // Concurrent setup requests must never replace an account already linked
+      // to the workspace, including one saved while the provider call ran.
+      const saved = await db.organization.updateMany({
+        where: { id: organizationId, stripeConnectedAccountId: null },
+        data: { stripeConnectedAccountId: accountId },
+      })
+      if (saved.count !== 1) {
+        const current = await db.organization.findUnique({ where: { id: organizationId } })
+        if (!current?.stripeConnectedAccountId) throw new Error('Connection was not saved')
+        accountId = current.stripeConnectedAccountId
+      }
+    } catch {
+      return { success: false, error: 'Your payment connection could not be saved. Please try again.' }
+    }
   }
 
   let accountLink
@@ -65,13 +77,15 @@ export async function startStripeOnboarding(): Promise<ConnectResult> {
     return { success: false, error: 'We could not open Stripe payment setup. Please try again.' }
   }
 
+  // The account is already bound and its link created. Optional telemetry must
+  // not hide a successful setup or encourage a redundant provider operation.
   await trackEvent({
     organizationId,
     userId,
     eventName: 'stripe_connect_started',
     entityType: 'organization',
     entityId: organizationId,
-  })
+  }).catch(() => { console.error('Stripe connection activity could not be recorded') })
 
   await logAudit({
     organizationId,
@@ -79,7 +93,7 @@ export async function startStripeOnboarding(): Promise<ConnectResult> {
     eventType: 'stripe_connection_started',
     targetType: 'organization',
     targetId: organizationId,
-  })
+  }).catch(() => { console.error('Stripe connection audit could not be recorded') })
 
   return { success: true, url: accountLink.url }
 }
@@ -131,6 +145,8 @@ export async function refreshStripeStatus(): Promise<RefreshResult> {
     return { success: false, error: 'Your Stripe status could not be saved. Please refresh it again.' }
   }
 
+  // The provider-verified audit above is required and atomic; these completion
+  // notifications are best-effort after the verified status has committed.
   if (chargesEnabled && !org.stripeChargesEnabled) {
     await trackEvent({
       organizationId: org.id,
@@ -138,7 +154,7 @@ export async function refreshStripeStatus(): Promise<RefreshResult> {
       eventName: 'stripe_connect_completed',
       entityType: 'organization',
       entityId: org.id,
-    })
+    }).catch(() => { console.error('Stripe connection activity could not be recorded') })
 
     await logAudit({
       organizationId,
@@ -147,7 +163,7 @@ export async function refreshStripeStatus(): Promise<RefreshResult> {
       targetType: 'organization',
       targetId: organizationId,
       metadata: { chargesEnabled, payoutsEnabled },
-    })
+    }).catch(() => { console.error('Stripe connection audit could not be recorded') })
   }
 
   revalidatePath('/setup')
