@@ -14,7 +14,7 @@ const form = () => { const data = new FormData(); data.set('status', 'sent'); re
 const customer = { id: 'customer1', firstName: 'Alex', email: 'customer@example.test' }
 beforeEach(() => {
   vi.clearAllMocks()
-  const document = { id: 'document1', status: 'draft', updatedAt: new Date(), totalCents: 10000, customer, job: { customer } }
+  const document = { id: 'document1', status: 'draft', updatedAt: new Date(), totalCents: 10000, customer, job: { customer }, notes: 'Private supplier margin discussion' }
   vi.mocked(db.estimate.findFirst).mockResolvedValue(document as never)
   vi.mocked(db.invoice.findFirst).mockResolvedValue(document as never)
   vi.mocked(db.estimate.updateMany).mockResolvedValue({ count: 1 })
@@ -27,7 +27,11 @@ describe.each([
   ['estimate', updateEstimateStatus, sendEstimateEmail, db.estimate.findFirst],
   ['invoice', updateInvoiceStatus, sendInvoiceEmail, db.invoice.findFirst],
 ] as const)('%s email delivery outcome', (_, update, send, find) => {
-  it('reports success after a confirmed provider submission', async () => expect(await update('document1', form())).toEqual({ success: true }))
+  it('reports confirmed provider submission without passing internal notes to the email template', async () => {
+    expect(await update('document1', form())).toEqual({ success: true })
+    expect(vi.mocked(send).mock.calls[0][0]).not.toHaveProperty('notes')
+    expect(JSON.stringify(vi.mocked(send).mock.calls[0][0])).not.toContain('Private supplier margin discussion')
+  })
   it('reports saved status with a clear warning when delivery fails', async () => {
     vi.mocked(send).mockResolvedValue({ success: false, error: 'Provider unavailable' })
     expect(await update('document1', form())).toMatchObject({ success: true, warning: expect.stringContaining('could not be delivered') })

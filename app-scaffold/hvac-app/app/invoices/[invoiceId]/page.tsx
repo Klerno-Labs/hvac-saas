@@ -138,7 +138,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
           {invoice.notes && (
             <div>
-              <p className="text-xs text-muted-foreground">Notes</p>
+              <p className="text-xs text-muted-foreground">Internal notes</p>
               <p className="text-sm">{invoice.notes}</p>
             </div>
           )}

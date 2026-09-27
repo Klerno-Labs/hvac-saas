@@ -219,14 +219,16 @@ export function EstimateEditForm({
         </div>
 
         <div>
-          <Label className="text-sm font-medium">Notes</Label>
+          <Label htmlFor="estimate-internal-notes" className="text-sm font-medium">Internal notes</Label>
           <Textarea
-            aria-label="Notes"
+            id="estimate-internal-notes"
+            aria-describedby="estimate-internal-notes-hint"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             className="mt-1 resize-y"
           />
+          <p id="estimate-internal-notes-hint" className="mt-1 text-xs text-muted-foreground">For your team only. Not shown in customer emails, the portal, or PDFs.</p>
         </div>
 
         <Button type="submit" disabled={loading} className="mt-2">

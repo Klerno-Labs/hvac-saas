@@ -58,6 +58,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
 
   const customerName = [estimate.job.customer.firstName, estimate.job.customer.lastName].filter(Boolean).join(' ')
 
+  // Every PDF is a shareable customer document, including staff downloads.
+  // Keep internal notes out of the renderer's input.
   const buffer = await renderToBuffer(
     EstimatePdf({
       orgName: estimate.organization.name,
@@ -70,7 +72,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
       customerPhone: estimate.job.customer.phone,
       scopeOfWork: estimate.scopeOfWork,
       terms: estimate.terms,
-      notes: estimate.notes,
       lineItems: estimate.lineItems,
       subtotalCents: estimate.subtotalCents,
       taxCents: estimate.taxCents,

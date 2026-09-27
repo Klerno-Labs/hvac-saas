@@ -203,15 +203,17 @@ export function InvoiceForm({ jobId, initialData }: { jobId: string; initialData
         </div>
 
         <div className="space-y-1.5">
-          <Label>Notes</Label>
+          <Label htmlFor="invoice-internal-notes">Internal notes</Label>
           <Textarea
-            aria-label="Notes"
+            id="invoice-internal-notes"
+            aria-describedby="invoice-internal-notes-hint"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            placeholder="Additional notes for the customer"
+            placeholder="Notes for your team"
             className="resize-y"
           />
+          <p id="invoice-internal-notes-hint" className="text-xs text-muted-foreground">For your team only. Not shown in customer emails, the portal, or PDFs.</p>
         </div>
 
         <div className="flex gap-3 mt-2">

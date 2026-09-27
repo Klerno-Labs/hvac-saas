@@ -131,7 +131,7 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
 
           {estimate.notes && (
             <div className="mt-4">
-              <p className="text-xs text-muted-foreground">Notes</p>
+              <p className="text-xs text-muted-foreground">Internal notes</p>
               <p>{estimate.notes}</p>
             </div>
           )}
