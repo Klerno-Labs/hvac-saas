@@ -10,7 +10,13 @@ These were deliberately synthetic signed requests, not events delivered by Strip
 
 Both new destinations are **enabled** with their verified scopes and pinned payload version. Only the two superseded FieldClose destinations are disabled; Nothing But Bots and RewriteMe destinations remain active and unchanged. The raw API version of the old apex destination is null (account default); its earlier dashboard displayed effective `2026-03-25.dahlia`. The legacy `www` destination explicitly uses that version. Preserve this distinction in any recovery plan.
 
-**Temporary access cleanup is pending Stripe identity verification.** The expiration action was submitted for `FieldClose webhook setup — temporary`, key ID `mk_1UKHUoPgFInaK96krkwwHIjX`, but Stripe opened a security-key/Touch ID or authenticator challenge. Do not claim revocation until that challenge and final result are verified. The key has only webhook-management write access and was never deployed. The owner handoff remains open. Scheduled tasks remain disabled, no real charge was made, and complete live financial workflows still require verification.
+**Earlier cleanup handoff, superseded by the completion below:** at this release checkpoint, the expiration action had been submitted for `FieldClose webhook setup — temporary`, key ID `mk_1UKHUoPgFInaK96krkwwHIjX`, but Stripe opened a security-key/Touch ID or authenticator challenge. Revocation was not yet confirmed. The key had only webhook-management write access and was never deployed.
+
+### Temporary access cleanup completed — September 27, 2026, 13:29 UTC
+
+After the owner completed identity verification, a fresh, fully loaded Stripe API-key list confirmed the temporary setup key was absent, **FieldClose production runtime** remained present, and no verification dialog remained. Revocation is **UI-confirmed**. No API 401 test was performed: the temporary secret had already been cleared from memory and was not retrieved again.
+
+Canonical-domain owner sign-in and the authenticated photo workflow remain pending. Scheduled tasks remain disabled, no real charge was made, and provider-originated billing/customer-payment outcomes and complete live financial workflows still require verification.
 
 ## Activation update — September 27, 2026, 12:50 UTC
 
