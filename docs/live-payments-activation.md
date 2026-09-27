@@ -2,6 +2,16 @@
 
 The original inventory below was recorded on September 26, 2026. It was read-only; subsequent authorized activation work is recorded separately here. Neither provider configuration nor a successful read proves completed payment settlement.
 
+## Public activation — September 27, 2026, 13:09 UTC
+
+Deployment `dpl_GkUyXefERdVdNsQ9EBsrR9E3xMvj`, application revision `992dcf3`, now serves **https://fieldclose.app** with the complete live configuration described below. GitHub CI passed. The protected candidate passed 24 page/access checks, seven page metadata/support checks plus deployment protection, and nine signed webhook boundary checks. Public alias, health, page, support and authentication checks passed after promotion. The same nine signed webhook checks passed publicly: invalid signatures and wrong account scopes are rejected; signed sandbox events and unassociated live events are acknowledged without processing.
+
+These were deliberately synthetic signed requests, not events delivered by Stripe or completed customer payments. They establish deployed secret matching, mode/scope boundaries and unrelated-event handling; they do not certify subscription settlement, Connect onboarding, invoice payment reconciliation or Terminal capture.
+
+Both new destinations are **enabled** with their verified scopes and pinned payload version. Only the two superseded FieldClose destinations are disabled; Nothing But Bots and RewriteMe destinations remain active and unchanged. The raw API version of the old apex destination is null (account default); its earlier dashboard displayed effective `2026-03-25.dahlia`. The legacy `www` destination explicitly uses that version. Preserve this distinction in any recovery plan.
+
+**Temporary access cleanup is pending Stripe identity verification.** The expiration action was submitted for `FieldClose webhook setup — temporary`, key ID `mk_1UKHUoPgFInaK96krkwwHIjX`, but Stripe opened a security-key/Touch ID or authenticator challenge. Do not claim revocation until that challenge and final result are verified. The key has only webhook-management write access and was never deployed. The owner handoff remains open. Scheduled tasks remain disabled, no real charge was made, and complete live financial workflows still require verification.
+
 ## Activation update — September 27, 2026, 12:50 UTC
 
 The owner completed Stripe identity verification. The approved **FieldClose production runtime** restricted live key and matching live publishable key are saved in Vercel Production. The restricted sandbox key remains Preview-only. No live charge was made. The existing public deployment retains its prior immutable test configuration and rejects payment operations; staged environment changes are not yet live.
