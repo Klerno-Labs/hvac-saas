@@ -52,6 +52,8 @@ Runtime revision `beae275` reports genuine scheduled-route failures and partial 
 
 An unpromoted scheduler-enabled production candidate delivered one approved internal appointment reminder. Resend confirmed delivery, the database retained one email-only reminder event, and a deliberate second execution sent zero. Collections and recurring generation returned zero work, and a post-cleanup repeat of all three routes also returned zero. The fixture was returned to an unscheduled draft. Exact timestamps and candidate identity are in [launch verification](launch-verification-2026-09-27.md).
 
+The final `06b5b7b` release was promoted to `fieldclose.app` on deployment `dpl_npJvDDwFEywEHGLKE2bAtCg6Sf16`. Its explicit enablement and all three provider schedules were confirmed against that exact public deployment. Each authenticated route returned HTTP 200 with zero work/errors, and the guarded before/after production aggregates matched.
+
 This proves a controlled authenticated execution and duplicate suppression, not future calendar invocation or missed-run alerts. No outage was induced and no hosted error route was deliberately added. Keep availability monitoring separate from delivery/payment readiness and retain an operator for unresolved exceptions.
 
 ## Support inbox setup

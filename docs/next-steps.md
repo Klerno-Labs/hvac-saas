@@ -2,11 +2,11 @@
 
 Use [current release gates](known-issues.md), [launch evidence](launch-verification-2026-09-27.md), and [payment verification](stripe-runtime-verification.md). Older unpromoted-candidate, unavailable-database and pending-owner-signup notes have been superseded.
 
-## Finish the controlled release
+## Completed release
 
-1. Verify the final payment and customer-document changes against unit, disposable PostgreSQL and browser/provider checks. Pin evidence to the actual application revision.
-2. Promote the scheduler-enabled final candidate only after the controlled reminder delivery, duplicate suppression and zero-work checks pass. Verify public health, access guards, private portal display and scheduler authorization after promotion.
-3. Keep the unavailable original database's recovery trail. Continue periodic production backup and restore verification; a new workspace did not recover the old records.
+Application `06b5b7b` is published at `fieldclose.app` on `dpl_npJvDDwFEywEHGLKE2bAtCg6Sf16`. Unit, PostgreSQL, build and full GitHub CI checks passed; actual sandbox customer Checkout and simulated Terminal cancellation/capture matched signed events, local ledger and provider records. Final public routes and metadata checks passed. Scheduled services are enabled, tied to this deployment, and passed authenticated zero-work checks.
+
+Keep the unavailable original database's recovery trail. Continue periodic production backup and restore verification; a new workspace did not recover the old records.
 
 ## First real customer operation
 
