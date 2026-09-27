@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { isSubscriptionActive } from '@/lib/billing'
 import { getOwnerAnalytics } from '@/lib/owner-analytics'
 import { resolvePeriod } from '@/lib/period'
+import { canDo } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -25,6 +26,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
+  // Match the financial dashboard/report capability. A signed-in technician or
+  // dispatcher must not gain access by requesting the JSON endpoint directly.
+  if (!canDo(membership.role, 'editPricing')) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403, headers: { 'Cache-Control': 'private, no-store' } })
+  }
+
   const { organizationId, organization } = membership
 
   const { searchParams } = new URL(request.url)
@@ -32,5 +39,5 @@ export async function GET(request: Request) {
   const period = resolvePeriod(periodParam, new Date(), organization.timezone ?? undefined)
 
   const analytics = await getOwnerAnalytics(organizationId, period)
-  return NextResponse.json(analytics)
+  return NextResponse.json(analytics, { headers: { 'Cache-Control': 'private, no-store' } })
 }
