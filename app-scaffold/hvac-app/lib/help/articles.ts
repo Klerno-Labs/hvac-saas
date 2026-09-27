@@ -1,3 +1,4 @@
+import { supportEmail, supportMailto } from '@/lib/support'
 import { PHOTO_SIZE_LIMIT } from '@/lib/photo-upload'
 
 export const helpCategories = ['Getting started', 'Quotes & payments', 'Field work', 'Your account'] as const
@@ -184,9 +185,9 @@ export const helpArticles: readonly HelpArticle[] = [
         'Choose a new password of at least eight characters. After a successful reset, sign in again; previous sessions are invalidated.',
       ], paragraphs: ['If the link is invalid, expired, or already used, request another. If reset email is unavailable or nothing arrives, contact support. Do not forward your reset link.'], links: [{ label: 'Reset a password', href: '/forgot-password' }] },
       { id: 'support', title: 'Contact support with useful details', paragraphs: [
-        'Email support@fieldclose.app with your business name, account email, the screen you were using, the steps you took, and the exact error message. Include a job, estimate, or invoice number when relevant.',
+        `Email ${supportEmail} with your business name, account email, the screen you were using, the steps you took, and the exact error message. Include a job, estimate, or invoice number when relevant.`,
         'You can attach a screenshot with private customer information removed. Do not include passwords, payment card details, reset links, invitation links, or customer portal links.',
-      ], links: [{ label: 'Email FieldClose support', href: 'mailto:support@fieldclose.app?subject=FieldClose%20support' }] },
+      ], links: [{ label: 'Email FieldClose support', href: supportMailto('FieldClose support') }] },
     ], related: ['team-and-imports', 'subscription-and-billing', 'field-work-and-offline'],
   },
   {

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
-import { siteUrl, supportEmail } from '@/lib/marketing/site'
+import { siteUrl } from '@/lib/marketing/site'
+import { supportMailto } from '@/lib/support'
 import { HelpSearch } from './help-search'
 import styles from './help.module.css'
 
@@ -22,7 +23,7 @@ export default function HelpPage() {
       <HelpSearch />
       <aside className={styles.support} aria-labelledby="help-support-title">
         <div><p className="eyebrow">Need a hand?</p><h2 id="help-support-title">Tell us where you got stuck.</h2><p>Include your business name, the screen you were using, and the error you saw. Leave passwords and private links out of your message.</p></div>
-        <div className={styles.supportLinks}><a href={`mailto:${supportEmail}?subject=FieldClose%20support`}>Email support <ArrowUpRight size={19} aria-hidden="true" /></a><Link href="/help/account-and-password#support">What to include</Link></div>
+        <div className={styles.supportLinks}><a href={supportMailto('FieldClose support')}>Email support <ArrowUpRight size={19} aria-hidden="true" /></a><Link href="/help/account-and-password#support">What to include</Link></div>
       </aside>
     </div>
   </main>

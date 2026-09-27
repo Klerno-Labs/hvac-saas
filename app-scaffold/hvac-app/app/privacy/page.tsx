@@ -1,9 +1,11 @@
 import { Metadata } from 'next'
 import { PublicHeader } from '@/app/components/public-header'
+import { supportEmail, supportMailto } from '@/lib/support'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'How FieldClose collects, uses, and protects your data.',
+  description: 'Learn how FieldClose collects, uses, stores, and protects your data, including cookies, service providers, data retention, and your privacy rights.',
+  alternates: { canonical: '/privacy' },
   robots: { index: true, follow: true },
 }
 
@@ -73,7 +75,7 @@ export default function PrivacyPage() {
 
         <h2>6. Data Retention</h2>
         <p>
-          Account and business records are retained while your account is active. Canceling a subscription does not automatically delete those records. Email support@fieldclose.app to request deletion or to ask about retained records and backups. Deletion requests require account verification and review of records that must be retained; we will confirm the scope and timing of the request.
+          Account and business records are retained while your account is active. Canceling a subscription does not automatically delete those records. Email {supportEmail} to request deletion or to ask about retained records and backups. Deletion requests require account verification and review of records that must be retained; we will confirm the scope and timing of the request.
         </p>
 
         <h2>7. Your Rights</h2>
@@ -101,7 +103,7 @@ export default function PrivacyPage() {
 
         <h2>11. Contact</h2>
         <p>
-          Privacy questions? Email <a href="mailto:support@fieldclose.app">support@fieldclose.app</a>.
+          Privacy questions? Email <a href={supportMailto()}>{supportEmail}</a>.
         </p>
 
         <hr className="my-8" />

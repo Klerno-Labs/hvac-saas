@@ -10,7 +10,6 @@ export function signupPath(plan?: PlanId) {
 }
 export const signupUrl = signupPath();
 export const planSignupUrl = (plan: PlanId) => signupPath(plan);
-export const supportEmail = 'support@fieldclose.app';
 // Verified against hvac-saas lib/billing.ts. Checkout is authoritative.
 export const plans = [
   { key: 'starter', name: 'Starter', price: PLANS.starter.priceMonthly / 100, audience: 'For independent techs and small shops.', features: ['Customer and job management', 'Estimates and invoices', 'Online payment collection', 'Customer portal', 'AI-assisted estimate drafts'] },

@@ -1,0 +1,39 @@
+# Monitoring and support activation
+
+This runbook separates the implemented error-reporting hooks from a working operational response. Configuration values, private errors, customer records, and access tokens do not belong in verification receipts or support examples.
+
+## Current evidence
+
+The read-only check on September 27, 2026 (UTC) found no `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, or `SENTRY_PROJECT` in any FieldClose Vercel environment scope. No Sentry destination or token was available in the application checkout's environment/configuration files or current process. The separate browser check reached Sentry's sign-in page, with no authenticated organization or project visible. A monitoring project, event receipt, alert routing, and response coverage remain unverified.
+
+The existing branded support address is `support@fieldclose.app`. At the same check, public DNS returned no MX record for `fieldclose.app` and no DMARC record. The domain uses Cloudflare nameservers; the previously available Cloudflare account did not expose this zone. The owner has now explicitly designated **`pegriollc@gmail.com`** for support and critical service alerts, including service-verification messages. This is the approved direct contact destination; provider verification where required, receipt, and the reply path remain to be completed. The working `FieldClose <noreply@pegrio.com>` outbound sender does not establish an inbound support mailbox. Set the public `NEXT_PUBLIC_SUPPORT_EMAIL` configuration to `pegriollc@gmail.com` for this production deployment. After rebuilding, marketing, help, policy, and billing contact details use that address directly; branded forwarding is not a prerequisite. Blank or invalid values fall back to the existing branded address, whose delivery remains unverified. This configuration does not establish alert rules or prove inbox coverage.
+
+These observations are dated evidence. Recheck them during activation rather than treating this document as a live status dashboard.
+
+## Error-reporting setup
+
+1. Have the owner sign in to Sentry, then select an existing approved FieldClose project. If none exists, prepare a Next.js project named `FieldClose` (proposed slug `fieldclose`) and have the owner complete any account, legal-consent, or access requirements before creation. Do not repurpose another application's project without reviewing its access and notification settings.
+2. Save `SENTRY_DSN` for Node.js/edge errors and `NEXT_PUBLIC_SENTRY_DSN` for browser errors in Vercel production. Both can point to the same approved project. Keep preview/test destinations separate when appropriate. The browser DSN is intentionally public routing configuration; an authentication token must never be placed in a `NEXT_PUBLIC_` variable.
+3. Build and deploy with the new values. Environment edits alone do not update a running deployment, and the browser value is compiled into the client bundle. Blank destinations leave the corresponding reporting disabled.
+4. Verify a deliberately generated, non-sensitive error from both browser and server using a controlled verification workflow. Do not introduce a public crash endpoint or use real customer failures as test data. Confirm the resulting events in the expected project and environment; a successful SDK call alone is not delivery evidence.
+5. Route critical alerts to the approved `pegriollc@gmail.com` destination, completing the provider's recipient verification where required. Prepare alerts for new or regressed unhandled errors/fatal exceptions in the FieldClose project, with repeat notifications limited to avoid flooding the inbox. Apply a production-environment filter only after a received event confirms the deployed environment label. Verify the actual rule options in the signed-in project and test notification receipt before claiming the rule is active. Record safe event identifiers, timestamps, receipt confirmation, and who will respond. Do not copy raw event payloads into release receipts.
+
+The existing SDK configuration disables default personal information, breadcrumbs, tracing, and replay. The shared `sanitizeMonitoringEvent` allowlist retains exception types and code locations while removing messages, request/user data, extra fields, and sensitive route tokens. The root recovery screen sends exceptions through that same configured SDK and keeps its retry action available if reporting fails. Its page never displays exception text or digests.
+
+Source-map uploads and release-token wiring are not configured. Do not claim source-mapped stack traces or automatic release association. `SENTRY_AUTH_TOKEN`, organization, and project build integration should only be added after the real project and permitted token scope are supplied and reviewed; the runtime DSNs do not require such a token. Follow Sentry's [Next.js setup guidance](https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/) for that subsequent work.
+
+## Availability and background work
+
+An external check can request `GET /api/health` without credentials. It returns non-cacheable core database/authentication health; it does not certify payments, photo storage, mail delivery, or Sentry ingestion. No unattended uptime alert destination has yet been verified. Select an existing approved monitoring destination and record a received failure/recovery test before claiming continuous monitoring.
+
+Review provider delivery failures, stored webhook/collection exceptions, private-storage failures, and scheduler outcomes independently. Assign an operator and escalation contact for unresolved items. Do not use authenticated cron endpoints as passive health checks: they can perform work and notify customers. The read-only readiness scripts report configuration/backlog evidence without replaying jobs.
+
+## Support inbox setup
+
+1. Save `NEXT_PUBLIC_SUPPORT_EMAIL=pegriollc@gmail.com` in Vercel production, then rebuild and deploy. It is a public contact address, not a credential. Confirm the live footer, Help Center, policies, and billing recovery messages show the approved address. Preview deployments can use a separate approved address.
+2. Confirm who monitors the existing inbox and the coverage/escalation process. Send one authorized support-verification message from a different mailbox, confirm arrival with the designated recipient, and verify the intended reply path. Provider acceptance or an outbound sender-domain verification does not prove human receipt or replies.
+3. Branded forwarding is an optional later improvement. In the DNS account that owns `fieldclose.app`, configure `support@fieldclose.app` to reach the approved inbox before switching the public configuration back. Cloudflare can [route email to an existing verified destination](https://developers.cloudflare.com/email-service/get-started/route-emails/). Verify the recipient, required DNS records, MX route, and receipt; preserve unrelated domain records and services. Review the mail authentication policy separately: inbound routing does not itself authorize replies as the branded address.
+4. Configure each critical-alert provider's destination separately and verify a received alert. The public support setting does not configure monitoring notifications.
+5. Record who checks support, the agreed coverage/escalation process, and verification timestamps. Do not publish response-time promises until someone has accepted responsibility for meeting them.
+
+Keep support requests limited to the steps attempted, time of the problem, and a non-sensitive reference. Do not request passwords, API keys, card details, customer portal links, or database credentials by email. No support routing, DNS records, alert rules, recipients, or new accounts are created by the application changes in this preparation.

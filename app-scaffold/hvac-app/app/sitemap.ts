@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { helpArticles } from '@/lib/help/articles'
 
-const SITE_URL = process.env.APP_URL || 'https://fieldclose.app'
+const SITE_URL = new URL(process.env.APP_URL || 'https://fieldclose.app').origin
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()

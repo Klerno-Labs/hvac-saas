@@ -51,7 +51,7 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Log in</CardTitle>
+        <CardTitle className="text-2xl"><h1>Log in</h1></CardTitle>
         <CardDescription>Welcome back.</CardDescription>
       </CardHeader>
       <CardContent>

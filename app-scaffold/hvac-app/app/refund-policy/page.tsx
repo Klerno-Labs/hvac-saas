@@ -1,9 +1,11 @@
 import { Metadata } from 'next'
 import { PublicHeader } from '@/app/components/public-header'
+import { supportEmail, supportMailto } from '@/lib/support'
 
 export const metadata: Metadata = {
   title: 'Refund Policy',
-  description: 'FieldClose 30-day satisfaction guarantee and refund terms.',
+  description: 'Review the FieldClose refund policy, including the 30-day satisfaction guarantee, monthly subscriptions, processing fees, and how to request a refund.',
+  alternates: { canonical: '/refund-policy' },
   robots: { index: true, follow: true },
 }
 
@@ -17,7 +19,7 @@ export default function RefundPolicyPage() {
 
         <h2>30-Day Satisfaction Guarantee</h2>
         <p>
-          We stand behind FieldClose. If you&apos;re not satisfied within your first 30 days of a paid subscription, contact us at <a href="mailto:support@fieldclose.app">support@fieldclose.app</a> and we&apos;ll refund your first month&apos;s subscription fee — no questions asked.
+          We stand behind FieldClose. If you&apos;re not satisfied within your first 30 days of a paid subscription, contact us at <a href={supportMailto('Refund Request')}>{supportEmail}</a> and we&apos;ll refund your first month&apos;s subscription fee — no questions asked.
         </p>
 
         <h2>Monthly Subscriptions</h2>
@@ -40,7 +42,7 @@ export default function RefundPolicyPage() {
 
         <h2>How to Request a Refund</h2>
         <ol>
-          <li>Email <a href="mailto:support@fieldclose.app">support@fieldclose.app</a> with your account email and &quot;Refund Request&quot; in the subject line</li>
+          <li>Email <a href={supportMailto('Refund Request')}>{supportEmail}</a> with your account email and &quot;Refund Request&quot; in the subject line</li>
           <li>Include the date you subscribed and your organization name</li>
           <li>We process approved refunds within 5 business days back to your original payment method</li>
         </ol>

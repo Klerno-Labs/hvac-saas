@@ -6,8 +6,9 @@ import path from 'node:path'
 import { getHelpArticle, getRelatedArticles, helpArticles, helpCategories } from '@/lib/help/articles'
 import { searchHelpArticles } from '@/lib/help/search'
 import { PHOTO_SIZE_LIMIT } from '@/lib/photo-upload'
+import { supportMailto } from '@/lib/support'
 
-vi.mock('@/lib/marketing/site', () => ({ siteUrl: 'https://fieldclose.app', supportEmail: 'support@fieldclose.app' }))
+vi.mock('@/lib/marketing/site', () => ({ siteUrl: 'https://fieldclose.app' }))
 import HelpPage, { metadata } from '@/app/(marketing)/help/page'
 import HelpArticlePage, { generateStaticParams, generateMetadata, dynamicParams } from '@/app/(marketing)/help/[slug]/page'
 import { HelpSearch } from '@/app/(marketing)/help/help-search'
@@ -60,7 +61,7 @@ describe('Help Center content and navigation', () => {
     for (const article of helpArticles) for (const section of article.sections) for (const link of section.links ?? []) {
       expect(link.label.trim()).not.toBe('')
       if (link.href.startsWith('mailto:')) {
-        expect(link.href).toMatch(/^mailto:support@fieldclose\.app(?:\?|$)/)
+        expect(link.href.split('?')[0]).toBe(supportMailto())
         continue
       }
       expect(link.href).toMatch(/^\/(?!\/)/)

@@ -46,3 +46,5 @@ Verify health, protected pages, payment processing, and scheduler state again. V
 ## Monitoring
 
 Monitor core health, database errors, application failures, Stripe delivery retries, email failures, storage errors, and scheduler outcomes independently. Review audit events under Settings > Audit. Keep an operational owner for failed background work; a successful HTTP response alone does not demonstrate a customer notification reached its destination.
+
+Configure both server and browser Sentry destinations, then verify a sanitized event and an alert reaching the responsible person. The recovery screen remains usable when reporting is unavailable and never renders raw error details. Monitoring is not operational until ingestion, alert routing, and ownership are verified. See the [monitoring and support runbook](monitoring-and-support.md) for setup, current evidence, and support inbox verification.

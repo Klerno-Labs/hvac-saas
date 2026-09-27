@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     default: 'FieldClose — Get Paid Faster on Every HVAC Job',
     template: '%s · FieldClose',
   },
-  description: 'The quote-to-payment operating system for residential HVAC businesses. Send estimates, complete jobs, invoice customers, and collect payment — all in one workflow.',
+  description: 'FieldClose helps residential HVAC businesses manage customers, create estimates, send invoices, and collect payments in one quote-to-payment workflow.',
   applicationName: 'FieldClose',
   keywords: [
     'HVAC software',
@@ -76,7 +76,6 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
   },
-  alternates: { canonical: SITE_URL },
   category: 'business software',
   verification: {
     google: 'SRi7UiAJOXVpe8bFWXO4ufcDfSY6YtTht7GC-wcwoPk',

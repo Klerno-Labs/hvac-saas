@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/session'
 import { db } from '@/lib/db'
 import { getStripe } from '@/lib/stripe'
 import { billingPortalConfigurationId } from '@/lib/billing-portal'
+import { supportEmail } from '@/lib/support'
 
 export async function POST() {
   // requireAuth (not requireActiveSubscription) so frozen orgs can still reach the portal to pay
@@ -11,7 +12,7 @@ export async function POST() {
 
   let configuration: string | undefined
   try { configuration = billingPortalConfigurationId() } catch {
-    return NextResponse.json({ error: 'Billing portal setup needs attention. Please contact support.' }, { status: 503 })
+    return NextResponse.json({ error: `Billing portal setup needs attention. Please contact support at ${supportEmail}.` }, { status: 503 })
   }
   const stripe = getStripe()
   const appUrl = process.env.APP_URL || 'http://localhost:3000'

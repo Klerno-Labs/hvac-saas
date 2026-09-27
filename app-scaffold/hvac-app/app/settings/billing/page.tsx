@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SubscribeButton, ManageBillingButton } from './subscribe-button'
+import { supportEmail, supportMailto } from '@/lib/support'
 
 export default async function BillingPage() {
   const { organization, role, user } = await requireAuth()
@@ -38,7 +39,7 @@ export default async function BillingPage() {
           )}
           {!organization.trialEndsAt && organization.subscriptionStatus === 'TRIALING' && (
             <p className="text-sm text-muted-foreground mt-2">
-              Trial access is not configured. Contact support to activate your trial.
+              Trial access is not configured. Contact <a href={supportMailto('FieldClose trial access')} className="underline">{supportEmail}</a> to activate your trial.
             </p>
           )}
           {role === 'owner' && organization.stripeCustomerId && <ManageBillingButton />}

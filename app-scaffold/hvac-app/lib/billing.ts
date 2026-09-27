@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import type Stripe from 'stripe'
 import { billingPortalConfigurationId } from '@/lib/billing-portal'
+import { supportEmail } from '@/lib/support'
 
 export const PLANS = {
   starter: {
@@ -95,7 +96,7 @@ async function updateCheckoutAttempt(organizationId: string, attempt: CheckoutAt
 export async function createSubscriptionCheckout(params: CheckoutInput): Promise<{ url: string } | { error: string }> {
   const plan = PLANS[params.planId]
   if (!plan || !plan.stripePriceId) {
-    return { error: 'Subscription checkout is not available yet. Contact support@fieldclose.app for help.' }
+    return { error: `Subscription checkout is not available yet. Contact support at ${supportEmail} for help.` }
   }
 
   let attempt: CheckoutAttempt | undefined
@@ -118,7 +119,7 @@ export async function createSubscriptionCheckout(params: CheckoutInput): Promise
     for (let pass = 0; pass < 3; pass++) {
       attempt = await updateCheckoutAttempt(params.organizationId, attempt, { leaseUntil: Date.now() + CHECKOUT_LEASE_MS })
       if (!attempt.metadata.customerId) {
-        if (Date.now() - attempt.createdAt.getTime() >= CHECKOUT_RETRY_MS) return { error: 'An earlier billing attempt needs verification. Contact support before starting another checkout.' }
+        if (Date.now() - attempt.createdAt.getTime() >= CHECKOUT_RETRY_MS) return { error: `An earlier billing attempt needs verification. Contact support at ${supportEmail} before starting another checkout.` }
         const customer = await stripe.customers.create({ email: attempt.metadata.email, metadata: { organizationId: params.organizationId } }, { ...stripeRequest, idempotencyKey: `fieldclose-customer-${params.organizationId}` })
         attempt = await updateCheckoutAttempt(params.organizationId, attempt, { customerId: customer.id })
       }
@@ -127,26 +128,26 @@ export async function createSubscriptionCheckout(params: CheckoutInput): Promise
         stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 100 }, stripeRequest),
         stripe.checkout.sessions.list({ customer: customerId, limit: 100 }, stripeRequest),
       ])
-      if (subscriptions.has_more || sessions.has_more) return { error: 'Your billing history needs review before another checkout can start. Contact support for help.' }
+      if (subscriptions.has_more || sessions.has_more) return { error: `Your billing history needs review before another checkout can start. Contact support at ${supportEmail} for help.` }
       if (subscriptions.data.some(subscription => !['canceled', 'incomplete_expired'].includes(subscription.status))) return await portal(customerId)
       const relevant = sessions.data.filter(session => session.mode === 'subscription')
-      if (relevant.some(session => session.metadata?.organizationId !== params.organizationId)) return { error: 'We could not verify the existing subscription checkout. Contact support before trying again.' }
+      if (relevant.some(session => session.metadata?.organizationId !== params.organizationId)) return { error: `We could not verify the existing subscription checkout. Contact support at ${supportEmail} before trying again.` }
       // A completed session may precede subscription-list/webhook visibility.
       if (relevant.some(session => session.status === 'complete' && !subscriptions.data.some(subscription => subscription.id === referenceId(session.subscription) && ['canceled', 'incomplete_expired'].includes(subscription.status)))) return pendingCheckout
 
       let session: Stripe.Checkout.Session | undefined = attempt.metadata.sessionId
         ? await stripe.checkout.sessions.retrieve(attempt.metadata.sessionId, stripeRequest)
         : relevant.find(candidate => candidate.metadata?.fieldcloseCheckoutAttemptId === attempt!.id)
-      if (session && (referenceId(session.customer) !== customerId || session.mode !== 'subscription' || session.metadata?.organizationId !== params.organizationId)) return { error: 'We could not verify the existing subscription checkout. Contact support before trying again.' }
+      if (session && (referenceId(session.customer) !== customerId || session.mode !== 'subscription' || session.metadata?.organizationId !== params.organizationId)) return { error: `We could not verify the existing subscription checkout. Contact support at ${supportEmail} before trying again.` }
       const otherOpen = relevant.filter(candidate => candidate.status === 'open' && candidate.id !== session?.id)
-      if (otherOpen.length > 1) return { error: 'Multiple unfinished subscription checkouts need review. Contact support before continuing.' }
+      if (otherOpen.length > 1) return { error: `Multiple unfinished subscription checkouts need review. Contact support at ${supportEmail} before continuing.` }
       for (const previous of otherOpen) {
         attempt = await updateCheckoutAttempt(params.organizationId, attempt, { leaseUntil: Date.now() + CHECKOUT_LEASE_MS })
         const expired = await stripe.checkout.sessions.expire(previous.id, stripeRequest)
         if (expired.status !== 'expired') return pendingCheckout
       }
       if (!session) {
-        if (Date.now() - attempt.createdAt.getTime() >= CHECKOUT_RETRY_MS) return { error: 'An earlier checkout could not be verified. Contact support before starting another one.' }
+        if (Date.now() - attempt.createdAt.getTime() >= CHECKOUT_RETRY_MS) return { error: `An earlier checkout could not be verified. Contact support at ${supportEmail} before starting another one.` }
         attempt = await updateCheckoutAttempt(params.organizationId, attempt, { leaseUntil: Date.now() + CHECKOUT_LEASE_MS })
         const intent = attempt.metadata
         session = await stripe.checkout.sessions.create({ mode: 'subscription', line_items: [{ price: intent.priceId, quantity: 1 }],

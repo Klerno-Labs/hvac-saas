@@ -1,9 +1,11 @@
 import { Metadata } from 'next'
 import { PublicHeader } from '@/app/components/public-header'
+import { supportEmail, supportMailto } from '@/lib/support'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Terms of service for FieldClose, a Pegrio LLC product.',
+  description: 'Read the FieldClose terms of service, including account responsibilities, subscriptions, acceptable use, cancellation, and service availability.',
+  alternates: { canonical: '/terms' },
   robots: { index: true, follow: true },
 }
 
@@ -82,7 +84,7 @@ export default function TermsPage() {
 
         <h2>13. Contact</h2>
         <p>
-          Questions about these Terms? Email us at <a href="mailto:support@fieldclose.app">support@fieldclose.app</a>.
+          Questions about these Terms? Email us at <a href={supportMailto()}>{supportEmail}</a>.
         </p>
 
         <hr className="my-8" />
