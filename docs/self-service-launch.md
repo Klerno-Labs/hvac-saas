@@ -34,7 +34,7 @@ When enabled, the fixed events cover signup clicks, tour opening/start/completio
 
 The following is the last recorded production preflight, not a fresh claim of service recovery:
 
-- `https://fieldclose.app` remains on its previous production deployment. An earlier protected candidate based on `decec78` reached Vercel Ready and was not promoted. That candidate predates this self-service work.
+- `https://fieldclose.app` remains on its previous production deployment. The protected self-service candidate at `3e766a6` is Ready, with its URL, access checks and remaining health failure recorded in [the release receipt](release-2026-09-26.md). It has not been promoted.
 - `/api/health` returned 503; `db.kcrwvvxhcncbemgvtodl.supabase.co` returned NXDOMAIN/ENOTFOUND. The existing Supabase project needs to be located and recovered before backups, migration rehearsal, migration, or promotion. No production replacement or seed was performed.
 - Stripe is test-only in the inspected environment, and no FieldClose webhook endpoints were registered. Use separate platform and Connect signing secrets and verify the event sets documented in [deploy-vercel.md](deploy-vercel.md).
 - `SCHEDULED_TASKS_ENABLED=false` is configured for new production candidates. Keep scheduled execution paused until database and delivery checks pass. Changing a project environment setting does not alter the environment of an already-running deployment.
