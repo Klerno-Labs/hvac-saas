@@ -1,12 +1,12 @@
 # FieldClose OVH staging verification — September 27, 2026
 
-Production traffic has **not moved**. Cloudflare sign-in, staging HTTPS, provider validation on the new host, production secret transfer, single-scheduler cutover, backup/rollback validation and final DNS promotion remain outstanding. High-concurrency latency is a launch constraint, despite no functional failures in this run.
+Production traffic has **not moved**. Staging DNS and HTTPS verification are complete. Provider validation on the new host, production secret transfer, single-scheduler cutover, backup/rollback validation and final DNS promotion remain outstanding. Vercel API access currently returns HTTP 403 and the browser requires sign-in to recover the existing production configuration. High-concurrency latency is a launch constraint, despite no functional failures in this run.
 
 ## Host
 
 OVH order 8987764, VPS-2 2027, US-EAST-VA, Ubuntu 24.04, 4 vCore, 8 GB RAM, 75 GB NVMe. Checkout $10.66/month including tax; standard-backup discount is promotional. Possible renewal without that discount is about $11.30 at the current tax rate. Other service bills remain separate.
 
-Owner completed initial password change and approved persistent deployment-key access. Server fingerprint verified via provider console. SSH key works; remote password/root login disabled. Firewall exposes SSH only. PostgreSQL and app ports are loopback-only. Automatic security updates and fail2ban enabled. Journals limited to 256 MB persisted, 64 MB runtime, 14-day retention. App runs as non-login fieldclose account with read-only system protection and 6 GiB process-group memory cap. Environment is root-owned/group-readable only, outside the release directory.
+Owner completed initial password change and approved persistent deployment-key access. Server fingerprint verified via provider console. SSH key works; remote password/root login disabled. Firewall exposes SSH, HTTP and HTTPS only. PostgreSQL and app ports are loopback-only. Automatic security updates and fail2ban enabled. Journals limited to 256 MB persisted, 64 MB runtime, 14-day retention. App runs as non-login fieldclose account with read-only system protection and 6 GiB process-group memory cap. Environment is root-owned/group-readable only, outside the release directory.
 
 ## Code and checks
 
@@ -32,3 +32,9 @@ Separate synthetic database with ten organizations, 100 employees, 180,000 histo
 At 100 sustained concurrent simulated employees, requests ran continuously with 500 ms think time. The 200-request burst deliberately exceeds that workload. Throughput plateaued around 30–33 requests/second, indicating saturation. Passing integrity tests does not establish acceptable speed at arbitrary load; high-concurrency performance must improve or launch traffic must be constrained. Do not call this unrestricted production readiness.
 
 Raw fixture and pressure summaries accompany this report. A full host reboot passed: FieldClose, PostgreSQL and fail2ban restarted automatically, health returned 200 with the database healthy, the firewall remained active, and systemd reported no failed units. Recovery output is in recovery.log.
+
+## HTTPS staging verification
+
+`staging.fieldclose.app` resolves directly to the OVH host. A Let’s Encrypt certificate is installed, with an enabled renewal timer and nginx reload hook. A certificate-renewal dry run passed against Let’s Encrypt staging. HTTP redirects to HTTPS. Staging requires an additional authentication gate and sends no-index headers. Production apex and www DNS remain unchanged.
+
+Five external HTTPS boundary/health checks passed. Twelve synthetic-user authentication and protected-route checks passed, including a secure session cookie, correct session identity, dashboard, jobs, customers, estimates, invoices, calendar, field, reports and settings. These are HTTP/session checks, not a complete interactive browser acceptance test. Provider credentials remain absent and outbound provider HTTP remains blocked in this synthetic environment.
