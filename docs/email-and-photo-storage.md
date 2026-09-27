@@ -1,6 +1,6 @@
 # Email and private photo storage
 
-Provider observations below were checked on September 26, 2026. Environment updates affect a new Vercel deployment; they do not alter a deployment already running. No credentials belong in this file, tickets, screenshots, or terminal output.
+The original provider observations below were checked on September 26, 2026; later application checks are dated separately. Environment updates affect a new Vercel deployment; they do not alter a deployment already running. No credentials belong in this file, tickets, screenshots, or terminal output.
 
 ## Email
 
@@ -11,6 +11,10 @@ Provider observations below were checked on September 26, 2026. Environment upda
 - Sending from `noreply@pegrio.com` does not establish an inbox or a monitored support address. The owner subsequently designated `pegriollc@gmail.com` for support and operational alerts. Routing configuration and app-generated support/alert delivery still need verification. `support@fieldclose.app` mailbox ownership and receipt remain unverified.
 
 After deployment, verify the app's reset, invitation, estimate, and invoice flows using explicitly authorized test recipients and disposable records. Inspect provider rejection/bounce status; a saved invitation or document is not proof that its message was delivered. Assign an owner to delivery failures and unresolved support requests. Resend's [test-domain restrictions](https://resend.com/docs/knowledge-base/403-error-resend-dev-domain), [domain limits](https://resend.com/docs/knowledge-base/how-to-add-more-domains), and [sent-email status API](https://resend.com/docs/api-reference/emails/retrieve-email) describe the relevant provider behavior.
+
+### Owner recovery follow-up — September 27, 2026, 13:37 UTC
+
+The owner reported completing password recovery. Fresh authenticated access to the existing Pegrio workspace was observed at **https://fieldclose.app/dashboard**. This closes the canonical owner sign-in handoff. The reset email body and its provider delivery status were not inspected, so this records owner-reported recovery and observed application access, not independently verified reset-email receipt. Invitation/document delivery and recovery failure/session-revocation paths remain separate checks.
 
 ## Private photos
 
@@ -38,4 +42,14 @@ The existing Wrangler login can access R2, but its token-management API request 
 
 Local development without R2 uses ignored `.data/private-photos` files behind the same routes. Vercel fails closed without all four R2 values; it never uses local fallback. **Legacy public image URLs remain publicly accessible until their objects and database references are separately migrated and old public access is revoked.** Restoring an old database may restore those links. Preserve old files until that migration is verified.
 
-Focused regression coverage: `tests/uploads.test.ts` and `tests/private-photos.test.ts` cover stored bytes, private references, missing configuration, storage failures, tenant and technician boundaries, customer-token expiry/revocation, object-path/bucket mismatches, bounded reads, private local fallback, and legacy-link compatibility. `tests/private-photos.integration.test.ts` exercises the real PostgreSQL membership, job, asset, and portal-token relations, including an inconsistent asset/job organization row; only authentication and provider bytes are mocked. Provider provisioning and direct storage verification are complete; deployed upload/retrieval remains a separate pending check.
+Focused regression coverage: `tests/uploads.test.ts` and `tests/private-photos.test.ts` cover stored bytes, private references, missing configuration, storage failures, tenant and technician boundaries, customer-token expiry/revocation, object-path/bucket mismatches, bounded reads, private local fallback, and legacy-link compatibility. `tests/private-photos.integration.test.ts` exercises the real PostgreSQL membership, job, asset, and portal-token relations, including an inconsistent asset/job organization row; only authentication and provider bytes are mocked. At the provider-setup checkpoint, deployed upload/retrieval was still pending; the following application check supersedes that status.
+
+### Application photo verification — September 27, 2026, 13:37 UTC
+
+One synthetic 99-byte, 32×32 PNG was uploaded through the real proof-of-work form for the existing internal job on **https://fieldclose.app**. After a full reload, the page showed **Uploaded photos 1** and the image DOM confirmed `complete: true`, `naturalWidth: 32`, `naturalHeight: 32`, and source `/api/photos/cmujv44va000112klstpznifw`. This establishes persisted owner-visible upload/retrieval through the deployed application. Authenticated image success was observed in the browser only; its HTTP status and headers were not separately instrumented.
+
+A cookie-free GET of that exact asset returned **401**, `Content-Type: application/json`, error `You must be logged in`, `Cache-Control: private, no-store, max-age=0`, `Referrer-Policy: no-referrer`, and `X-Robots-Tag: noindex, nofollow`, with no image bytes. This verifies anonymous denial for the saved asset, separately from the earlier direct-provider storage check.
+
+The final job page remained **Draft** and unscheduled, with **Completed** blank, **Photos (1)** and no invoices. It still stated **No proof of work recorded yet**, consistent with uploading a photo without submitting a completion record. Safe screenshots were retained locally as `production-photo-persisted.png` and `production-photo-job-still-draft.png`.
+
+Hosted cross-tenant, unassigned-technician, customer-portal and storage-failure checks were not performed; local integration coverage does not replace them. No job completion, signature, customer document delivery or charge was submitted during this verification.

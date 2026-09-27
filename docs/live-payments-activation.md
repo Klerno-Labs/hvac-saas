@@ -16,7 +16,11 @@ Both new destinations are **enabled** with their verified scopes and pinned payl
 
 After the owner completed identity verification, a fresh, fully loaded Stripe API-key list confirmed the temporary setup key was absent, **FieldClose production runtime** remained present, and no verification dialog remained. Revocation is **UI-confirmed**. No API 401 test was performed: the temporary secret had already been cleared from memory and was not retrieved again.
 
-Canonical-domain owner sign-in and the authenticated photo workflow remain pending. Scheduled tasks remain disabled, no real charge was made, and provider-originated billing/customer-payment outcomes and complete live financial workflows still require verification.
+At this cleanup checkpoint, canonical-domain owner sign-in and the authenticated photo workflow were still pending. Scheduled tasks remained disabled, no real charge was made, and provider-originated billing/customer-payment outcomes and complete live financial workflows still required verification.
+
+### Owner access and photo follow-up — September 27, 2026, 13:37 UTC
+
+The owner reported completing password recovery, and fresh authenticated access to the existing workspace was observed on `fieldclose.app/dashboard`; reset-email receipt was not independently verified. One synthetic photo uploaded through the internal job's form and rendered after a full reload. A cookie-free request for that exact asset returned 401 JSON with no image. See [application verification and its limits](email-and-photo-storage.md#application-photo-verification--september-27-2026-1337-utc). These checks close the owner sign-in and owner photo-upload handoffs; hosted tenant/technician/portal boundaries remain unverified. Payment verification is unchanged: no charge was made, complete live financial workflows remain open, and scheduled work remains disabled.
 
 ## Activation update — September 27, 2026, 12:50 UTC
 
