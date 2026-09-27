@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import type Stripe from 'stripe'
+import { billingPortalConfigurationId } from '@/lib/billing-portal'
 
 export const PLANS = {
   starter: {
@@ -103,7 +104,10 @@ export async function createSubscriptionCheckout(params: CheckoutInput): Promise
     const claim = await claimCheckout(params)
     if ('error' in claim) return { error: claim.error! }
     const portal = async (customer: string) => {
-      const session = await stripe.billingPortal.sessions.create({ customer, return_url: `${process.env.APP_URL || 'http://localhost:3000'}/settings/billing` }, stripeRequest)
+      const configuration = billingPortalConfigurationId()
+      const session = await stripe.billingPortal.sessions.create({ customer, return_url: `${process.env.APP_URL || 'http://localhost:3000'}/settings/billing`,
+        ...(configuration ? { configuration } : {}),
+      }, stripeRequest)
       return { url: session.url }
     }
     if ('portalCustomerId' in claim) return await portal(claim.portalCustomerId!)

@@ -43,7 +43,7 @@ export async function reconcileConfirmedPayment(payment: ConfirmedPayment): Prom
       update: {amountCents: payment.amountCents, currency: payment.currency, status: 'succeeded', paidAt},
     })
     await tx.invoice.update({where: {id: invoice.id}, data: {status: 'paid', outstandingCents: 0, paidAt}})
-    await tx.collectionAttempt.updateMany({where: {invoiceId: invoice.id, status: 'created'}, data: {status: 'skipped'}})
+    await tx.collectionAttempt.updateMany({where: {invoiceId: invoice.id, status: { in: ['created', 'failed', 'retry', 'sending', 'partial', 'review'] }}, data: {status: 'skipped'}})
     await tx.auditLog.create({data: {organizationId: invoice.organizationId, actorEmail: 'stripe-webhook', eventType: 'payment.recorded', targetType: 'invoice', targetId: invoice.id, metadata: {
       amountCents: payment.amountCents, currency: payment.currency, method: payment.method,
       connectedAccountId: payment.connectedAccountId, paymentIntentId: payment.paymentIntentId,

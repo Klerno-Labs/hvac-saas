@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toggleCollectionsPause, dismissCollectionAttempt } from './collections-actions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { collectionDeliverySummary } from '@/lib/collection-delivery'
 
 type Attempt = {
   id: string
@@ -81,13 +82,13 @@ export function CollectionsSection({
                 <Badge variant={attemptBadgeVariant(a.status)} className={attemptBadgeClass(a.status)}>
                   {a.status}
                 </Badge>
-                {a.notes && <span className="text-xs text-muted-foreground">{a.notes}</span>}
+                <span className="text-xs text-muted-foreground">{collectionDeliverySummary(a.notes, a.status)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
                   {new Date(a.createdAt).toLocaleDateString()}
                 </span>
-                {a.status === 'created' && (
+                {['created', 'retry', 'partial', 'review'].includes(a.status) && (
                   <Button
                     variant="outline"
                     size="xs"

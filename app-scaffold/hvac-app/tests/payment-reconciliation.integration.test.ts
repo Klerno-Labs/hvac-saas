@@ -25,6 +25,15 @@ async function fixture() {
   return {invoiceId: invoice.id, organizationId, connectedAccountId: 'acct_fixture', paymentIntentId: `pi_${randomUUID()}`, amountCents: 12500, currency: 'usd', method: 'checkout'}
 }
 describe('settled payments against PostgreSQL', () => {
+  it.each(['created', 'failed', 'retry', 'sending', 'partial', 'review', 'sent', 'dismissed'])('stops outstanding %s collection work without erasing delivery evidence', async status => {
+    const input = await fixture()
+    const notes = JSON.stringify({ version: 1, email: { status: 'retry', attempts: 1 }, sms: { status: 'accepted', attempts: 1, providerId: 'SM_preserved' } })
+    await db.collectionAttempt.updateMany({ where: { invoiceId: input.invoiceId }, data: { status, notes } })
+    await reconcileConfirmedPayment(input)
+    const saved = await db.collectionAttempt.findFirstOrThrow({ where: { invoiceId: input.invoiceId } })
+    expect(saved.status).toBe(['sent', 'dismissed'].includes(status) ? status : 'skipped')
+    expect(saved.notes).toBe(notes)
+  })
   it.each([true, false, undefined])('stores only explicit webhook mode as durable payment evidence: %s', async livemode => {
     const input = { ...await fixture(), ...(typeof livemode === 'boolean' ? { livemode } : {}) }
     await reconcileConfirmedPayment(input)

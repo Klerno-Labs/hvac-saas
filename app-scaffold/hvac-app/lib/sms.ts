@@ -26,7 +26,7 @@ export function isTwilioConfigured(): boolean {
   )
 }
 
-type SmsResult = { success: true; sid: string } | { success: false; error: string }
+type SmsResult = { success: true; sid: string } | { success: false; error: string; retryable?: boolean }
 
 export async function sendSms(to: string, body: string): Promise<SmsResult> {
   const client = getTwilioClient()
@@ -34,7 +34,7 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
 
   if (!client || !from) {
     console.log('[sms-skipped] SMS delivery is not configured')
-    return { success: false, error: 'SMS delivery not configured (Twilio env vars missing)' }
+    return { success: false, error: 'SMS delivery not configured (Twilio env vars missing)', retryable: true }
   }
 
   try {
@@ -44,11 +44,12 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
       body,
     })
 
-    return { success: true, sid: message.sid }
-  } catch {
+    return message.sid ? { success: true, sid: message.sid } : { success: false, error: 'SMS acceptance could not be confirmed', retryable: false }
+  } catch (error) {
     // Provider errors can contain phone numbers, message text and request data.
     console.error('[sms-error] SMS provider request failed')
-    return { success: false, error: 'Failed to send SMS' }
+    const status = error && typeof error === 'object' && 'status' in error ? Number(error.status) : 0
+    return { success: false, error: 'Failed to send SMS', retryable: [400, 401, 403, 404, 422, 429].includes(status) }
   }
 }
 

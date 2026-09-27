@@ -5,6 +5,8 @@ import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { MAX_PHOTO_BYTES, PHOTO_SIZE_LIMIT, PHOTO_CONTENT_TYPES } from '@/lib/photo-upload'
+import { localPhotoPath, photoObjectKey, r2PhotoConfig } from '@/lib/photo-storage'
+import { photoReadUrl } from '@/lib/photo-url'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
@@ -61,37 +63,30 @@ export async function POST(request: NextRequest) {
   const ext = EXT_MAP[file.type] || '.jpg'
   const uniqueName = `${crypto.randomUUID()}${ext}`
 
-  const hasR2Config = !!(
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    process.env.R2_BUCKET &&
-    process.env.R2_PUBLIC_BASE_URL
-  )
+  const storage = r2PhotoConfig()
+  const key = photoObjectKey(organizationId, jobId, uniqueName)
 
-  if (!hasR2Config && process.env.VERCEL === '1') {
+  if (!storage && process.env.VERCEL === '1') {
     return NextResponse.json(
       { error: 'Photo storage is not configured. Contact your administrator.' },
       { status: 503 },
     )
   }
 
-  if (hasR2Config) {
+  if (storage) {
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
 
     const r2Client = new S3Client({
       region: 'auto',
-      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint: `https://${storage.accountId}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: storage.accessKeyId,
+        secretAccessKey: storage.secretAccessKey,
       },
     })
 
-    const key = `uploads/${uniqueName}`
-
     const command = new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET,
+      Bucket: storage.bucket,
       Key: key,
       ContentType: file.type,
       ContentLength: file.size,
@@ -100,11 +95,13 @@ export async function POST(request: NextRequest) {
 
     try {
       await r2Client.send(command)
-    } catch (error) {
-      console.error('[uploads] Object storage upload failed', error)
+    } catch {
+      console.error('[uploads] Object storage upload failed')
       return NextResponse.json({ error: 'Photo upload failed. Please try again.' }, { status: 503 })
+    } finally {
+      r2Client.destroy()
     }
-    const fileUrl = `${process.env.R2_PUBLIC_BASE_URL}/${key}`
+    const fileUrl = `r2://${storage.bucket}/${key}`
 
     const asset = await db.proofOfWorkAsset.create({
       data: {
@@ -125,17 +122,18 @@ export async function POST(request: NextRequest) {
       metadataJson: { assetId: asset.id, fileType: file.type },
     })
 
-    return NextResponse.json({ fileUrl, id: asset.id })
+    return NextResponse.json({ fileUrl: photoReadUrl({ id: asset.id, fileUrl }), id: asset.id })
   }
 
-  console.warn('R2 env vars not configured, falling back to local filesystem')
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+  console.warn('R2 env vars not configured, using private local development storage')
+  const destination = localPhotoPath(key)
+  const uploadsDir = path.dirname(destination)
   await mkdir(uploadsDir, { recursive: true })
 
   const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(path.join(uploadsDir, uniqueName), buffer)
+  await writeFile(destination, buffer)
 
-  const fileUrl = `/uploads/${uniqueName}`
+  const fileUrl = `local-private://photos/${key}`
 
   const asset = await db.proofOfWorkAsset.create({
     data: {
@@ -156,5 +154,5 @@ export async function POST(request: NextRequest) {
     metadataJson: { assetId: asset.id, fileType: file.type },
   })
 
-  return NextResponse.json({ id: asset.id, fileUrl })
+  return NextResponse.json({ id: asset.id, fileUrl: photoReadUrl({ id: asset.id, fileUrl }) })
 }

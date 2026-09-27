@@ -1,4 +1,5 @@
 import { startOfBusinessDayAsUtcDate } from '@/lib/format'
+import { photoReadUrl } from '@/lib/photo-url'
 import { jobAccessWhere } from '@/lib/mutation-access'
 import { requireAuth } from '@/lib/session'
 import { db } from '@/lib/db'
@@ -55,7 +56,7 @@ export default async function FieldPage() {
       ) : (
         <div className="space-y-4">
           {jobs.map((job) => (
-            <FieldJobCard key={job.id} job={job} />
+            <FieldJobCard key={job.id} job={{ ...job, assets: job.assets.map(asset => ({ ...asset, fileUrl: photoReadUrl(asset) })) }} />
           ))}
         </div>
       )}

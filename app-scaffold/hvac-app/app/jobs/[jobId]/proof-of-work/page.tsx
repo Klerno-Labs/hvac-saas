@@ -1,4 +1,5 @@
 import { jobAccessWhere } from '@/lib/mutation-access'
+import { photoReadUrl } from '@/lib/photo-url'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
@@ -51,7 +52,7 @@ export default async function ProofOfWorkPage({ params }: { params: Promise<{ jo
             }}
             existingAssets={job.assets.map((a) => ({
               id: a.id,
-              fileUrl: a.fileUrl,
+              fileUrl: photoReadUrl(a),
               fileType: a.fileType,
             }))}
           />

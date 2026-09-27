@@ -1,4 +1,5 @@
 import { formatDateOnly } from '@/lib/format'
+import { photoReadUrl } from '@/lib/photo-url'
 import { canDo } from '@/lib/permissions'
 import { jobAccessWhere } from '@/lib/mutation-access'
 import { requireActiveSubscription } from '@/lib/session'
@@ -145,13 +146,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
               {job.assets.map((asset) => (
                 <a
                   key={asset.id}
-                  href={asset.fileUrl}
+                  href={photoReadUrl(asset)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="relative aspect-square rounded-lg overflow-hidden border bg-muted block"
                 >
                   <img
-                    src={asset.fileUrl}
+                    src={photoReadUrl(asset)}
                     alt="Proof of work"
                     className="object-cover w-full h-full hover:opacity-90 transition-opacity"
                   />

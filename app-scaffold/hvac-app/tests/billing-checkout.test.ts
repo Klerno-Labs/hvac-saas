@@ -35,6 +35,7 @@ function seedAttempt(overrides: Record<string, unknown> = {}, ageMs = 0) {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  vi.stubEnv('STRIPE_BILLING_PORTAL_CONFIGURATION_ID', '')
   Object.assign(fixture.org, { stripeCustomerId: null, stripeSubscriptionId: null, subscriptionStatus: 'TRIALING' })
   fixture.attempts = []; fixture.sessions = []; fixture.subscriptions = []; fixture.inTransaction = false
   let tail = Promise.resolve()
@@ -193,6 +194,23 @@ describe('durable subscription checkout attempts', () => {
     const result = await createSubscriptionCheckout(request())
     expect(result).toHaveProperty('error')
     expect(JSON.stringify(result)).not.toContain('private detail')
+    expect(fixture.createSession).not.toHaveBeenCalled()
+  })
+
+  it.each(['local', 'provider'] as const)('uses the explicit FieldClose portal configuration for a %s subscription', async source => {
+    vi.stubEnv('STRIPE_BILLING_PORTAL_CONFIGURATION_ID', 'bpc_FieldCloseLive')
+    if (source === 'local') Object.assign(fixture.org, { stripeCustomerId: 'cus_fixture', stripeSubscriptionId: 'sub_existing', subscriptionStatus: 'ACTIVE' })
+    else fixture.subscriptions.push({ id: 'sub_pending_webhook', status: 'active' } as Stripe.Subscription)
+    expect(await createSubscriptionCheckout(request())).toHaveProperty('url')
+    expect(fixture.portal).toHaveBeenCalledWith(expect.objectContaining({ customer: 'cus_fixture', configuration: 'bpc_FieldCloseLive' }), expect.any(Object))
+    expect(fixture.createSession).not.toHaveBeenCalled()
+  })
+
+  it('does not fall back to another app’s portal when the configured ID is malformed', async () => {
+    vi.stubEnv('STRIPE_BILLING_PORTAL_CONFIGURATION_ID', 'https://another-app.example')
+    Object.assign(fixture.org, { stripeCustomerId: 'cus_fixture', stripeSubscriptionId: 'sub_existing', subscriptionStatus: 'ACTIVE' })
+    expect(await createSubscriptionCheckout(request())).toHaveProperty('error')
+    expect(fixture.portal).not.toHaveBeenCalled()
     expect(fixture.createSession).not.toHaveBeenCalled()
   })
 

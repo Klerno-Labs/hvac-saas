@@ -6,10 +6,11 @@ vi.mock('@/lib/db', () => ({ db: {
   organizationMember: { findFirst: vi.fn() }, job: { findFirst: vi.fn() }, proofOfWorkAsset: { create: vi.fn() },
 } }))
 vi.mock('@/lib/events', () => ({ trackEvent: vi.fn() }))
-const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }))
+const { mockSend, mockDestroy } = vi.hoisted(() => ({ mockSend: vi.fn(), mockDestroy: vi.fn() }))
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(function () { return { send: mockSend } }),
+  S3Client: vi.fn(function () { return { send: mockSend, destroy: mockDestroy } }),
   PutObjectCommand: vi.fn(function (input) { return input }),
+  GetObjectCommand: vi.fn(function (input) { return input }),
 }))
 vi.mock('fs/promises', () => ({ writeFile: vi.fn(), mkdir: vi.fn() }))
 
@@ -21,7 +22,7 @@ import { writeFile, mkdir } from 'fs/promises'
 
 const R2_ENV = {
   R2_ACCOUNT_ID: 'acct', R2_ACCESS_KEY_ID: 'key', R2_SECRET_ACCESS_KEY: 'secret',
-  R2_BUCKET: 'bucket', R2_PUBLIC_BASE_URL: 'https://pub.r2.dev',
+  R2_BUCKET: 'bucket',
 }
 function request(file = new File(['photo'], 'test.jpg', { type: 'image/jpeg' })) {
   const form = new FormData()
@@ -53,16 +54,18 @@ describe('POST /api/uploads multipart storage', () => {
     const response = await POST(request() as never)
     const body = await response.json()
     expect(response.status).toBe(200)
-    expect(body).toEqual({ id: 'asset1', fileUrl: expect.stringMatching(/^https:\/\/pub\.r2\.dev\/uploads\/[a-f0-9-]+\.jpg$/) })
+    expect(body).toEqual({ id: 'asset1', fileUrl: '/api/photos/asset1' })
     expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
-      Bucket: 'bucket', ContentType: 'image/jpeg', ContentLength: 5, Body: Buffer.from('photo'),
+      Bucket: 'bucket', Key: expect.stringMatching(/^private\/org1\/j1\/[a-f0-9-]+\.jpg$/),
+      ContentType: 'image/jpeg', ContentLength: 5, Body: Buffer.from('photo'),
     }))
     expect(db.proofOfWorkAsset.create).toHaveBeenCalledWith({ data: {
-      organizationId: 'org1', jobId: 'j1', fileUrl: body.fileUrl, fileType: 'image/jpeg', fileSize: 5,
+      organizationId: 'org1', jobId: 'j1', fileUrl: expect.stringMatching(/^r2:\/\/bucket\/private\/org1\/j1\/[a-f0-9-]+\.jpg$/), fileType: 'image/jpeg', fileSize: 5,
     } })
     expect(mockSend.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(db.proofOfWorkAsset.create).mock.invocationCallOrder[0])
     expect(mockSend.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(trackEvent).mock.invocationCallOrder[0])
     expect(writeFile).not.toHaveBeenCalled()
+    expect(mockDestroy).toHaveBeenCalledOnce()
   })
 
   it('does not record an uploaded asset when object storage rejects the upload', async () => {
@@ -74,6 +77,7 @@ describe('POST /api/uploads multipart storage', () => {
     expect(db.proofOfWorkAsset.create).not.toHaveBeenCalled()
     expect(trackEvent).not.toHaveBeenCalled()
     expect(writeFile).not.toHaveBeenCalled()
+    expect(mockDestroy).toHaveBeenCalledOnce()
   })
 
   it.each(Object.keys(R2_ENV))('fails closed on Vercel if %s is missing', async missing => {
@@ -89,14 +93,23 @@ describe('POST /api/uploads multipart storage', () => {
     expect(trackEvent).not.toHaveBeenCalled()
   })
 
-  it('preserves the local development filesystem fallback', async () => {
+  it('stores new development photos outside the public directory', async () => {
     for (const key of Object.keys(R2_ENV)) vi.stubEnv(key, '')
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const response = await POST(request() as never)
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ id: 'asset1', fileUrl: expect.stringMatching(/^\/uploads\/[a-f0-9-]+\.jpg$/) })
-    expect(writeFile).toHaveBeenCalledWith(expect.stringMatching(/\/public\/uploads\/[a-f0-9-]+\.jpg$/), Buffer.from('photo'))
+    expect(await response.json()).toEqual({ id: 'asset1', fileUrl: '/api/photos/asset1' })
+    expect(writeFile).toHaveBeenCalledWith(expect.stringMatching(/\/\.data\/private-photos\/private\/org1\/j1\/[a-f0-9-]+\.jpg$/), Buffer.from('photo'))
     expect(mockSend).not.toHaveBeenCalled()
+  })
+
+  it('does not expose a new photo even if a legacy public base URL is configured', async () => {
+    vi.stubEnv('R2_PUBLIC_BASE_URL', 'https://old-public.example.test')
+    const response = await POST(request() as never)
+    expect(await response.json()).toEqual({ id: 'asset1', fileUrl: '/api/photos/asset1' })
+    expect(db.proofOfWorkAsset.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ fileUrl: expect.stringMatching(/^r2:\/\/bucket\/private\//) }),
+    }))
   })
 
   it('accepts a 4 MB photo through the actual multipart parser', async () => {

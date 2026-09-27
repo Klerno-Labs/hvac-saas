@@ -14,7 +14,7 @@ function getResend(): Resend | null {
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'FieldClose <noreply@resend.dev>'
 
-type SendResult = { success: true; id: string } | { success: false; error: string }
+type SendResult = { success: true; id: string } | { success: false; error: string; retryable?: boolean }
 
 export async function sendEmail(params: {
   to: string
@@ -25,7 +25,7 @@ export async function sendEmail(params: {
   const resend = getResend()
   if (!resend) {
     console.log('[email-skipped] Email delivery is not configured')
-    return { success: false, error: 'Email delivery not configured (RESEND_API_KEY missing)' }
+    return { success: false, error: 'Email delivery not configured (RESEND_API_KEY missing)', retryable: true }
   }
 
   try {
@@ -38,14 +38,14 @@ export async function sendEmail(params: {
 
     if (result.error) {
       console.error('[email-error] Email provider rejected the request')
-      return { success: false, error: result.error.message }
+      return { success: false, error: result.error.message, retryable: [400, 401, 403, 404, 422, 429].includes(result.error.statusCode ?? 0) }
     }
 
-    return { success: true, id: result.data?.id || '' }
+    return result.data?.id ? { success: true, id: result.data.id } : { success: false, error: 'Email acceptance could not be confirmed', retryable: false }
   } catch {
     // Never log provider payloads: they can contain addresses or private links.
     console.error('[email-error] Email provider request failed')
-    return { success: false, error: 'Failed to send email' }
+    return { success: false, error: 'Failed to send email', retryable: false }
   }
 }
 
@@ -114,6 +114,7 @@ export async function sendCollectionEmail(params: {
   portalUrl?: string
   dueDate?: string
   stage: 'overdue_1' | 'overdue_2' | 'final_notice'
+  idempotencyKey?: string
 }): Promise<SendResult> {
   const stageText = {
     overdue_1: { title: 'Friendly Payment Reminder', message: "This is a friendly reminder that your invoice is past due. If you've already paid, please disregard this notice." },
@@ -130,6 +131,7 @@ export async function sendCollectionEmail(params: {
   return sendEmail({
     to: params.to,
     subject: `${stageText.title}: Invoice #${params.invoiceNumber} from ${params.orgName}`,
+    idempotencyKey: params.idempotencyKey,
     html: renderEmail({
       title: stageText.title,
       preheader: `Invoice #${params.invoiceNumber} — ${params.totalFormatted} outstanding`,
