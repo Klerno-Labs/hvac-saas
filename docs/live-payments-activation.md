@@ -12,6 +12,7 @@ This is a read-only inventory recorded on September 26, 2026 and a proposed cuto
 | Sandbox destinations and portal | No webhook endpoints or Billing Portal configurations were returned by the sandbox API. `STRIPE_CONNECT_WEBHOOK_SECRET` is absent in Vercel production. |
 | Existing live account | [Pegrio LLC, `acct_1TMx2XPgFInaK96k`](https://dashboard.stripe.com/acct_1TMx2XPgFInaK96k/account/status). The live dashboard showed Payments and Payouts active, with no active account-status tasks. Connect setup showed identity verification and integration choices complete. |
 | Live API access | Not available through the configured Vercel credentials. The live inventory below was read from the existing signed-in Stripe dashboard, not inferred from the sandbox. |
+| Existing live key retrieval | Existing standard secret keys were masked with no retrieval action, and none was named FieldClose. One generic restricted key offered **Reveal**, but its permissions and ownership were not verified. Its presence does not establish that it is suitable for FieldClose; do not reveal or reuse it speculatively. |
 
 The live account also hosts other Pegrio products. Keep all activation changes specific to FieldClose. Do not change another application's endpoints, prices, portal configuration, or account-wide settings as a shortcut.
 
@@ -63,13 +64,43 @@ Configure the FieldClose portal with:
 
 Stripe supports selecting a configuration when creating a portal session; see [customer portal configurations](https://docs.stripe.com/api/customer_portal/configurations/object).
 
+## Use a dedicated restricted API key
+
+Prefer a dedicated FieldClose restricted key over a full-access standard secret key for this shared Pegrio account. The current application accepts `rk_test_…` and `rk_live_…` in `STRIPE_SECRET_KEY`; its single Stripe client uses that key for both platform and connected-account requests. Stripe documents restricted keys as drop-in replacements, with separate permissions for connected accounts. A dedicated key also allows FieldClose credentials to be revoked or rotated without rotating another application's key. See [restricted API keys](https://docs.stripe.com/keys/restricted-api-keys).
+
+The following baseline comes from the application's actual API calls. It is a starting permission set to verify in sandbox, not evidence that a restricted key has passed every flow. Resource labels may differ in the Dashboard; Write includes Read.
+
+| Request scope | Resource permission | Runtime operations |
+| --- | --- | --- |
+| Platform | Customers: **Write** | Create subscription customers. |
+| Platform | Checkout Sessions: **Write** | Create, list, retrieve, and expire subscription Checkout sessions. |
+| Platform | Subscriptions: **Read** | Find existing subscriptions and retrieve current state during billing webhook reconciliation. |
+| Platform | Customer Portal Sessions: **Write** | Create sessions for the FieldClose billing portal configuration. |
+| Platform | Connect Accounts: **Write** | Create Express accounts and retrieve current account capabilities. |
+| Platform | Account Links: **Write** | Create Express onboarding links. |
+| Connected accounts | Checkout Sessions: **Write** | Create, retrieve, and expire invoice Checkout sessions, including inline pricing and application fees. |
+| Connected accounts | Payment Intents: **Write** | Create, retrieve, and capture Terminal payments, including application fees. |
+| Connected accounts | Terminal Connection Tokens: **Write** | Create tokens for the Terminal SDK. |
+
+Account creation, capability refresh, and onboarding-link creation are platform-scoped requests. Invoice payment and Terminal requests supply the organization's connected account through `Stripe-Account`; enable their corresponding connected-account permissions explicitly. See [Connect authentication](https://docs.stripe.com/connect/authentication).
+
+No direct runtime calls require refunds, transfers, payouts, bank-account management, balance access, or webhook-endpoint writes. Leave unrelated permissions disabled initially. Webhook signature verification uses separate destination signing secrets locally, so it does not itself need Events read permission or webhook-endpoint write permission. Billing reconciliation still needs the Subscriptions read permission listed above. See [API keys and webhook signing secrets](https://docs.stripe.com/keys).
+
+Verify a dedicated restricted **test** key with new and repeated subscription checkout, subscription recovery, billing portal access, Express onboarding and refresh, connected-account invoice checkout with inline product/pricing and an application fee, Terminal token creation/payment capture, and signed subscription webhook reconciliation. Inspect denied requests for additional resource dependencies and add only demonstrated requirements; then configure an equivalent dedicated live key. Do not assume the existing generic restricted key covers these operations or expand to full account access merely to silence a denied request. No live charge is authorized by this procedure.
+
+Restricted permissions limit API resource families; they do not enforce FieldClose's organization metadata as a Stripe-side boundary. Consequently, this permission model should not be treated as isolation from other Pegrio records within the same account. Keep tenant checks in the application and keep account-wide changes out of routine activation.
+
+### Keep manual diagnostics separate
+
+The optional `scripts/check-provider-services.mjs` audit reads platform account details, Prices with expanded Products, webhook endpoints, and billing portal configurations. Those diagnostic reads are not all runtime requirements. Prefer a separate read-only operator key supplied only to the manual audit process, rather than broadening the deployed application's key for diagnostics. A restricted runtime key may correctly deny a diagnostic read; that denial is not a reason to grant write access. Neither diagnostic access nor a successful read proves delivery or payment reconciliation. See [Stripe API key practices](https://docs.stripe.com/keys-best-practices).
+
 ## Smallest secure owner step
 
-1. Open the existing **live** Pegrio LLC account's [API keys page](https://dashboard.stripe.com/acct_1TMx2XPgFInaK96k/apikeys). Use its existing authorized live secret key and matching live publishable key. If a key cannot be retrieved, the owner must handle any credential creation or verification required by Stripe.
+1. In the existing Pegrio LLC account, have the owner create and verify a dedicated restricted test key using the baseline above, then create the corresponding dedicated live key through the [live API keys page](https://dashboard.stripe.com/acct_1TMx2XPgFInaK96k/apikeys). Use the matching live publishable key. The observed standard secrets cannot be retrieved through the inspected interface, and the generic restricted key is not verified for reuse. Let the owner complete any required Stripe verification; do not rotate another application's key or require a full-access standard key by default.
 2. In Vercel, open the **FieldClose** project's Environment Variables settings. Set `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` for **Production only** using the secure settings interface. Keep the values out of chat and repository files. Never replace the live account with a newly created financial account merely to obtain a key.
 3. Do **not** redeploy just the key change. Complete the live price IDs, two destination secrets, dedicated portal configuration, and database checks together before building the candidate. Environment changes affect newly created deployments, not an already running release.
 
-Once the live key is installed, authorized maintenance can verify the existing live resources and prepare the FieldClose-specific configuration without asking the owner to enter every non-secret ID manually. This document does not authorize charges or account-wide changes.
+Once the runtime key is installed and appropriate separate diagnostic access is available, authorized maintenance can verify the existing live resources and prepare the FieldClose-specific configuration without asking the owner to enter every non-secret ID manually. This document does not authorize charges, creation or disclosure of credentials, or account-wide changes.
 
 ## Database and cutover precautions
 
