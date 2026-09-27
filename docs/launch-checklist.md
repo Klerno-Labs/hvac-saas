@@ -1,6 +1,6 @@
 # FieldClose release checklist
 
-Local build/test evidence is recorded in `readiness-2026-09-26.md`. The boxes below are production release gates, not claims that these services have been exercised.
+Current local verification and remaining commercial/operating gates are recorded in [the September 27 hardening report](evidence/release-hardening-2026-09-27/report.md). Earlier evidence is retained in `readiness-2026-09-26.md`. The boxes below are production release gates, not claims that these services have been exercised.
 
 ## Deployment and recovery
 
