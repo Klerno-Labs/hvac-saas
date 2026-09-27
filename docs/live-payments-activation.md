@@ -1,8 +1,27 @@
 # FieldClose live payment activation
 
-This is a read-only inventory recorded on September 26, 2026 and a proposed cutover procedure. It is not evidence that live payments or webhook delivery have passed an end-to-end test. No charges, credentials, webhook destinations, products, or hosting settings were changed during the inventory.
+The original inventory below was recorded on September 26, 2026. It was read-only; subsequent authorized activation work is recorded separately here. Neither provider configuration nor a successful read proves completed payment settlement.
 
-## Verified accounts and deployment state
+## Activation update — September 27, 2026, 12:50 UTC
+
+The owner completed Stripe identity verification. The approved **FieldClose production runtime** restricted live key and matching live publishable key are saved in Vercel Production. The restricted sandbox key remains Preview-only. No live charge was made. The existing public deployment retains its prior immutable test configuration and rejects payment operations; staged environment changes are not yet live.
+
+Both live product/price pairs in the table below were rechecked in the live dashboard: active, flat-rate USD monthly pricing at $49 and $99. The Starter product description now correctly allows one owner. Pro's unlimited-user description matches current runtime enforcement. Their exact IDs are staged in `STRIPE_STARTER_PRICE_ID` and `STRIPE_PRO_PRICE_ID`.
+
+A separate active live portal, `bpc_1UKHNvPgFInaK96kr3OtlaZR`, is created and staged in `STRIPE_BILLING_PORTAL_CONFIGURATION_ID`. Verified settings include the FieldClose headline, application return URL, correct legal links, invoice history, payment-method updates, cancellation at period end, and disabled plan changes. The other product's default portal is unchanged.
+
+The owner separately approved a temporary key with only **Webhook Endpoints, Event Destinations: Write**. It prepared these destinations at payload version `2025-02-24.acacia`, with distinct signing secrets saved as Production Secrets. The dashboard independently confirms their scopes. Both replacements are currently **disabled**, pending handler ownership fixes and coordinated deployment:
+
+| Destination | Scope | Signing-secret setting |
+| --- | --- | --- |
+| `we_1UKHWtPgFInaK96kqlGDb6mf` | Your account, `/api/billing/webhook` | `STRIPE_WEBHOOK_SECRET` |
+| `we_1UKHWwPgFInaK96k49rieOJA` | Connected accounts, `/api/stripe/webhook` | `STRIPE_CONNECT_WEBHOOK_SECRET` |
+
+Shared-account review found that unrelated subscriptions and paid Checkout events could be retried rather than ignored, and initial subscription matching needed stronger product ownership checks. Do not enable replacements until those corrections pass regression verification. The temporary setup key must be expired after the approved setup; it is not deployed. Old FieldClose destinations remain unchanged at this timestamp.
+
+The separate fresh production database is already created, migrated, SSL-enforced, backed up and restore-tested; the historical pending-creation note below is superseded. The old database's contents remain unknown and unrecovered. See [production activation](production-activation.md).
+
+## Historical inventory — September 26
 
 | Item | Verified state |
 | --- | --- |
@@ -25,7 +44,7 @@ The live account also hosts other Pegrio products. Keep all activation changes s
 
 Both products were active in the live dashboard. After live API access is configured, verify the prices are live, active, fixed licensed monthly recurring prices with active products before installing their IDs. Do not create duplicate products merely because the current environment refers to test prices.
 
-The live Starter description currently says **“Up to 5 users.”** Correct that FieldClose product description to the app's actual Starter allowance of one owner before sending customers to Checkout. Pro supports team members; do not add unimplemented support or service commitments to the provider copy.
+At the original inventory, the Starter description said **“Up to 5 users.”** It has since been corrected to one owner, as recorded above. Pro supports team members; do not add unimplemented support or service commitments to the provider copy.
 
 ## Replace the old webhook arrangement with explicit scopes
 

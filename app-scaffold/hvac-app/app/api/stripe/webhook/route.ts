@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { captureException } from '@sentry/nextjs'
 import { isPlatformBillingEvent, verifyStripeWebhook } from '@/lib/stripe-webhook'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    if (!await belongsToFieldClose(event)) return NextResponse.json({ received: true, ignored: true })
     switch (event.type) {
       case 'checkout.session.completed':
       case 'checkout.session.async_payment_succeeded':
@@ -60,9 +62,39 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
+    captureException(error)
     console.error(`Webhook processing error for ${event.type}:`, error)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
+}
+
+/** Shared Connect destinations receive other products' events as well. Only
+ * local account/document references enter handlers; those handlers still reject
+ * wrong account/org identities and retry failures for our own records. */
+async function belongsToFieldClose(event: Stripe.Event): Promise<boolean> {
+  if (event.type === 'account.updated') {
+    const account = event.data.object as Stripe.Account
+    if (account.id !== event.account) throw new Error('Stripe account update scope mismatch')
+    return Boolean(await db.organization.findFirst({ where: { stripeConnectedAccountId: account.id }, select: { id: true } }))
+  }
+  const checkoutEvent = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'checkout.session.expired'].includes(event.type)
+  if (!checkoutEvent && !['payment_intent.succeeded', 'payment_intent.payment_failed'].includes(event.type)) return false
+  const object = event.data.object as Stripe.Checkout.Session | Stripe.PaymentIntent
+  if (checkoutEvent && (object as Stripe.Checkout.Session).mode !== 'payment') return false
+  if (checkoutEvent && event.type !== 'checkout.session.expired' && (object as Stripe.Checkout.Session).payment_status !== 'paid') return false
+  if (event.type === 'payment_intent.succeeded' && object.metadata?.method !== TERMINAL_PAYMENT_METHOD) {
+    const saved = await db.payment.findUnique({ where: { stripePaymentIntent: object.id }, select: { method: true } })
+    if (saved?.method === TERMINAL_PAYMENT_METHOD) throw new Error('Missing Terminal payment method identity')
+    return false
+  }
+  if (object.metadata?.invoiceId && await db.invoice.findUnique({ where: { id: object.metadata.invoiceId }, select: { id: true } })) return true
+  if (object.metadata?.organizationId && await db.organization.findFirst({ where: { id: object.metadata.organizationId }, select: { id: true } })) return true
+  // Missing metadata on a previously saved FieldClose session/intent is a
+  // processing error, not a foreign event that can be discarded silently.
+  if (checkoutEvent && await db.invoice.findFirst({ where: { stripeCheckoutSessionId: object.id }, select: { id: true } })) return true
+  const reference = checkoutEvent ? (object as Stripe.Checkout.Session).payment_intent : object.id
+  const intentId = typeof reference === 'string' ? reference : reference?.id
+  return Boolean(intentId && await db.payment.findUnique({ where: { stripePaymentIntent: intentId }, select: { id: true } }))
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session, account: string | undefined, livemode: boolean) {
@@ -136,7 +168,7 @@ async function recordPaymentFailure(input: {
   reason: 'checkout_expired' | 'payment_intent_failed'
 }) {
   const { invoiceId, organizationId, account, paymentIntentId, sessionId, reason } = input
-  if (!invoiceId) return
+  if (!invoiceId) throw new Error('Missing failed payment invoice')
   if (!organizationId) throw new Error('Missing failed payment organization')
   await db.$transaction(async tx => {
     // Use the same invoice lock as settlement so late failures cannot overwrite

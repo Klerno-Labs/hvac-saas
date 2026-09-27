@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }))
+import { captureException } from '@sentry/nextjs'
 
 vi.mock('next/headers', () => ({
   headers: vi.fn(),
@@ -11,6 +13,7 @@ vi.mock('@/lib/stripe', () => ({
 vi.mock('@/lib/db', () => ({
   db: {
     $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     webhookEvent: {
       create: vi.fn(),
       deleteMany: vi.fn(),
@@ -95,8 +98,21 @@ const stubOrg = {
   id: 'org_1',
   name: 'Test HVAC',
   stripeCustomerId: 'cus_test',
+  stripeSubscriptionId: 'sub_test' as string | null,
+  updatedAt: new Date('2026-09-27T12:00:00Z'),
   subscriptionStatus: 'ACTIVE',
   readOnlyAt: null,
+}
+
+function givenOrganization(org: typeof stubOrg | null) {
+  vi.mocked(db.organization.findFirst).mockResolvedValue(org as never)
+  vi.mocked(db.organization.findUnique).mockImplementation(({ where }) => {
+    if (!org) return Promise.resolve(null) as never
+    const matches = where.id ? where.id === org.id
+      : where.stripeCustomerId ? where.stripeCustomerId === org.stripeCustomerId
+      : where.stripeSubscriptionId === org.stripeSubscriptionId
+    return Promise.resolve(matches ? org : null) as never
+  })
 }
 
 beforeEach(() => {
@@ -119,10 +135,13 @@ beforeEach(() => {
 
   vi.mocked(db.webhookEvent.create).mockResolvedValue({} as never)
   vi.mocked(db.webhookEvent.update).mockResolvedValue({} as never)
-  vi.mocked(db.organization.findFirst).mockResolvedValue(stubOrg as never)
+  givenOrganization(stubOrg)
   vi.mocked(db.organization.update).mockResolvedValue({} as never)
   vi.mocked(sendDunningEmail).mockResolvedValue(undefined)
+  vi.stubEnv('STRIPE_STARTER_PRICE_ID', 'price_fieldclose_starter')
+  vi.stubEnv('STRIPE_PRO_PRICE_ID', 'price_fieldclose_pro')
 })
+afterEach(() => vi.unstubAllEnvs())
 
 // --- tests ---
 
@@ -289,6 +308,170 @@ describe('billing event ordering', () => {
     Object.assign(event.data.object, {subscription:null})
     mockStripe.webhooks.constructEvent.mockReturnValue(event)
     expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(db.organization.update).not.toHaveBeenCalled()
+  })
+})
+
+function fieldCloseSubscription(planId = 'starter') {
+  const event = makeSubscriptionEvent('customer.subscription.created', 'active')
+  return { ...event, data: { object: { ...event.data.object,
+    metadata: { organizationId: 'org_1', planId },
+    items: { data: [{ price: { id: `price_fieldclose_${planId}` }, quantity: 1 }] },
+  } } }
+}
+
+describe('shared-platform billing association', () => {
+  function expectNoBillingWrite() {
+    expect(db.$transaction).not.toHaveBeenCalled()
+    expect(db.webhookEvent.create).not.toHaveBeenCalled()
+    expect(db.organization.update).not.toHaveBeenCalled()
+    expect(sendDunningEmail).not.toHaveBeenCalled()
+  }
+
+  it.each(['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted', 'invoice.payment_failed', 'invoice.payment_succeeded'])('ignores unrelated %s without retrieving a foreign subscription or writing event records', async type => {
+    const event = type.startsWith('invoice.') ? makeInvoiceEvent(type, 'cus_other_app') : makeSubscriptionEvent(type, 'active', 'cus_other_app')
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    givenOrganization(null)
+    expect(await (await webhookPOST(makeWebhookRequest())).json()).toEqual({ received: true, ignored: true })
+    expect(mockStripe.subscriptions.retrieve).not.toHaveBeenCalled()
+    expectNoBillingWrite()
+  })
+
+  it('does not adopt an unrelated subscription merely because another app reused the customer', async () => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: null })
+    mockStripe.webhooks.constructEvent.mockReturnValue(makeSubscriptionEvent('customer.subscription.created', 'active'))
+    expect(await (await webhookPOST(makeWebhookRequest())).json()).toEqual({ received: true, ignored: true })
+    expectNoBillingWrite()
+  })
+
+  it('ignores a foreign-priced subscription with foreign organization metadata on the same customer', async () => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: null })
+    const event = fieldCloseSubscription()
+    event.data.object.metadata.organizationId = 'foreign_app_org'
+    event.data.object.items.data[0].price.id = 'price_foreign_app'
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    expect(await (await webhookPOST(makeWebhookRequest())).json()).toEqual({ received: true, ignored: true })
+    expectNoBillingWrite()
+  })
+
+  it.each(['bound-subscription', 'fieldclose-price', 'known-organization'])('retries conflicting metadata when %s establishes FieldClose association', async reason => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: reason === 'bound-subscription' ? 'sub_test' : null })
+    const event = fieldCloseSubscription()
+    event.data.object.metadata.organizationId = 'another_org'
+    if (reason !== 'fieldclose-price') event.data.object.items.data[0].price.id = 'price_foreign_app'
+    if (reason === 'known-organization') {
+      vi.mocked(db.organization.findUnique).mockImplementation(({ where }) => {
+        if (where.stripeCustomerId === 'cus_test') return Promise.resolve({ ...stubOrg, stripeSubscriptionId: null }) as never
+        if (where.id === 'another_org') return Promise.resolve({ ...stubOrg, id: 'another_org', stripeCustomerId: 'cus_another' }) as never
+        return Promise.resolve(null) as never
+      })
+    }
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expectNoBillingWrite()
+  })
+
+  it('resolves the exact subscription before a competing customer association', async () => {
+    const event = fieldCloseSubscription()
+    event.data.object.customer = 'cus_other'
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expect(db.organization.findUnique).toHaveBeenCalledExactlyOnceWith({ where: { stripeSubscriptionId: 'sub_test' } })
+    expect(mockStripe.subscriptions.retrieve).not.toHaveBeenCalled()
+    expectNoBillingWrite()
+  })
+
+  it.each(['starter', 'pro'])('binds an initial %s subscription only with matching customer, organization, plan, and price', async planId => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: null })
+    mockStripe.webhooks.constructEvent.mockReturnValue(fieldCloseSubscription(planId))
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(db.$queryRaw).toHaveBeenCalled()
+    expect(db.organization.update).toHaveBeenCalledWith({ where: { id: 'org_1' }, data: expect.objectContaining({ stripeSubscriptionId: 'sub_test', plan: planId.toUpperCase(), subscriptionStatus: 'ACTIVE' }) })
+  })
+
+  it.each(['wrong-price', 'missing-price', 'wrong-quantity', 'extra-item', 'unknown-plan'])('retries an owned initial subscription with %s instead of granting access', async condition => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: null })
+    const event = fieldCloseSubscription()
+    if (condition === 'wrong-price') event.data.object.items.data[0].price.id = 'price_other_app'
+    if (condition === 'missing-price') vi.stubEnv('STRIPE_STARTER_PRICE_ID', '')
+    if (condition === 'wrong-quantity') event.data.object.items.data[0].quantity = 2
+    if (condition === 'extra-item') event.data.object.items.data.push({ price: { id: 'price_other_app' }, quantity: 1 })
+    if (condition === 'unknown-plan') event.data.object.metadata.planId = 'enterprise'
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expectNoBillingWrite()
+  })
+
+  it('does not discard a FieldClose-priced subscription whose organization is temporarily missing', async () => {
+    givenOrganization(null)
+    mockStripe.webhooks.constructEvent.mockReturnValue(fieldCloseSubscription())
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expectNoBillingWrite()
+  })
+
+  it.each(['known-customer', 'unknown-customer'])('retries a FieldClose-priced subscription with missing organization metadata and %s', async association => {
+    givenOrganization(association === 'known-customer' ? { ...stubOrg, stripeSubscriptionId: null } : null)
+    const event = fieldCloseSubscription()
+    event.data.object.metadata.organizationId = ''
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expectNoBillingWrite()
+  })
+
+  it('does not mistake another app’s generic organization/plan metadata for FieldClose ownership', async () => {
+    givenOrganization(null)
+    const event = fieldCloseSubscription()
+    event.data.object.metadata.organizationId = 'other_app_org'
+    event.data.object.items.data[0].price.id = 'price_other_app'
+    mockStripe.webhooks.constructEvent.mockReturnValue(event)
+    expect(await (await webhookPOST(makeWebhookRequest())).json()).toEqual({ received: true, ignored: true })
+    expectNoBillingWrite()
+  })
+
+  it('retries when an event or retrieved subscription conflicts with our stored customer', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue(fieldCloseSubscription())
+    mockStripe.subscriptions.retrieve.mockResolvedValue({ ...fieldCloseSubscription().data.object, customer: 'cus_wrong' })
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expectNoBillingWrite()
+  })
+
+  it('retains provider retries for an owned subscription', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue(makeSubscriptionEvent('customer.subscription.updated', 'active'))
+    mockStripe.subscriptions.retrieve.mockRejectedValue(new Error('Provider unavailable'))
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expect(captureException).toHaveBeenCalledOnce()
+    expectNoBillingWrite()
+  })
+
+  it('reports a caught billing notification failure without replaying the committed billing event', async () => {
+    mockStripe.webhooks.constructEvent.mockReturnValue(makeInvoiceEvent('invoice.payment_failed'))
+    const failure = new Error('Notification unavailable')
+    vi.mocked(sendDunningEmail).mockRejectedValue(failure)
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(db.webhookEvent.update).toHaveBeenCalled()
+    expect(captureException).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
+  it('permits a verified replacement only after the previous subscription is canceled', async () => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: 'sub_previous', subscriptionStatus: 'CANCELED' })
+    mockStripe.webhooks.constructEvent.mockReturnValue(fieldCloseSubscription())
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(200)
+    expect(db.organization.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ stripeSubscriptionId: 'sub_test', subscriptionStatus: 'ACTIVE' }) }))
+  })
+
+  it('cannot replace a current subscription from a delayed older event', async () => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: 'sub_newer' })
+    mockStripe.webhooks.constructEvent.mockReturnValue(fieldCloseSubscription())
+    expect(await (await webhookPOST(makeWebhookRequest())).json()).toEqual({ received: true, ignored: true })
+    expectNoBillingWrite()
+  })
+
+  it('retries a changed subscription association inside the transaction', async () => {
+    givenOrganization({ ...stubOrg, stripeSubscriptionId: null })
+    vi.mocked(db.organization.findFirst).mockResolvedValue({ ...stubOrg, stripeSubscriptionId: 'sub_concurrent' } as never)
+    mockStripe.webhooks.constructEvent.mockReturnValue(fieldCloseSubscription())
+    expect((await webhookPOST(makeWebhookRequest())).status).toBe(500)
+    expect(db.$queryRaw).toHaveBeenCalled()
     expect(db.organization.update).not.toHaveBeenCalled()
   })
 })
