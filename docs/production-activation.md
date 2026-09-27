@@ -8,7 +8,7 @@ The owner does not know whether the unreachable original Supabase project contai
 
 The owner created the new project as **`fieldclose`**, reference **`lcdammkhivlabinxmzja`**, in the existing Pegrio Pro organization, East US (Ohio), Micro compute. The prepared form disabled Data API and automatic table exposure; the live connection dialog confirms Data API remains disabled. FieldClose uses server-side Prisma and does not need public Supabase REST table access. The dashboard lists Micro at approximately $10/month before credits; the owner completed the credential/hosting step. Provider status is Healthy and Table Editor shows no tables or views in `public`. No application migrations have been applied yet.
 
-The original connection was preserved and re-read as encrypted production `LEGACY_DATABASE_URL` in the same Vercel project. The active `DATABASE_URL` has not yet changed. The new password must be supplied through secure project settings; never paste it in chat. Vercel browser sign-in is awaiting the owner's authenticator step.
+The original connection was preserved and re-read as encrypted production `LEGACY_DATABASE_URL` in the same Vercel project. The active `DATABASE_URL` has not yet changed. An existing authenticated Vercel browser session is available; the production connection editor is prepared with the new project's transaction-pooler address, with only the password placeholder selected for the owner. The owner must replace the placeholder and save it before connectivity or migrations can proceed. Never paste the password in chat or capture the populated field in a screenshot.
 
 After creation:
 
