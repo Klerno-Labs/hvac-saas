@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto'
 import type Stripe from 'stripe'
 
 const provider = vi.hoisted(() => {
+  vi.stubEnv('VERCEL_ENV', 'preview')
+  vi.stubEnv('STRIPE_SECRET_KEY', 'rk_test_fixture')
   vi.stubEnv('STRIPE_STARTER_PRICE_ID', 'price_starter_fixture')
   vi.stubEnv('STRIPE_PRO_PRICE_ID', 'price_pro_fixture')
   vi.stubEnv('APP_URL', 'https://billing.example.test')

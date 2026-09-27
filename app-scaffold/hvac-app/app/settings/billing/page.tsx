@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { SubscribeButton, ManageBillingButton } from './subscribe-button'
 import { supportEmail, supportMailto } from '@/lib/support'
+import { getStripeRuntimeAvailability } from '@/lib/stripe-runtime'
 
 export default async function BillingPage() {
   const { organization, role, user } = await requireAuth()
 
   const isActive = isSubscriptionActive(organization)
+  const paymentsAvailable = getStripeRuntimeAvailability().available
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
@@ -42,7 +44,8 @@ export default async function BillingPage() {
               Trial access is not configured. Contact <a href={supportMailto('FieldClose trial access')} className="underline">{supportEmail}</a> to activate your trial.
             </p>
           )}
-          {role === 'owner' && organization.stripeCustomerId && <ManageBillingButton />}
+          {!paymentsAvailable && <p role="status" className="mt-3 text-sm text-muted-foreground">Subscriptions and online payments are temporarily unavailable. Your saved business records are unchanged. Contact <a href={supportMailto('FieldClose payment setup')} className="underline">{supportEmail}</a> for help.</p>}
+          {paymentsAvailable && role === 'owner' && organization.stripeCustomerId && <ManageBillingButton />}
         </CardContent>
       </Card>
 
@@ -67,7 +70,7 @@ export default async function BillingPage() {
               {organization.plan.toLowerCase() === planId && organization.subscriptionStatus === 'ACTIVE' ? (
                 <Badge variant="outline" className="w-full justify-center py-2">Current plan</Badge>
               ) : (
-                role === 'owner' ? <SubscribeButton planId={planId} userEmail={user.email || ''} /> : <p className="text-sm text-muted-foreground">Ask your organization owner to manage billing.</p>
+                !paymentsAvailable ? <Badge variant="outline">Subscriptions unavailable</Badge> : role === 'owner' ? <SubscribeButton planId={planId} userEmail={user.email || ''} /> : <p className="text-sm text-muted-foreground">Ask your organization owner to manage billing.</p>
               )}
             </CardContent>
           </Card>

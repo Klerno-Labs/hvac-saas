@@ -50,7 +50,10 @@ export async function createTerminalPaymentIntent(
     return { success: false, error: 'This invoice cannot be collected (paid, void, draft, or zero amount).' }
   }
 
-  const stripe = getStripe()
+  let stripe: ReturnType<typeof getStripe>
+  try { stripe = getStripe() } catch {
+    return { success: false, error: 'Card payments are temporarily unavailable. Ask the owner to review payment setup.' }
+  }
   const params = buildTerminalPaymentIntentParams({
     invoiceId: invoice.id,
     organizationId,
@@ -129,7 +132,10 @@ export async function captureTerminalPayment(paymentIntentId: string): Promise<C
     return { success: false, error: 'Stripe Connect is not configured' }
   }
 
-  const stripe = getStripe()
+  let stripe: ReturnType<typeof getStripe>
+  try { stripe = getStripe() } catch {
+    return { success: false, error: 'Card payments are temporarily unavailable. Ask the owner to review payment setup.' }
+  }
   const stripeAccount = org.stripeConnectedAccountId
 
   let succeededIntent: Stripe.PaymentIntent
@@ -198,7 +204,10 @@ export async function createTerminalConnectionToken(): Promise<ConnectionTokenRe
     return { success: false, error: eligibility.reason ?? 'Stripe Terminal is not available.' }
   }
 
-  const stripe = getStripe()
+  let stripe: ReturnType<typeof getStripe>
+  try { stripe = getStripe() } catch {
+    return { success: false, error: 'Card payments are temporarily unavailable. Ask the owner to review payment setup.' }
+  }
   try {
     const token = await stripe.terminal.connectionTokens.create(
       {},

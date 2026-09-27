@@ -1,5 +1,6 @@
 import type Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
+import { getStripeRuntimeAvailability } from '@/lib/stripe-runtime'
 
 type WebhookScope = 'platform' | 'connect'
 type VerificationResult =
@@ -15,8 +16,9 @@ export function verifyStripeWebhook(
 ): VerificationResult {
   if (!signature) return { verified: false, error: 'Missing webhook signature', status: 400 }
 
-  const keyMode = process.env.STRIPE_SECRET_KEY?.trim().match(/^(?:sk|rk)_(test|live)_/)?.[1]
-  if (!keyMode) return { verified: false, error: 'Missing Stripe mode configuration', status: 503 }
+  const runtime = getStripeRuntimeAvailability()
+  if (!runtime.available) return { verified: false, error: 'Stripe payment configuration is unavailable', status: 503 }
+  const keyMode = runtime.mode
 
   const secrets = {
     platform: process.env.STRIPE_WEBHOOK_SECRET?.trim(),

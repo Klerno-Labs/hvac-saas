@@ -13,6 +13,10 @@ export async function createCheckoutSession(invoiceId: string): Promise<CreateCh
   const access = await requireMutationAccess('editPricing')
   if (!access.authorized) return { success: false, error: access.error }
   const { session, userId, organizationId } = access.context
+  let stripe: ReturnType<typeof getStripe>
+  try { stripe = getStripe() } catch {
+    return { success: false, error: 'Online payments are temporarily unavailable. Ask the owner to review payment setup.' }
+  }
 
   const org = await db.organization.findUnique({ where: { id: organizationId } })
   if (!org?.stripeConnectedAccountId || !org.stripeChargesEnabled) {
@@ -38,7 +42,6 @@ export async function createCheckoutSession(invoiceId: string): Promise<CreateCh
   // If a checkout session already exists and is still usable, return it
   if (invoice.stripeCheckoutSessionId) {
     try {
-      const stripe = getStripe()
       const existingSession = await stripe.checkout.sessions.retrieve(
         invoice.stripeCheckoutSessionId,
         { stripeAccount: org.stripeConnectedAccountId },
@@ -51,7 +54,6 @@ export async function createCheckoutSession(invoiceId: string): Promise<CreateCh
     }
   }
 
-  const stripe = getStripe()
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
 
   // Build line items for Checkout

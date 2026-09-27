@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type Stripe from 'stripe'
 import { billingPortalConfigurationId } from '@/lib/billing-portal'
 import { supportEmail } from '@/lib/support'
+import { getStripeRuntimeAvailability } from '@/lib/stripe-runtime'
 
 export const PLANS = {
   starter: {
@@ -97,6 +98,9 @@ export async function createSubscriptionCheckout(params: CheckoutInput): Promise
   const plan = PLANS[params.planId]
   if (!plan || !plan.stripePriceId) {
     return { error: `Subscription checkout is not available yet. Contact support at ${supportEmail} for help.` }
+  }
+  if (!getStripeRuntimeAvailability().available) {
+    return { error: `Subscriptions are temporarily unavailable. Contact ${supportEmail} for help.` }
   }
 
   let attempt: CheckoutAttempt | undefined

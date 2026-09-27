@@ -30,6 +30,10 @@ export async function createPortalCheckoutSession(
   if (!ctx) {
     return { success: false, error: 'Invalid or expired portal link' }
   }
+  let stripe: ReturnType<typeof getStripe>
+  try { stripe = getStripe() } catch {
+    return { success: false, error: 'Online payment is temporarily unavailable. Contact the business to arrange payment.' }
+  }
 
   const org = await db.organization.findUnique({ where: { id: ctx.organizationId } })
   if (!org?.stripeConnectedAccountId || !org.stripeChargesEnabled) {
@@ -65,7 +69,6 @@ export async function createPortalCheckoutSession(
   // Reuse existing checkout session if valid
   if (invoice.stripeCheckoutSessionId) {
     try {
-      const stripe = getStripe()
       const existingSession = await stripe.checkout.sessions.retrieve(
         invoice.stripeCheckoutSessionId,
         { stripeAccount: org.stripeConnectedAccountId },
@@ -79,7 +82,6 @@ export async function createPortalCheckoutSession(
     }
   }
 
-  const stripe = getStripe()
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
 
   const lineItems = invoice.lineItems.map((li) => ({

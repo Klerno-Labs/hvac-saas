@@ -14,7 +14,10 @@ export async function POST() {
   try { configuration = billingPortalConfigurationId() } catch {
     return NextResponse.json({ error: `Billing portal setup needs attention. Please contact support at ${supportEmail}.` }, { status: 503 })
   }
-  const stripe = getStripe()
+  let stripe: ReturnType<typeof getStripe>
+  try { stripe = getStripe() } catch {
+    return NextResponse.json({ error: `Billing is temporarily unavailable. Contact ${supportEmail} for help.` }, { status: 503 })
+  }
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
 
   let { stripeCustomerId } = organization
