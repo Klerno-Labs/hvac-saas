@@ -48,7 +48,7 @@ export default async function CalendarPage({
       status: true,
       scheduledFor: true,
     },
-    orderBy: { scheduledFor: 'asc' },
+    orderBy: [{ scheduledFor: 'asc' }, { id: 'asc' }],
   })
 
   // Group jobs by day of month
@@ -84,7 +84,7 @@ export default async function CalendarPage({
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap gap-4 items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Calendar</h1>
         <div className="flex items-center gap-2">
           <Link
@@ -150,9 +150,10 @@ export default async function CalendarPage({
                         {dayNum}
                       </span>
                       <div className="mt-0.5 space-y-0.5">
-                        {dayJobs.map((job) => (
+                        {dayJobs.slice(0, 3).map((job) => (
                           <Link
                             key={job.id}
+                            prefetch={false}
                             href={`/jobs/${job.id}` as never}
                             className="no-underline block"
                           >
@@ -164,6 +165,11 @@ export default async function CalendarPage({
                             </Badge>
                           </Link>
                         ))}
+                        {dayJobs.length > 3 && (
+                          <Link prefetch={false} href={`/jobs?day=${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`} className="block text-xs font-medium underline py-1" aria-label={`View all ${dayJobs.length} jobs on ${monthLabel} ${dayNum}`}>
+                            +{dayJobs.length - 3} more
+                          </Link>
+                        )}
                       </div>
                     </>
                   )}

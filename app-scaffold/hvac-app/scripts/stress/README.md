@@ -33,3 +33,5 @@ Raw JSON/CSV retain every request's route label, status, timing, response bytes 
 ## Analyze retained results
 
 Install matplotlib in a separate Python environment, then run `python scripts/stress/analyze.py --source /path/to/results --output /path/to/report`. It preserves raw request CSVs, separates the original harness redirect misclassification from actual authorization failures, and emits HTML/Markdown, charts, phase CSV, JSON summary and SHA-256 hashes. `query-probes.mjs` captures read-only warm-cache query plans after load has stopped; those timings are not concurrent HTTP measurements.
+
+Set `SIM_SUSTAINED_SECONDS` to an integer from 120 through 1800 for a longer bounded sustained phase (default 120). A longer run is still a local closed-loop experiment, not a hosted availability guarantee. The summary reduction avoids argument-count limits as the request sample grows.

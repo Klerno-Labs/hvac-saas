@@ -1,8 +1,8 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { signIn, getProviders } from 'next-auth/react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,8 @@ function LoginForm() {
   const registered = searchParams.get('registered') === 'true'
   const invite = /^[a-f0-9]{64}$/.test(searchParams.get('invite') || '') ? searchParams.get('invite')! : ''
   const destination = invite ? `/invite/${invite}` : '/dashboard'
+  const [githubEnabled, setGithubEnabled] = useState(false)
+  useEffect(() => { let active = true; getProviders().then(providers => { if (active) setGithubEnabled(Boolean(providers?.github)) }).catch(() => {}); return () => { active = false } }, [])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -86,6 +88,7 @@ function LoginForm() {
           </div>
         </form>
 
+        {githubEnabled && <>
         <div className="relative my-6">
           <Separator />
           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
@@ -96,6 +99,7 @@ function LoginForm() {
         <Button variant="outline" className="w-full" onClick={handleGitHub}>
           Continue with GitHub
         </Button>
+        </>}
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}

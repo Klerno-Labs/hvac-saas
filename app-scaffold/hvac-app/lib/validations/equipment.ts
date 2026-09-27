@@ -1,3 +1,4 @@
+import { documentDateSchema, MAX_DOCUMENT_CENTS } from './document'
 import { z } from 'zod'
 
 export const EQUIPMENT_TYPES = [
@@ -31,7 +32,12 @@ export const EQUIPMENT_TYPE_LABELS: Record<EquipmentType, string> = {
 const optionalString = (max: number) => z.string().max(max).optional().or(z.literal('')).transform((v) => v || undefined)
 const optionalNumber = z.preprocess(
   (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-  z.number().optional(),
+  z.number().finite().min(0).optional(),
+)
+
+const optionalInteger = z.preprocess(
+  (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+  z.number().int().min(0).max(MAX_DOCUMENT_CENTS).optional(),
 )
 
 export const createEquipmentSchema = z.object({
@@ -40,17 +46,17 @@ export const createEquipmentSchema = z.object({
   make: optionalString(100),
   model: optionalString(100),
   serial: optionalString(100),
-  installDate: optionalString(20),
+  installDate: documentDateSchema,
   installedByUs: z.boolean().optional().default(false),
   installerName: optionalString(150),
   tonnage: optionalNumber,
   seer: optionalNumber,
   refrigerantType: optionalString(50),
-  btu: optionalNumber,
+  btu: optionalInteger,
   locationOnProperty: optionalString(200),
-  warrantyStartDate: optionalString(20),
-  partsWarrantyMonths: optionalNumber,
-  laborWarrantyMonths: optionalNumber,
+  warrantyStartDate: documentDateSchema,
+  partsWarrantyMonths: optionalInteger,
+  laborWarrantyMonths: optionalInteger,
   notes: optionalString(2000),
 })
 
@@ -65,7 +71,7 @@ export const createServiceRecordSchema = z.object({
   equipmentId: z.string().min(1),
   serviceType: z.enum(SERVICE_RECORD_TYPES),
   description: optionalString(2000),
-  performedAt: z.string().min(1, 'Date is required'),
+  performedAt: documentDateSchema.refine((value): value is string => typeof value === 'string' && value.length > 0, 'Date is required'),
   jobId: z.string().optional(),
 })
 

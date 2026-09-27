@@ -18,10 +18,10 @@ export async function createInventoryItem(formData: FormData): Promise<CreateInv
     name: formData.get('name'),
     sku: formData.get('sku') || undefined,
     description: formData.get('description') || undefined,
-    unitCostCents: Math.round(parseFloat(formData.get('unitCost') as string || '0') * 100),
-    sellPriceCents: Math.round(parseFloat(formData.get('sellPrice') as string || '0') * 100),
-    quantityOnHand: parseInt(formData.get('quantityOnHand') as string || '0', 10),
-    reorderPoint: parseInt(formData.get('reorderPoint') as string || '0', 10),
+    unitCostCents: Math.round(Number(formData.get('unitCost') || '0') * 100),
+    sellPriceCents: Math.round(Number(formData.get('sellPrice') || '0') * 100),
+    quantityOnHand: Number(formData.get('quantityOnHand') || '0'),
+    reorderPoint: Number(formData.get('reorderPoint') || '0'),
     category: formData.get('category') || undefined,
   }
 

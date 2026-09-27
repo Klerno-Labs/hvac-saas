@@ -90,7 +90,7 @@ export default async function SettingsPage() {
           <div>
             <CardTitle>Referrals</CardTitle>
             <CardDescription>
-              Invite other shops and earn free months.
+              Give another service business 30 extra trial days.
             </CardDescription>
           </div>
           <Link href="/settings/referrals" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>

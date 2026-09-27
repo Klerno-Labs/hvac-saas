@@ -31,10 +31,10 @@ export async function authorizeCredentials(credentials: Partial<Record<string, u
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   providers: [
-    GitHub({
-      clientId: process.env.AUTH_GITHUB_ID || '',
-      clientSecret: process.env.AUTH_GITHUB_SECRET || '',
-    }),
+    ...(process.env.AUTH_GITHUB_ID?.trim() && process.env.AUTH_GITHUB_SECRET?.trim() ? [GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    })] : []),
     Credentials({
       name: 'credentials',
       credentials: {

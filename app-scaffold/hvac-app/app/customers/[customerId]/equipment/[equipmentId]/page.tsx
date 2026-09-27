@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import { customerAccessWhere, jobAccessWhere } from '@/lib/mutation-access'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
@@ -67,7 +68,7 @@ export default async function EquipmentDetailPage({
         </CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Spec label="Serial #" value={equipment.serial} />
-          <Spec label="Install date" value={equipment.installDate?.toLocaleDateString()} />
+          <Spec label="Install date" value={equipment.installDate ? formatDateOnly(equipment.installDate) : undefined} />
           <Spec label="Tonnage" value={equipment.tonnage ? `${equipment.tonnage}` : null} />
           <Spec label="SEER" value={equipment.seer ? `${equipment.seer}` : null} />
           <Spec label="BTU" value={equipment.btu ? `${equipment.btu.toLocaleString()}` : null} />

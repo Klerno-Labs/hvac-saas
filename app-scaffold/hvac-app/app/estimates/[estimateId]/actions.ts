@@ -64,7 +64,10 @@ export async function updateEstimate(
   const taxCents = data.taxCents
   const totalCents = subtotalCents + taxCents
 
-  await db.$transaction(async (tx) => {
+  const saved = await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Estimate" WHERE id = ${estimateId} AND "organizationId" = ${organizationId} FOR UPDATE`
+    const current = await tx.estimate.findFirst({ where: { id: estimateId, organizationId } })
+    if (!current || current.status !== 'draft' || current.updatedAt.getTime() !== estimate.updatedAt.getTime()) return false
     await tx.estimateLineItem.deleteMany({ where: { estimateId } })
     await tx.estimate.update({
       where: { id: estimateId, organizationId, status: 'draft', updatedAt: estimate.updatedAt },
@@ -78,7 +81,9 @@ export async function updateEstimate(
         lineItems: { create: lineItemsWithTotals },
       },
     })
+    return true
   })
+  if (!saved) return { success: false, error: 'This document changed while you were editing. Refresh and try again.' }
 
   await trackEvent({
     organizationId,

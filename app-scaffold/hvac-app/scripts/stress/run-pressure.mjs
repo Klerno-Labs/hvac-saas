@@ -11,6 +11,8 @@ import { guardedUrl, output, companyId, employeeId, customerId, marker } from '.
 const app = process.env.SIM_APP_DIR || '/tmp/fieldclose-release/payment-final-app'
 const run = process.env.SIM_RUN || 'baseline'
 assert.match(run,/^[a-z0-9-]+$/)
+const sustainedSeconds = Number(process.env.SIM_SUSTAINED_SECONDS || 120)
+assert.ok(Number.isInteger(sustainedSeconds) && sustainedSeconds >= 120 && sustainedSeconds <= 1800, 'Sustained phase must be 120–1800 seconds')
 const base='http://127.0.0.1:3310'
 const req=createRequire(`${app}/package.json`)
 const { encodeReply } = req('next/dist/compiled/react-server-dom-webpack/client.edge')
@@ -24,7 +26,7 @@ async function pool(items, count, fn) { let i=0; const results=await Promise.all
 const percentile=(v,p)=>v.length?[...v].sort((a,b)=>a-b)[Math.min(v.length-1,Math.ceil(v.length*p)-1)]:0
 function summarize(samples) {
   const times=samples.map(s=>s.ms), successful=samples.filter(s=>s.ok)
-  return {requests:samples.length,passed:successful.length,failed:samples.length-successful.length,errorRate:samples.length?(samples.length-successful.length)/samples.length:0,p50Ms:percentile(times,.5),p95Ms:percentile(times,.95),p99Ms:percentile(times,.99),maxMs:Math.max(0,...times)}
+  return {requests:samples.length,passed:successful.length,failed:samples.length-successful.length,errorRate:samples.length?(samples.length-successful.length)/samples.length:0,p50Ms:percentile(times,.5),p95Ms:percentile(times,.95),p99Ms:percentile(times,.99),maxMs:times.reduce((max, time) => Math.max(max, time), 0)}
 }
 class Session {
   cookies=new Map()
@@ -137,7 +139,7 @@ try {
   });assert.equal(await db.payment.count({where:{invoiceId:{in:ids.map(i=>i.id)},status:'succeeded'}}),100)})
   await phase('warmup',10,10,250)
   for(const concurrency of [10,25,50,100,200])await phase(`burst-${concurrency}`,concurrency,20)
-  await phase('sustained-100',100,120,500)
+  await phase('sustained-100',100,sustainedSeconds,500)
   await phase('recovery-10',10,20,250)
   stage='integrity'
   await check('post-pressure: no historical balance corruption',async()=>{

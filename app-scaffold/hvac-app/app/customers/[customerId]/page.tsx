@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import { customerAccessWhere, jobAccessWhere } from '@/lib/mutation-access'
 import { canDo } from '@/lib/permissions'
 import { requireActiveSubscription } from '@/lib/session'
@@ -142,7 +143,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                   </div>
                   {job.scheduledFor && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Scheduled: {new Date(job.scheduledFor).toLocaleDateString()}
+                      Scheduled: {formatDateOnly(job.scheduledFor)}
                     </p>
                   )}
                 </CardContent>

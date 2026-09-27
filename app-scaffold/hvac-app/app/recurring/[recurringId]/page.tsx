@@ -1,4 +1,5 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { formatDateOnly } from '@/lib/format'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -24,7 +25,7 @@ export default async function RecurringJobDetailPage({
   params: Promise<{ recurringId: string }>
 }) {
   const { recurringId } = await params
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('manageJobs')
 
   const recurringJob = await db.recurringJob.findFirst({
     where: { id: recurringId, organizationId },
@@ -114,7 +115,7 @@ export default async function RecurringJobDetailPage({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Next due date</span>
-              <span className="font-medium">{new Date(recurringJob.nextDueDate).toLocaleDateString()}</span>
+              <span className="font-medium">{formatDateOnly(recurringJob.nextDueDate)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Last generated</span>

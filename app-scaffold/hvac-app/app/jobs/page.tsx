@@ -8,16 +8,18 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Pagination } from '@/app/components/pagination'
 import { SearchInput } from '@/app/components/search-input'
+import { documentDateSchema } from '@/lib/validations/document'
+import { jobAccessWhere } from '@/lib/mutation-access'
+import { JOB_STATUSES } from '@/lib/validations/job'
 import { canDo } from '@/lib/permissions'
 
 const PAGE_SIZE = 20
 
-const JOB_STATUSES = ['draft', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const
 
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; status?: string }>
+  searchParams: Promise<{ page?: string; q?: string; status?: string; day?: string }>
 }) {
   const { organizationId, userId, role } = await requireActiveSubscription()
   const params = await searchParams
@@ -25,9 +27,11 @@ export default async function JobsPage({
   const q = params.q?.trim() || ''
   const statusFilter = params.status || ''
 
-  const where: Record<string, unknown> = { organizationId }
-  if (role === 'technician') {
-    where.assignedUserId = userId
+  const day = params.day && documentDateSchema.safeParse(params.day).success ? params.day : ''
+  const where: Record<string, unknown> = jobAccessWhere({ organizationId, userId, role })
+  if (day) {
+    const start = new Date(`${day}T00:00:00.000Z`)
+    where.scheduledFor = { gte: start, lt: new Date(start.getTime() + 86_400_000) }
   }
 
   if (statusFilter && JOB_STATUSES.includes(statusFilter as (typeof JOB_STATUSES)[number])) {
@@ -46,7 +50,7 @@ export default async function JobsPage({
     db.job.findMany({
       where,
       include: { customer: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
@@ -55,13 +59,14 @@ export default async function JobsPage({
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const spParams: Record<string, string> = {}
+  if (day) spParams.day = day
   if (q) spParams.q = q
   if (statusFilter) spParams.status = statusFilter
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Jobs</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{day ? `Jobs · ${formatDateOnly(day)}` : 'Jobs'}</h1>
         {canDo(role, 'manageJobs') && (
           <Link href="/jobs/new" className={cn(buttonVariants(), 'no-underline')}>New job</Link>
         )}
@@ -72,16 +77,16 @@ export default async function JobsPage({
           action="/jobs"
           defaultValue={q}
           placeholder="Search by title or customer name..."
-          hiddenInputs={statusFilter ? { status: statusFilter } : undefined}
+          hiddenInputs={{ ...(statusFilter ? { status: statusFilter } : {}), ...(day ? { day } : {}) }}
         />
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
-        <Link href="/jobs">
+        <Link href={day ? `/jobs?day=${day}` : '/jobs'}>
           <Badge variant={!statusFilter ? 'default' : 'outline'} className="cursor-pointer">All</Badge>
         </Link>
         {JOB_STATUSES.map((s) => (
-          <Link key={s} href={`/jobs?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ''}`}>
+          <Link key={s} href={`/jobs?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ''}${day ? `&day=${day}` : ''}`}>
             <Badge variant={statusFilter === s ? 'default' : 'outline'} className="cursor-pointer">
               {s.replace('_', ' ')}
             </Badge>
@@ -93,7 +98,7 @@ export default async function JobsPage({
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground">
-              {q || statusFilter ? 'No jobs match your filters.' : 'No jobs yet. Create your first job to get started.'}
+              {q || statusFilter || day ? 'No jobs match your filters.' : 'No jobs yet. Create your first job to get started.'}
             </p>
           </CardContent>
         </Card>
