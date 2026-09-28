@@ -1,6 +1,6 @@
 # FieldClose OVH staging verification — September 27, 2026
 
-Production traffic has **not moved**. Staging DNS and HTTPS verification are complete. Provider validation on the new host, production secret transfer, single-scheduler cutover, backup/rollback validation and final DNS promotion remain outstanding. Vercel API access currently returns HTTP 403 and the browser requires sign-in to recover the existing production configuration. High-concurrency latency is a launch constraint, despite no functional failures in this run.
+Production traffic has **not moved**. Staging DNS and HTTPS verification are complete. Provider validation on the new host, production secret transfer, single-scheduler cutover, backup/rollback validation and final DNS promotion remain outstanding. Vercel access was refreshed and 18 settings recovered, plus both existing Stripe webhook signing secrets recovered from Stripe. The restricted Stripe runtime key and two R2 credentials still require replacement/recovery. High-concurrency latency is a launch constraint, despite no functional failures in this run.
 
 ## Host
 
@@ -48,3 +48,9 @@ A second actual-VPS run completed 11,673/11,673 expected HTTP outcomes without t
 The new role-revocation assertion initially expected a direct redirect to Field, while the app correctly redirects via Dashboard. That assertion was corrected to verify both hops. A focused follow-up passed all 11 requests, including role revocation and password-change session invalidation on the next request. The original result retains this failed test expectation for transparency; see ovh-session-revocation.json for the corrected check. The pressure runner now exits unsuccessfully when any check fails, even if expected HTTP statuses pass.
 
 The optimized build from aada925 is installed at /srv/fieldclose/releases/aada925 and active only on gated staging. All 12 HTTPS sign-in/session/page checks passed again after promotion. The previous staging release remains available for rollback. Production DNS and configuration are unchanged.
+
+## Production configuration preparation
+
+Recovered 20 configuration values securely without committing secrets. OVH successfully reached the existing Supabase database using encryption. A fresh local backup/restore matched all 37 tables, 10 migrations, 41 application rows, schema and row checksums. Production records were not copied into OVH staging.
+
+The saved Vercel scheduler setting is currently true; cutover must disable old scheduled execution before enabling OVH timers. The existing R2 bucket belongs to account 875490aabe834d96bb73672db986aef4, which the currently signed-in Cloudflare account cannot access. A duplicate of the existing restricted Stripe runtime key is prepared but has not been created pending approval. No production DNS changes have been made.
