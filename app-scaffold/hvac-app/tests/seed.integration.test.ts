@@ -1,16 +1,26 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import { PrismaClient } from '@prisma/client'
-import { seedPlanLimits } from '../prisma/seed'
+async function seedPlanLimits() { const seed = await import('../prisma/seed'); return seed.seedPlanLimits() }
 
+// Destructive integration tests require a dedicated disposable database.
+if (!process.env.TEST_DATABASE_URL || !new URL(process.env.TEST_DATABASE_URL).pathname.endsWith('_test')) {
+  throw new Error('Set TEST_DATABASE_URL to a disposable database ending in _test')
+}
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
 const prisma = new PrismaClient()
+const seedEventId = `evt_seed_${randomUUID()}`
+afterAll(async () => { await prisma.$disconnect(); await (await import('../prisma/seed')).disconnectSeed() })
 
 describe('Plan Limits Seed', () => {
   beforeEach(async () => {
     await prisma.planLimit.deleteMany()
+    await prisma.webhookEvent.deleteMany({ where: { stripeEventId: seedEventId } })
   })
 
   afterEach(async () => {
     await prisma.planLimit.deleteMany()
+    await prisma.webhookEvent.deleteMany({ where: { stripeEventId: seedEventId } })
   })
 
   it('seeds exactly one PlanLimit row per Plan enum value', async () => {
@@ -51,7 +61,7 @@ describe('Plan Limits Seed', () => {
   })
 
   it('WebhookEvent.stripeEventId unique constraint rejects duplicate inserts', async () => {
-    const stripeEventId = 'evt_test123'
+    const stripeEventId = seedEventId
 
     await prisma.webhookEvent.create({
       data: {

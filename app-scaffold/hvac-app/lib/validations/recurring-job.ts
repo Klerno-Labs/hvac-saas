@@ -1,3 +1,4 @@
+import { documentDateSchema } from './document'
 import { z } from 'zod'
 
 export const RECURRING_FREQUENCIES = ['monthly', 'quarterly', 'biannual', 'annual'] as const
@@ -10,7 +11,7 @@ export const createRecurringJobSchema = z.object({
   frequency: z.enum(RECURRING_FREQUENCIES, {
     errorMap: () => ({ message: 'Invalid frequency' }),
   }),
-  nextDueDate: z.string().min(1, 'Start date is required'),
+  nextDueDate: documentDateSchema.refine((value): value is string => typeof value === 'string' && value.length > 0, 'Date is required'),
 })
 
 export type CreateRecurringJobInput = z.infer<typeof createRecurringJobSchema>

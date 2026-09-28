@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -12,7 +12,7 @@ export default async function InventoryItemDetailPage({
 }: {
   params: Promise<{ itemId: string }>
 }) {
-  const { organizationId } = await requireAuth()
+  const { organizationId } = await requirePageCapability('manageInventory')
   const { itemId } = await params
 
   const item = await db.inventoryItem.findFirst({

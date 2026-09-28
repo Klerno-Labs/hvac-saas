@@ -1,23 +1,25 @@
 import { Metadata } from 'next'
-import { NavHeader } from '@/app/components/nav-header'
+import { PublicHeader } from '@/app/components/public-header'
+import { supportEmail, supportMailto } from '@/lib/support'
 
 export const metadata: Metadata = {
   title: 'Refund Policy',
-  description: 'FieldClose 30-day satisfaction guarantee and refund terms.',
+  description: 'Review the FieldClose refund policy, including the 30-day satisfaction guarantee, monthly subscriptions, processing fees, and how to request a refund.',
+  alternates: { canonical: '/refund-policy' },
   robots: { index: true, follow: true },
 }
 
 export default function RefundPolicyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <NavHeader />
+      <PublicHeader />
       <article className="max-w-3xl mx-auto px-4 py-16 prose prose-slate dark:prose-invert">
         <h1>Refund Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: July 22, 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: September 26, 2026</p>
 
         <h2>30-Day Satisfaction Guarantee</h2>
         <p>
-          We stand behind FieldClose. If you&apos;re not satisfied within your first 30 days of a paid subscription, contact us at <a href="mailto:support@fieldclose.app">support@fieldclose.app</a> and we&apos;ll refund your first month&apos;s subscription fee — no questions asked.
+          We stand behind FieldClose. If you&apos;re not satisfied within your first 30 days of a paid subscription, contact us at <a href={supportMailto('Refund Request')}>{supportEmail}</a> and we&apos;ll refund your first month&apos;s subscription fee — no questions asked.
         </p>
 
         <h2>Monthly Subscriptions</h2>
@@ -35,19 +37,19 @@ export default function RefundPolicyPage() {
 
         <h2>Payment Processing Fees</h2>
         <p>
-          Payments collected through FieldClose on behalf of your business (customer invoice payments) are processed by Stripe. Stripe&apos;s processing fees (2.9% + $0.30 per transaction) are non-refundable once the payment has been settled to your bank account. Chargeback and dispute handling follows Stripe&apos;s standard dispute process.
+          Customer invoice payments are processed by Stripe. Processing fees depend on the payment method and your Stripe pricing. Stripe generally does not return original processing fees when a successful payment is refunded; a bank payout is not required for that rule to apply. See <a href="https://docs.stripe.com/refunds">Stripe&apos;s refund documentation</a> for details. Customer invoice refunds are separate from FieldClose subscription refunds.
         </p>
 
         <h2>How to Request a Refund</h2>
         <ol>
-          <li>Email <a href="mailto:support@fieldclose.app">support@fieldclose.app</a> with your account email and &quot;Refund Request&quot; in the subject line</li>
+          <li>Email <a href={supportMailto('Refund Request')}>{supportEmail}</a> with your account email and &quot;Refund Request&quot; in the subject line</li>
           <li>Include the date you subscribed and your organization name</li>
           <li>We process approved refunds within 5 business days back to your original payment method</li>
         </ol>
 
         <h2>Account Data After Cancellation</h2>
         <p>
-          After cancellation, your data is retained for 90 days to allow for reactivation. During this window, you can request a data export by emailing support. After 90 days, all data is permanently deleted. See our <a href="/privacy">Privacy Policy</a> for details.
+          Canceling a subscription does not automatically delete business records. Contact support to request an export or deletion, and see our <a href="/privacy">Privacy Policy</a> for the request process.
         </p>
 
         <hr className="my-8" />

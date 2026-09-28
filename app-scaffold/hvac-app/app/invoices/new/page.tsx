@@ -1,11 +1,11 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound, redirect } from 'next/navigation'
 import { InvoiceForm } from './form'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export default async function NewInvoicePage({ searchParams }: { searchParams: Promise<{ jobId?: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('editPricing')
   const { jobId } = await searchParams
 
   if (!jobId) {

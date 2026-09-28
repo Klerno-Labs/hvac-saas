@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signup } from './actions'
@@ -8,44 +8,45 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getTradeProfile, isTradeId } from '@/lib/trades'
 
 function SignupInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const ref = searchParams.get('ref') || ''
+  const invite = /^[a-f0-9]{64}$/.test(searchParams.get('invite') || '') ? searchParams.get('invite')! : ''
+  const requestedPlan = searchParams.get('plan') === 'pro' ? 'pro' : 'starter'
+  const requestedTrade = searchParams.get('trade')
+  const tradeType = isTradeId(requestedTrade) ? requestedTrade : 'hvac'
+  const profile = getTradeProfile(tradeType)
+  const submitting = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (submitting.current) return
+    submitting.current = true
     setError(null)
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const result = await signup(formData)
+    let saved = false
+    try {
+      const result = await signup(formData)
 
-    if (result.success) {
-      // Fire-and-forget: emit signed `lead.ingest` event to Robert.
-      // Must run AFTER signup() has persisted the user so we never
-      // attribute a lead that was actually a validation failure. Robert
-      // failures are swallowed so the login redirect is never blocked.
-      const email = formData.get('email')
-      if (typeof email === 'string' && email.length > 0) {
-        void fetch('/api/internal/lead-ingest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            plan: 'trial',
-            source: 'fieldclose.app/signup',
-          }),
-          keepalive: true,
-        }).catch(() => null)
+      if (result.success) {
+        saved = true
+        router.push(`/login?registered=true${invite ? `&invite=${invite}` : ''}`)
+      } else {
+        setError(result.error)
+        setLoading(false)
       }
-      router.push('/login?registered=true')
-    } else {
-      setError(result.error)
+    } catch {
+      setError('Account creation is temporarily unavailable. Try again shortly, or log in if you already submitted this form.')
       setLoading(false)
+    } finally {
+      if (!saved) submitting.current = false
     }
   }
 
@@ -53,12 +54,12 @@ function SignupInner() {
     <main className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Get paid faster on every HVAC job.</CardDescription>
+          <CardTitle className="text-2xl"><h1>Create your account</h1></CardTitle>
+          <CardDescription>Bring your {profile.businessLabel.toLowerCase()} jobs from first estimate to final payment.</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">
+            <div role="alert" className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">
               {error}
             </div>
           )}
@@ -69,7 +70,10 @@ function SignupInner() {
             </div>
           )}
 
+          {!invite && <p className="mb-4 text-sm text-muted-foreground">14-day {requestedPlan === 'pro' ? 'Pro' : 'Starter'} trial. No credit card required. A paid subscription starts only when you choose it in Billing.</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <input type="hidden" name="trade" value={tradeType} />
+            <input type="hidden" name="plan" value={requestedPlan} />
             {ref && <input type="hidden" name="ref" value={ref} />}
             <div className="space-y-2">
               <Label htmlFor="name">Full name</Label>
@@ -88,9 +92,11 @@ function SignupInner() {
             </Button>
           </form>
 
+          <p className="mt-5 text-sm text-muted-foreground text-center">By creating an account, you agree to our <Link href="/terms" className="underline">Terms</Link> and acknowledge our <Link href="/privacy" className="underline">Privacy Policy</Link>.</p>
+          <p className="mt-4 text-center text-sm"><Link href={`/demo?${new URLSearchParams({ trade: tradeType, plan: requestedPlan }).toString()}` as never} className="underline">Explore the product tour first</Link></p>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="text-primary font-medium hover:underline">
+            <Link href={invite ? `/login?invite=${invite}` : "/login"} className="text-primary font-medium hover:underline">
               Log in
             </Link>
           </p>

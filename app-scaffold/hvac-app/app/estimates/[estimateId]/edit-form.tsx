@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { PriceBookPicker } from '../_components/pricebook-picker'
-import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
+import { type EstimateCatalogItem, addEstimateLineItem } from '@/lib/pricebook-to-lineitem'
 
 type LineItem = {
   name: string
@@ -32,7 +32,7 @@ export function EstimateEditForm({
 }: {
   estimateId: string
   initialData: InitialData
-  priceBookItems: PriceBookItem[]
+  priceBookItems: EstimateCatalogItem[]
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -95,13 +95,14 @@ export function EstimateEditForm({
       )}
       <PriceBookPicker
         items={priceBookItems}
-        onPick={(li) => setLineItems([...lineItems, li])}
+        onPick={(li) => setLineItems(current => addEstimateLineItem(current, li))}
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div>
           <Label className="text-sm font-medium">Scope of work *</Label>
           <Textarea
+            aria-label="Scope of work"
             value={scopeOfWork}
             onChange={(e) => setScopeOfWork(e.target.value)}
             required
@@ -124,12 +125,14 @@ export function EstimateEditForm({
                 <div className="flex flex-col gap-2">
                   <Input
                     placeholder="Item name"
+                    aria-label={`Item name, line ${i + 1}`}
                     value={li.name}
                     onChange={(e) => updateLineItem(i, 'name', e.target.value)}
                     required
                   />
                   <Input
                     placeholder="Description (optional)"
+                    aria-label={`Item description, line ${i + 1}`}
                     value={li.description}
                     onChange={(e) => updateLineItem(i, 'description', e.target.value)}
                   />
@@ -139,7 +142,8 @@ export function EstimateEditForm({
                       <Input
                         type="number"
                         min={1}
-                        value={li.quantity}
+                        aria-label={`Quantity, line ${i + 1}`}
+                    value={li.quantity}
                         onChange={(e) => updateLineItem(i, 'quantity', parseInt(e.target.value) || 1)}
                         className="mt-1"
                       />
@@ -150,6 +154,7 @@ export function EstimateEditForm({
                         type="number"
                         min={0}
                         step="0.01"
+                        aria-label={`Unit price in dollars, line ${i + 1}`}
                         value={(li.unitPriceCents / 100).toFixed(2)}
                         onChange={(e) => updateLineItem(i, 'unitPriceCents', Math.round(parseFloat(e.target.value || '0') * 100))}
                         className="mt-1"
@@ -160,6 +165,7 @@ export function EstimateEditForm({
                       <Input
                         type="text"
                         readOnly
+                        aria-label={`Line total, line ${i + 1}`}
                         value={formatCents(li.quantity * li.unitPriceCents)}
                         className="mt-1 bg-muted"
                       />
@@ -172,6 +178,7 @@ export function EstimateEditForm({
                     onClick={() => removeLineItem(i)}
                     className="bg-transparent border-none text-destructive cursor-pointer text-lg px-1"
                     title="Remove item"
+                    aria-label={`Remove line ${i + 1}`}
                   >
                     &times;
                   </button>
@@ -188,6 +195,7 @@ export function EstimateEditForm({
               type="number"
               min={0}
               step="0.01"
+              aria-label="Tax in dollars"
               value={(taxCents / 100).toFixed(2)}
               onChange={(e) => setTaxCents(Math.round(parseFloat(e.target.value || '0') * 100))}
               className="mt-1"
@@ -202,6 +210,7 @@ export function EstimateEditForm({
         <div>
           <Label className="text-sm font-medium">Terms</Label>
           <Textarea
+            aria-label="Terms"
             value={terms}
             onChange={(e) => setTerms(e.target.value)}
             rows={2}
@@ -210,13 +219,16 @@ export function EstimateEditForm({
         </div>
 
         <div>
-          <Label className="text-sm font-medium">Notes</Label>
+          <Label htmlFor="estimate-internal-notes" className="text-sm font-medium">Internal notes</Label>
           <Textarea
+            id="estimate-internal-notes"
+            aria-describedby="estimate-internal-notes-hint"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             className="mt-1 resize-y"
           />
+          <p id="estimate-internal-notes-hint" className="mt-1 text-xs text-muted-foreground">For your team only. Not shown in customer emails, the portal, or PDFs.</p>
         </div>
 
         <Button type="submit" disabled={loading} className="mt-2">

@@ -10,7 +10,7 @@ type EventInput = {
   metadataJson?: Record<string, unknown>
 }
 
-export async function trackEvent(input: EventInput) {
+export async function trackEvent(input: EventInput, client: Pick<Prisma.TransactionClient, 'activityEvent'> = db) {
   const data: Prisma.ActivityEventUncheckedCreateInput = {
     organizationId: input.organizationId ?? null,
     userId: input.userId,
@@ -19,5 +19,5 @@ export async function trackEvent(input: EventInput) {
     entityId: input.entityId,
     metadataJson: input.metadataJson as Prisma.InputJsonValue | undefined,
   }
-  return db.activityEvent.create({ data })
+  return client.activityEvent.create({ data })
 }

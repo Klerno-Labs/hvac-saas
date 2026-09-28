@@ -18,11 +18,11 @@ type AuditInput = {
  *
  * Never include secrets, tokens, passwords, or raw payment payloads in metadata.
  */
-export async function logAudit(input: AuditInput) {
+export async function logAudit(input: AuditInput, client: Pick<Prisma.TransactionClient, 'auditLog'> = db) {
   // Sanitize metadata — strip any keys that could contain secrets
   const safeMetadata = input.metadata ? sanitizeMetadata(input.metadata) : undefined
 
-  return db.auditLog.create({
+  return client.auditLog.create({
     data: {
       organizationId: input.organizationId,
       actorId: input.actorId ?? null,

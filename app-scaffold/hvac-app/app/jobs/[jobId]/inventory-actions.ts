@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { recordInventoryUsageSchema } from '@/lib/validations/inventory'
@@ -11,19 +11,13 @@ export async function recordPartUsage(
   jobId: string,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth()
-  if (!session?.user?.id) return { success: false, error: 'You must be logged in' }
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-  if (!membership) return { success: false, error: 'You must belong to an organization' }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, userId, organizationId } = access.context
 
   // Verify job belongs to org
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
+    where: { id: jobId, ...jobAccessWhere(access.context) },
   })
   if (!job) return { success: false, error: 'Job not found' }
 
@@ -38,37 +32,19 @@ export async function recordPartUsage(
 
   const data = parsed.data
 
-  // Verify item belongs to org and has enough stock
-  const item = await db.inventoryItem.findFirst({
-    where: { id: data.inventoryItemId, organizationId },
+  const recorded = await db.$transaction(async (tx) => {
+    const stock = await tx.inventoryItem.updateMany({
+      where: { id: data.inventoryItemId, organizationId, quantityOnHand: { gte: data.quantity } },
+      data: { quantityOnHand: { decrement: data.quantity } },
+    })
+    if (stock.count !== 1) return false
+    await tx.inventoryUsage.create({
+      data: { organizationId, inventoryItemId: data.inventoryItemId, jobId,
+        quantity: data.quantity, notes: data.notes || null },
+    })
+    return true
   })
-  if (!item) return { success: false, error: 'Inventory item not found' }
-
-  if (item.quantityOnHand < data.quantity) {
-    return {
-      success: false,
-      error: `Insufficient stock. Only ${item.quantityOnHand} available.`,
-    }
-  }
-
-  // Create usage record and decrement stock in a transaction
-  await db.$transaction([
-    db.inventoryUsage.create({
-      data: {
-        organizationId,
-        inventoryItemId: data.inventoryItemId,
-        jobId,
-        quantity: data.quantity,
-        notes: data.notes || null,
-      },
-    }),
-    db.inventoryItem.update({
-      where: { id: data.inventoryItemId },
-      data: {
-        quantityOnHand: { decrement: data.quantity },
-      },
-    }),
-  ])
+  if (!recorded) return { success: false, error: 'Item is unavailable or has insufficient stock. Refresh and try again.' }
 
   await trackEvent({
     organizationId,

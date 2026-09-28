@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
@@ -48,13 +48,8 @@ const MAX_ROWS = 5000
 
 // ---------- auth / tenant helper (mirrors app/customers/new/actions.ts exactly) ----------
 
-async function getOrgContext(): Promise<{ userId: string; organizationId: string } | null> {
-  const session = await auth()
-  if (!session?.user?.id) return null
-  const userId = session.user.id
-  const membership = await db.organizationMember.findFirst({ where: { userId } })
-  if (!membership) return null
-  return { userId, organizationId: membership.organizationId }
+async function getOrgContext(kind: ImportEntityType) {
+  return requireMutationAccess(kind === 'pricebook' ? 'editPricing' : 'manageCustomers')
 }
 
 // ---------- internal helpers ----------
@@ -122,8 +117,9 @@ async function fetchExistingKeys(
 
 export async function previewImport(input: ImportInput): Promise<PreviewResult> {
   try {
-    const ctx = await getOrgContext()
-    if (!ctx) return { success: false, error: 'Authentication required' }
+    const access = await getOrgContext(input.kind)
+    if (!access.authorized) return { success: false, error: access.error }
+    const ctx = access.context
     const { organizationId } = ctx
 
     const { kind, rows, mapping } = input
@@ -182,8 +178,9 @@ export async function previewImport(input: ImportInput): Promise<PreviewResult> 
 
 export async function commitImport(input: ImportInput): Promise<CommitResult> {
   try {
-    const ctx = await getOrgContext()
-    if (!ctx) return { success: false, error: 'Authentication required' }
+    const access = await getOrgContext(input.kind)
+    if (!access.authorized) return { success: false, error: access.error }
+    const ctx = access.context
     const { userId, organizationId } = ctx
 
     const { kind, rows, mapping } = input

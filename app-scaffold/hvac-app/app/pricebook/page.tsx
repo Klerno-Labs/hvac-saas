@@ -1,4 +1,4 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import type { Route } from 'next'
@@ -7,7 +7,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function PriceBookPage() {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('editPricing')
 
   const items = await db.priceBookItem.findMany({
     where: { organizationId, deletedAt: null },

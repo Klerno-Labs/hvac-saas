@@ -1,0 +1,103 @@
+{
+  "sourceRevision": "working-tree-release-hardening",
+  "startedAt": "2026-09-27T17:24:39.893Z",
+  "scope": "isolated local production build, real Auth.js sign-in, disposable PostgreSQL and private local storage",
+  "checks": [
+    {
+      "name": "real credentials sign-in: owner",
+      "status": "passed"
+    },
+    {
+      "name": "real credentials sign-in: assigned",
+      "status": "passed"
+    },
+    {
+      "name": "real credentials sign-in: unassigned",
+      "status": "passed"
+    },
+    {
+      "name": "real credentials sign-in: other",
+      "status": "passed"
+    },
+    {
+      "name": "owner multipart upload creates a private persisted asset",
+      "status": "passed"
+    },
+    {
+      "name": "owner retrieval streams exact bytes with private headers",
+      "status": "passed"
+    },
+    {
+      "name": "assigned technician retrieval succeeds",
+      "status": "passed"
+    },
+    {
+      "name": "unassigned technician retrieval denied",
+      "status": "passed"
+    },
+    {
+      "name": "other organization owner retrieval denied",
+      "status": "passed"
+    },
+    {
+      "name": "anonymous exact-asset retrieval denied",
+      "status": "passed"
+    },
+    {
+      "name": "unassigned technician upload denied before persistence",
+      "status": "passed"
+    },
+    {
+      "name": "other organization upload denied before persistence",
+      "status": "passed"
+    },
+    {
+      "name": "valid customer token streams exact bytes without staff session",
+      "status": "passed"
+    },
+    {
+      "name": "other-customer customer token denied",
+      "status": "passed"
+    },
+    {
+      "name": "mismatched-org customer token denied",
+      "status": "passed"
+    },
+    {
+      "name": "expired customer token denied",
+      "status": "passed"
+    },
+    {
+      "name": "revoked customer token denied",
+      "status": "passed"
+    },
+    {
+      "name": "deleted customer token denied by photo and shared portal page",
+      "status": "passed"
+    },
+    {
+      "name": "missing private object fails closed and recovers after restoration",
+      "status": "passed"
+    },
+    {
+      "name": "real reset server action commits new password and invalidates sibling tokens",
+      "status": "passed"
+    },
+    {
+      "name": "pre-reset real session can no longer retrieve private photo",
+      "status": "passed"
+    },
+    {
+      "name": "used reset capability cannot change the password again",
+      "status": "passed"
+    },
+    {
+      "name": "fresh real sign-in with changed password restores authorized access",
+      "status": "passed"
+    }
+  ],
+  "buildId": "e4rAvkI8JaOXnDbVKKK6Z",
+  "database": "fieldclose_readiness_access_test",
+  "status": "passed",
+  "finishedAt": "2026-09-27T17:24:43.174Z"
+}

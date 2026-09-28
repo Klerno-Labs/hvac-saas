@@ -22,22 +22,13 @@ export function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Public, indexable pages — allow CDN caching so Google can crawl efficiently
-  const isPublicPage =
-    pathname === '/' ||
-    pathname === '/signup' ||
-    pathname === '/login' ||
-    pathname === '/forgot-password' ||
-    pathname === '/reset-password' ||
-    pathname === '/terms' ||
-    pathname === '/privacy' ||
-    pathname === '/refund-policy'
-
-  if (isPublicPage) {
-    // s-maxage lets Vercel's CDN cache the page; stale-while-revalidate serves
-    // fresh content on the next request. This overrides NextAuth's default
-    // no-store which was preventing Google from indexing the site.
-    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+  // Authentication and portal responses can contain personalized data or tokens.
+  // Let Next.js control public-page caching; never force shared caching over auth.
+  if (pathname.startsWith('/reviews/') || pathname.startsWith('/portal/') || pathname.startsWith('/api/portal/') || pathname.startsWith('/api/photos/') || pathname.startsWith('/pay/') || pathname.startsWith('/invite/') || pathname.startsWith('/api/auth/') ||
+      ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname) || pathname === '/setup' || pathname.startsWith('/setup/')) {
+    response.headers.set('Cache-Control', 'private, no-store')
+    response.headers.set('Referrer-Policy', 'no-referrer')
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
   }
 
   // For API routes, ensure JSON content type on errors

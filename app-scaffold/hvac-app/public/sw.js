@@ -1,6 +1,6 @@
 'use strict'
 
-const CACHE = 'fieldclose-v1'
+const CACHE = 'fieldclose-public-v2'
 
 const PRECACHE = [
   '/manifest.json',
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+        Promise.all(keys.filter((k) => k.startsWith('fieldclose-') && k !== CACHE).map((k) => caches.delete(k)))
       )
       .then(() => self.clients.claim())
   )
@@ -45,41 +45,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url)
 
-  // Navigation to /jobs and /jobs/** — network-first, serve cached copy offline
-  if (request.mode === 'navigate' && url.pathname.startsWith('/jobs')) {
-    event.respondWith(networkFirstNav(request))
-    return
-  }
-
-  // Static assets — cache-first
-  if (
-    request.destination === 'style' ||
-    request.destination === 'script' ||
-    request.destination === 'font' ||
-    request.destination === 'image'
-  ) {
+  // Cache only same-origin, public build assets. Never persist jobs, portal
+  // documents, customer photos, or API responses across account changes.
+  if (url.origin === self.location.origin &&
+      (url.pathname.startsWith('/_next/static/') || PRECACHE.includes(url.pathname))) {
     event.respondWith(cacheFirst(request))
-    return
   }
 })
-
-async function networkFirstNav(request) {
-  try {
-    const response = await fetch(request)
-    const cache = await caches.open(CACHE)
-    cache.put(request, response.clone())
-    return response
-  } catch {
-    const cached = await caches.match(request)
-    return (
-      cached ||
-      new Response('Offline — reconnect to load this page.', {
-        status: 503,
-        headers: { 'Content-Type': 'text/plain' },
-      })
-    )
-  }
-}
 
 async function cacheFirst(request) {
   const cached = await caches.match(request)

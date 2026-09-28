@@ -1,0 +1,145 @@
+{
+  "applicationRevision": "06b5b7b74caaf965115f60cf36884314c4c90935",
+  "productionDeployment": "dpl_npJvDDwFEywEHGLKE2bAtCg6Sf16",
+  "origin": "https://fieldclose.app",
+  "ci": {
+    "url": "https://github.com/Klerno-Labs/hvac-saas/actions/runs/36327161870",
+    "conclusion": "success"
+  },
+  "localChecks": {
+    "unitTests": 1418,
+    "postgresIntegrationTests": 128,
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "isolatedBrowserBuildId": "UodLfhdqqHcpsFC27GgOp"
+  },
+  "publicChecks": {
+    "checkedAt": "2026-09-27T14:59:00.910Z",
+    "routeChecks": 24,
+    "metadataAndAccessChecks": 8,
+    "allPassed": true
+  },
+  "sandboxPayments": {
+    "checkedAt": "2026-09-27T14:58:18.163Z",
+    "providerGetChecksPassed": true,
+    "ledgerChecksPassed": true,
+    "paidInvoices": 3,
+    "successfulPaymentsPerInvoice": 1,
+    "pendingPayments": 0,
+    "explicitUnprocessedTerminalCancellationVerified": true,
+    "simulatedReaderUsed": true,
+    "realMoney": false,
+    "providerReadApiVersion": "2025-02-24.acacia",
+    "cliEventApiVersion": "2026-03-25.dahlia",
+    "settledReservationIdentitiesRetained": true
+  },
+  "scheduler": {
+    "checkedAt": "2026-09-27T14:58:59.099Z",
+    "deployment": {
+      "id": "dpl_npJvDDwFEywEHGLKE2bAtCg6Sf16",
+      "commit": "06b5b7b74caaf965115f60cf36884314c4c90935"
+    },
+    "scheduler": {
+      "providerEnabled": true,
+      "matchesPublicDeployment": true,
+      "definitions": [
+        {
+          "path": "/api/appointments/reminders",
+          "schedule": "0 15 * * *"
+        },
+        {
+          "path": "/api/collections/run",
+          "schedule": "0 3 * * *"
+        },
+        {
+          "path": "/api/recurring/generate",
+          "schedule": "0 2 * * *"
+        }
+      ]
+    },
+    "guards": {
+      "emptyWorkQueue": true,
+      "explicitEnable": true,
+      "emailOnly": true,
+      "configured": true,
+      "deployedConfiguration": true,
+      "expectedSchedules": true
+    },
+    "authenticatedCalls": [
+      {
+        "path": "/api/appointments/reminders",
+        "status": 200,
+        "noStore": true,
+        "success": true,
+        "counters": {
+          "sent": 0,
+          "errors": 0
+        }
+      },
+      {
+        "path": "/api/collections/run",
+        "status": 200,
+        "noStore": true,
+        "success": true,
+        "counters": {
+          "organizationsProcessed": 0,
+          "attemptsCreated": 0,
+          "attemptsSkipped": 0,
+          "channelsAccepted": 0,
+          "errors": 0,
+          "needsReview": 0
+        }
+      },
+      {
+        "path": "/api/recurring/generate",
+        "status": 200,
+        "noStore": true,
+        "success": true,
+        "counters": {
+          "generated": 0,
+          "generatedMembershipVisits": 0
+        }
+      }
+    ],
+    "allPassed": true
+  },
+  "canonicalZeroInvoice": {
+    "checkedAt": "2026-09-27T14:59:35.427Z",
+    "actualPreviouslyEmailedLinkReused": true,
+    "additionalEmailsSent": 0,
+    "internalNotesNotRendered": true,
+    "invoiceNoPaymentAction": true,
+    "invoiceNoPaymentDue": true,
+    "portalListNoPaymentDue": true
+  },
+  "cleanup": {
+    "removedPrivateHandoffFiles": [
+      "handoff.json",
+      "local-login.json",
+      "local-checkout.json",
+      "credentials"
+    ],
+    "verificationPortsClosed": {
+      "3308": true,
+      "3309": true
+    },
+    "browserSecretBindingsReset": true,
+    "productionConfigurationUnchanged": true
+  },
+  "limits": [
+    "No real charge, refund, dispute or bank payout tested.",
+    "No physical card reader tested.",
+    "Provider-initiated scheduled invocation and missed-run response remain unverified.",
+    "Private production photo persisted; cross-tenant and failure-path evidence is isolated local testing.",
+    "No advertising or outbound acquisition campaign launched; customer support and payment exceptions still require an operator."
+  ],
+  "sourceReceiptSha256": {
+    "public_routes": "4044044c6e7b8096185b9d1c5d30629c27e8136777a9699f625e0f4a50530064",
+    "public_metadata": "ebe1928073e58c6a66725b1247ccd49c9475cf2b9d3fd863996036f45c62ceec",
+    "provider_payments": "dbd82c8128c2d35979d9571c6ab45ebd75fb9adb538b67f0e809883257ae7e48",
+    "local_payment_ledger": "9e62b1b151395b9dab07b2b117c6c5b4ada0098f138af911ead0932fece5db17",
+    "scheduler": "83bea5eff53ec3600de8938e6e0c784db0cd238e18dfb936f5294aa2b1f22313",
+    "canonical_zero_invoice": "e90f37c6d9582147c6d7bd80641d57922d095ff76e37561f2945e7dc39114c69",
+    "cleanup": "d10be888ff10bdf4b725798a710c67939e12d579665f37da0329a1320b10d7dc"
+  }
+}

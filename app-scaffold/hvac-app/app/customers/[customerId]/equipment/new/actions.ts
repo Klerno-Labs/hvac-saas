@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createEquipmentSchema } from '@/lib/validations/equipment'
@@ -14,12 +14,9 @@ function parseDate(s: string | undefined): Date | null {
 }
 
 export async function createEquipment(formData: FormData): Promise<Result> {
-  const session = await auth()
-  if (!session?.user?.id) return { success: false, error: 'You must be logged in' }
-
-  const membership = await db.organizationMember.findFirst({ where: { userId: session.user.id } })
-  if (!membership) return { success: false, error: 'You must belong to an organization' }
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('manageCustomers')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, userId, organizationId } = access.context
 
   const raw = {
     customerId: formData.get('customerId'),

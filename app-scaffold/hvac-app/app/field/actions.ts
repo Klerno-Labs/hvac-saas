@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { trackEvent } from '@/lib/events'
@@ -18,16 +18,12 @@ export async function updateFieldJobStatus(
     return { success: false, error: 'Invalid field status' }
   }
 
-  const session = await auth()
-  if (!session?.user?.id) return { success: false, error: 'Not authenticated' }
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-  if (!membership) return { success: false, error: 'No organization membership' }
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, membership, userId, organizationId } = access.context
 
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId: membership.organizationId },
+    where: { id: jobId, ...jobAccessWhere(access.context) },
   })
   if (!job) return { success: false, error: 'Job not found' }
 
@@ -59,16 +55,12 @@ export async function addFieldNote(
 ): Promise<ActionResult> {
   if (!body.trim()) return { success: false, error: 'Note cannot be empty' }
 
-  const session = await auth()
-  if (!session?.user?.id) return { success: false, error: 'Not authenticated' }
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-  if (!membership) return { success: false, error: 'No organization membership' }
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, membership, organizationId } = access.context
 
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId: membership.organizationId },
+    where: { id: jobId, ...jobAccessWhere(access.context) },
   })
   if (!job) return { success: false, error: 'Job not found' }
 

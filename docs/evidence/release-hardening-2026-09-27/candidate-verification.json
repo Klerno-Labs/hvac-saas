@@ -1,0 +1,181 @@
+{
+  "url": "https://fieldclose-hdjemx6v9-hatfield-legacy-trusts-projects.vercel.app",
+  "verifiedAt": "2026-09-27T17:38:36.828Z",
+  "results": [
+    {
+      "path": "/pricing",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/demo",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/faq",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "newDesign": true
+    },
+    {
+      "path": "/help",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/help/not-an-article",
+      "status": 404,
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "path": "/help/getting-started",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/tools/paperwork-calculator",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/setup",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true,
+      "privateCache": true
+    },
+    {
+      "path": "/pricebook/new",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true
+    },
+    {
+      "path": "/settings/import",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true,
+      "privateCache": true
+    },
+    {
+      "path": "/sitemap.xml",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "privateCache": true
+    },
+    {
+      "path": "/signup",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/privacy",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/terms",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/social-image",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/portal/invalid/photos/no-such-asset",
+      "status": 404,
+      "expected": 404,
+      "ok": true,
+      "privateCache": true
+    },
+    {
+      "path": "/api/photos/no-such-asset",
+      "status": 401,
+      "expected": 401,
+      "ok": true,
+      "privateCache": true
+    },
+    {
+      "path": "/dashboard",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true
+    },
+    {
+      "path": "/api/health",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "coreHealth": {
+        "ok": true,
+        "service": "hvac-app",
+        "version": "0.1.0",
+        "timestamp": "2026-09-27T17:38:36.262Z",
+        "checks": {
+          "database": {
+            "status": "ok"
+          },
+          "env": {
+            "status": "ok"
+          },
+          "stripe": {
+            "status": "configured"
+          },
+          "auth": {
+            "status": "configured"
+          }
+        },
+        "optionalConfigured": 5
+      }
+    },
+    {
+      "path": "/api/stripe/webhook",
+      "status": 400,
+      "expected": 400,
+      "ok": true
+    },
+    {
+      "path": "/api/collections/run",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "path": "/api/appointments/reminders",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    }
+  ]
+}

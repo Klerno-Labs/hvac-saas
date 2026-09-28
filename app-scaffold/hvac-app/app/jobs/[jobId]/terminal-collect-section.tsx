@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,13 +9,10 @@ import {
   createTerminalConnectionToken,
   createTerminalPaymentIntent,
   captureTerminalPayment,
+  cancelTerminalPaymentAttempt,
 } from './terminal-payment-actions'
-import {
-  createTerminal,
-  type TerminalSDK,
-  type TerminalReader,
-  type TerminalConnectionStatus,
-} from '@/lib/stripe-terminal-client'
+import { createTerminal, type TerminalConnectionStatus } from '@/lib/stripe-terminal-client'
+import { createTerminalCollectionSession, initialTerminalCollectionState, type TerminalPhase as Phase } from '@/lib/terminal-collection-session'
 
 type CollectableInvoice = {
   id: string
@@ -24,18 +22,6 @@ type CollectableInvoice = {
   status: string
 }
 
-type Phase =
-  | 'idle'
-  | 'initializing'
-  | 'discovering'
-  | 'select_reader'
-  | 'connecting'
-  | 'ready'
-  | 'collecting'
-  | 'capturing'
-  | 'success'
-  | 'error'
-
 function formatCents(cents: number): string {
   return '$' + (cents / 100).toFixed(2)
 }
@@ -44,13 +30,15 @@ export function TerminalCollectSection({
   eligible,
   ineligibleReason,
   invoices,
+  allowSimulation = false,
 }: {
   eligible: boolean
   ineligibleReason?: string
   invoices: CollectableInvoice[]
+  allowSimulation?: boolean
 }) {
   const collectable = invoices.filter(
-    (inv) => inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'draft' && inv.totalCents > 0,
+    (inv) => inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'draft' && inv.outstandingCents > 0,
   )
 
   return (
@@ -63,7 +51,7 @@ export function TerminalCollectSection({
           </Badge>
         </CardTitle>
         <CardDescription>
-          Collect a tap-to-pay card payment on a Stripe Terminal reader. The invoice is marked paid once capture is confirmed.
+          Collect a tap-to-pay card payment on a registered Stripe Terminal smart reader on the same network. The invoice updates when Stripe confirms the payment.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -79,7 +67,7 @@ export function TerminalCollectSection({
           <ul className="divide-y rounded-lg border">
             {collectable.map((inv) => (
               <li key={inv.id} className="p-3">
-                <CollectRow invoice={inv} eligible={eligible} />
+                <CollectRow invoice={inv} eligible={eligible} allowSimulation={allowSimulation} />
               </li>
             ))}
           </ul>
@@ -89,123 +77,38 @@ export function TerminalCollectSection({
   )
 }
 
-function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligible: boolean }) {
-  const [phase, setPhase] = useState<Phase>('idle')
-  const [message, setMessage] = useState<string | null>(null)
-  const [readers, setReaders] = useState<TerminalReader[]>([])
+function CollectRow({ invoice, eligible, allowSimulation }: { invoice: CollectableInvoice; eligible: boolean; allowSimulation: boolean }) {
+  const router = useRouter()
+  const [state, setState] = useState(initialTerminalCollectionState)
+  const { phase, message, readers, canCancelAttempt } = state
   const [simulated, setSimulated] = useState(false)
-  const terminalRef = useRef<TerminalSDK | null>(null)
-  const activeIntentRef = useRef<{ id: string; clientSecret: string } | null>(null)
+  const sessionRef = useRef<ReturnType<typeof createTerminalCollectionSession> | null>(null)
 
-  const reset = useCallback(() => {
-    terminalRef.current = null
-    activeIntentRef.current = null
-    setReaders([])
-    setMessage(null)
-    setPhase('idle')
-  }, [])
-
-  const begin = useCallback(async () => {
-    setMessage(null)
-    setPhase('initializing')
-
-    const intent = await createTerminalPaymentIntent(invoice.id)
-    if (!intent.success) {
-      setMessage(intent.error)
-      setPhase('error')
-      return
-    }
-    activeIntentRef.current = { id: intent.paymentIntentId, clientSecret: intent.clientSecret }
-
-    try {
-      const terminal = await createTerminal({
+  useEffect(() => {
+    const session = createTerminalCollectionSession({
+      createIntent: () => createTerminalPaymentIntent(invoice.id),
+      createTerminal: onUnexpectedReaderDisconnect => createTerminal({
         onFetchConnectionToken: async () => {
           const token = await createTerminalConnectionToken()
           if (!token.success) throw new Error(token.error)
           return token.secret
         },
-        onUnexpectedReaderDisconnect: () => {
-          setMessage('Reader disconnected unexpectedly. Reconnect to continue.')
-          setPhase('select_reader')
-        },
-      })
-      terminalRef.current = terminal
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to initialise Stripe Terminal.')
-      setPhase('error')
-      return
-    }
+        onUnexpectedReaderDisconnect,
+      }),
+      capture: captureTerminalPayment,
+      cancelAttempt: cancelTerminalPaymentAttempt,
+      onState: setState,
+      onCaptured: () => router.refresh(),
+    })
+    sessionRef.current = session
+    setState(initialTerminalCollectionState)
+    return () => { session.dispose(); sessionRef.current = null }
+  }, [invoice.id, router])
 
-    setPhase('discovering')
-    try {
-      const result = await terminalRef.current!.discoverReaders({
-        type: 'bluetooth_scan',
-        simulated,
-      })
-      setReaders(result.discoveredReaders || [])
-      if (result.discoveredReaders.length === 0) {
-        setMessage('No readers found. Make sure the reader is powered on and nearby, or enable the simulated reader.')
-        setPhase('select_reader')
-      } else if (result.discoveredReaders.length === 1) {
-        await connectReader(result.discoveredReaders[0])
-      } else {
-        setPhase('select_reader')
-      }
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Reader discovery failed.')
-      setPhase('error')
-    }
-  }, [invoice.id, simulated])
-
-  const connectReader = useCallback(async (reader: TerminalReader) => {
-    setPhase('connecting')
-    setMessage(null)
-    try {
-      await terminalRef.current?.connectReader(reader)
-      setPhase('ready')
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to connect to reader.')
-      setPhase('error')
-    }
-  }, [])
-
-  const collect = useCallback(async () => {
-    const terminal = terminalRef.current
-    const intent = activeIntentRef.current
-    if (!terminal || !intent) {
-      setMessage('Session expired. Start again.')
-      setPhase('error')
-      return
-    }
-
-    setPhase('collecting')
-    setMessage(null)
-    try {
-      const collected = await terminal.collectPaymentMethod(intent.clientSecret)
-      const processed = await terminal.processPayment(collected.paymentIntent)
-
-      setPhase('capturing')
-      const capture = await captureTerminalPayment(processed.paymentIntent.id)
-      if (!capture.success) {
-        setMessage(capture.error)
-        setPhase('error')
-        return
-      }
-      setPhase('success')
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Payment collection failed.')
-      setPhase('error')
-    }
-  }, [])
-
-  const cancelCollection = useCallback(async () => {
-    try {
-      await terminalRef.current?.cancelCollectPaymentMethod()
-    } catch {
-      // ignore cancel errors
-    }
-    setPhase('ready')
-  }, [])
+  const begin = () => sessionRef.current?.begin(allowSimulation && simulated)
+  const reset = () => sessionRef.current?.reset()
+  const collect = () => sessionRef.current?.collect()
+  const cancelCollection = () => sessionRef.current?.cancelCollection()
 
   return (
     <div className="space-y-2">
@@ -213,7 +116,7 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
         <div>
           <p className="text-sm font-medium">Invoice #{invoice.invoiceNumber}</p>
           <p className="text-xs text-muted-foreground">
-            Outstanding {formatCents(invoice.outstandingCents > 0 ? invoice.outstandingCents : invoice.totalCents)}
+            Outstanding {formatCents(invoice.outstandingCents)}
             {' '}· <span className="capitalize">{invoice.status}</span>
           </p>
         </div>
@@ -224,7 +127,7 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
           </Button>
         )}
         {phase === 'success' && (
-          <Badge variant="default">Paid</Badge>
+          <Badge variant="secondary">Awaiting invoice confirmation</Badge>
         )}
         {(phase === 'error' || phase === 'success') && (
           <Button size="sm" variant="outline" onClick={reset}>
@@ -233,7 +136,7 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
         )}
       </div>
 
-      {phase === 'idle' && (
+      {phase === 'idle' && allowSimulation && (
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
           <input
             type="checkbox"
@@ -262,7 +165,7 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
                         {r.label || r.deviceType || 'Reader'}{' '}
                         <span className="text-muted-foreground">({r.serialNumber})</span>
                       </span>
-                      <Button size="xs" variant="outline" onClick={() => connectReader(r)}>
+                      <Button size="xs" variant="outline" onClick={() => sessionRef.current?.connectReader(r)}>
                         Connect
                       </Button>
                     </li>
@@ -270,14 +173,14 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
                 </ul>
               )}
               <Button size="xs" variant="ghost" onClick={reset}>
-                Cancel
+                Close reader setup
               </Button>
             </div>
           )}
           {phase === 'ready' && (
             <div className="flex gap-2">
               <Button size="sm" onClick={collect}>Present card &amp; collect</Button>
-              <Button size="sm" variant="ghost" onClick={reset}>Cancel</Button>
+              <Button size="sm" variant="ghost" onClick={reset}>Disconnect reader</Button>
             </div>
           )}
           {phase === 'collecting' && (
@@ -286,12 +189,18 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
         </div>
       )}
 
-      {phase === 'success' && (
-        <p className="text-sm text-emerald-600">Payment captured and invoice marked paid.</p>
+      {canCancelAttempt && ['ready', 'select_reader', 'error'].includes(phase) && (
+        <Button size="sm" variant="outline" onClick={() => sessionRef.current?.cancelAttempt()}>
+          Cancel payment attempt
+        </Button>
       )}
 
-      {message && phase === 'error' && (
-        <p className="text-sm text-destructive">{message}</p>
+      {phase === 'success' && (
+        <p className="text-sm text-emerald-600">Payment captured. The invoice will update after Stripe confirms it.</p>
+      )}
+
+      {message && (
+        <p role={phase === 'error' ? 'alert' : 'status'} className={phase === 'error' ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}>{message}</p>
       )}
     </div>
   )
@@ -299,12 +208,16 @@ function CollectRow({ invoice, eligible }: { invoice: CollectableInvoice; eligib
 
 function PhaseStatus({ phase }: { phase: Phase }) {
   const labels: Partial<Record<Phase, string>> = {
+    disconnecting: 'Disconnecting reader…',
     initializing: 'Initialising Stripe Terminal…',
     discovering: 'Searching for readers…',
     select_reader: 'Select a reader:',
     connecting: 'Connecting to reader…',
     ready: 'Reader connected. Ask the customer to tap, insert, or swipe.',
     collecting: 'Waiting for card tap…',
+    canceling: 'Canceling card collection…',
+    canceling_attempt: 'Canceling the payment attempt…',
+    processing: 'Processing payment. Please wait…',
     capturing: 'Capturing payment…',
   }
   return <p className="font-medium">{labels[phase] ?? phase}</p>

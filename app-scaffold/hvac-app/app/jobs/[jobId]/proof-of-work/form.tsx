@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { SignaturePad } from '@/components/signature-pad'
+import { MAX_PHOTO_BYTES, PHOTO_SIZE_LIMIT, PHOTO_CONTENT_TYPES } from '@/lib/photo-upload'
 
 type InitialData = {
   workSummary: string
@@ -64,13 +65,13 @@ export function ProofOfWorkForm({
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
 
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      if (!PHOTO_CONTENT_TYPES.includes(file.type)) {
         setUploadError(`"${file.name}" is not a supported image type. Use JPG, PNG, or WebP.`)
         continue
       }
 
-      if (file.size > 10 * 1024 * 1024) {
-        setUploadError(`"${file.name}" exceeds the 10 MB limit.`)
+      if (file.size > MAX_PHOTO_BYTES) {
+        setUploadError(`"${file.name}" exceeds the ${PHOTO_SIZE_LIMIT} limit.`)
         continue
       }
 
@@ -91,18 +92,6 @@ export function ProofOfWorkForm({
         }
 
         const data = await res.json()
-
-        if (data.presignedUrl) {
-          const putRes = await fetch(data.presignedUrl, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type },
-          })
-          if (!putRes.ok) {
-            setUploadError(`Failed to upload "${file.name}" to storage`)
-            continue
-          }
-        }
 
         newPhotos.push({ id: data.id, fileUrl: data.fileUrl })
       } catch {
@@ -269,7 +258,7 @@ export function ProofOfWorkForm({
             className="cursor-pointer"
           />
           <p className="text-xs text-muted-foreground">
-            JPG, PNG, or WebP. Max 10 MB per file.
+            JPG, PNG, or WebP. Max {PHOTO_SIZE_LIMIT} per file.
           </p>
           {uploading && (
             <p className="text-sm text-muted-foreground">Uploading...</p>

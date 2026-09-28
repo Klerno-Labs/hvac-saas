@@ -1,33 +1,22 @@
+import { startOfBusinessDayAsUtcDate } from '@/lib/format'
+import { photoReadUrl } from '@/lib/photo-url'
+import { jobAccessWhere } from '@/lib/mutation-access'
 import { requireAuth } from '@/lib/session'
 import { db } from '@/lib/db'
 import FieldJobCard from './job-card'
 
 export default async function FieldPage() {
-  const { user, organizationId, role } = await requireAuth()
+  const context = await requireAuth()
 
-  // Members see only jobs assigned to them by technicianName (RBAC: task 5 assignment)
-  if (role === 'member' && !user.name) {
-    return (
-      <main className="max-w-lg mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold mb-2">Today&apos;s Jobs</h1>
-        <p className="text-sm text-muted-foreground">
-          Set your display name in account settings to see your assigned jobs.
-        </p>
-      </main>
-    )
-  }
-
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
+  const todayStart = startOfBusinessDayAsUtcDate(new Date(), context.organization.timezone)
   const todayEnd = new Date(todayStart)
-  todayEnd.setDate(todayEnd.getDate() + 1)
+  todayEnd.setUTCDate(todayEnd.getUTCDate() + 1)
 
   const jobs = await db.job.findMany({
     where: {
-      organizationId,
+      ...jobAccessWhere(context),
       scheduledFor: { gte: todayStart, lt: todayEnd },
       status: { in: ['scheduled', 'in_progress', 'completed'] },
-      ...(role === 'member' ? { technicianName: user.name as string } : {}),
     },
     include: {
       customer: {
@@ -51,7 +40,8 @@ export default async function FieldPage() {
     orderBy: { scheduledFor: 'asc' },
   })
 
-  const dateLabel = new Date().toLocaleDateString('en-US', {
+  const dateLabel = todayStart.toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -66,7 +56,7 @@ export default async function FieldPage() {
       ) : (
         <div className="space-y-4">
           {jobs.map((job) => (
-            <FieldJobCard key={job.id} job={job} />
+            <FieldJobCard key={job.id} job={{ ...job, assets: job.assets.map(asset => ({ ...asset, fileUrl: photoReadUrl(asset) })) }} />
           ))}
         </div>
       )}

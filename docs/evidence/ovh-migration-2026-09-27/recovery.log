@@ -1,0 +1,14 @@
+ 20:51:06 up 0 min,  1 user,  load average: 0.77, 0.25, 0.09
+active
+active
+active
+{"ok":true,"service":"hvac-app","version":"0.1.0","timestamp":"2026-09-27T20:51:06.480Z","checks":{"database":{"status":"ok"},"env":{"status":"ok"},"stripe":{"status":"not_configured"},"auth":{"status":"configured"}},"optionalConfigured":1}  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+Status: active
+
+To                         Action      From
+--                         ------      ----
+OpenSSH                    ALLOW       Anywhere                  
+OpenSSH (v6)               ALLOW       Anywhere (v6)             
+

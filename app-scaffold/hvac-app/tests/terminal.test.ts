@@ -45,8 +45,16 @@ describe('resolveCollectAmountCents', () => {
     expect(resolveCollectAmountCents(base)).toBe(5000)
   })
 
-  it('falls back to total when outstanding is zero', () => {
-    expect(resolveCollectAmountCents({ ...base, outstandingCents: 0, totalCents: 7500 })).toBe(7500)
+  it('never recollects the original total when the outstanding balance is zero', () => {
+    expect(resolveCollectAmountCents({ ...base, outstandingCents: 0, totalCents: 7500 })).toBeNull()
+  })
+
+  it.each([NaN, Infinity, 0.5, -1, 5001])('rejects an invalid or excessive outstanding balance %s', outstandingCents => {
+    expect(resolveCollectAmountCents({ ...base, outstandingCents })).toBeNull()
+  })
+
+  it('rejects unknown invoice states instead of assuming they are payable', () => {
+    expect(resolveCollectAmountCents({ ...base, status: 'refunded' })).toBeNull()
   })
 
   it('returns null for paid invoices', () => {

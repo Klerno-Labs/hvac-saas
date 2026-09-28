@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next'
+import { helpArticles } from '@/lib/help/articles'
 
-const SITE_URL = process.env.APP_URL || 'https://fieldclose.app'
+const SITE_URL = new URL(process.env.APP_URL || 'https://fieldclose.app').origin
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()
   return [
+    ...['/demo', '/help', '/tools/paperwork-calculator', ...helpArticles.map(article => `/help/${article.slug}`)].map(path => ({url: `${SITE_URL}${path}`, changeFrequency: 'monthly' as const, priority: 0.7})),
     {
       url: `${SITE_URL}/`,
       lastModified: now,
@@ -12,22 +14,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
-      url: `${SITE_URL}/signup`,
+      url: `${SITE_URL}/pricing`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
-      url: `${SITE_URL}/login`,
+      url: `${SITE_URL}/faq`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.5,
-    },
-    {
-      url: `${SITE_URL}/forgot-password`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.3,
     },
     {
       url: `${SITE_URL}/terms`,
