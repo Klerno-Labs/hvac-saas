@@ -58,3 +58,9 @@ Read from the existing verified `https://fieldclose.app/` Google Search Console 
 - Google documentation updates: https://developers.google.com/search/updates (FAQ rich results retired; no promised benefit from FAQ schema or llms.txt)
 
 Traffic growth requires publication, crawling, useful content and evidence over time. This implementation does not establish rankings, acquisition volume, an unattended marketing system or unrestricted application launch readiness.
+
+## Dependency audit follow-up
+
+The first independent CI run passed build, unit and PostgreSQL integration checks, then failed the production dependency audit. A newly reviewed braces advisory (GHSA-vfj7-8cjw-p6xm; updated October 2) affects deeply nested glob patterns; no patched braces version was listed. The production dependency path came through the shadcn development CLI. Application source uses only its build-time CSS import, with no runtime JavaScript imports.
+
+Moved the same locked shadcn 4.3.0 package to development dependencies and regenerated lockfile classification; **zero package versions changed**. `npm audit --omit=dev --audit-level=high` now reports zero vulnerabilities. The unpatched transitive package remains in development tooling; this is runtime packaging correction, not an upstream vulnerability fix. OVH staging must prune development dependencies after building and validate the resulting production install. The audit gate was not weakened.
