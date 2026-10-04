@@ -1,0 +1,111 @@
+{
+  "recordedAt": "2026-10-04T21:13:35.723Z",
+  "revision": "763b859725fbeed66434ba9a8ff59023c103cb6d",
+  "scope": "Production-origin build preparation only; no production promotion",
+  "sourceArchiveSha256": "c87e87cc27bc1077659ff96651e8192bf81dc1933f41bd2f2fec463b0740d515",
+  "build": {
+    "node": "24.21.0",
+    "npm": "11.9.0",
+    "freshLinuxNpmCiPassed": true,
+    "optimizedBuildPassed": true,
+    "nodeHeapMiB": 3072,
+    "nicePriority": 10,
+    "buildRoot": "/home/ubuntu/fieldclose-production-builds/763b859",
+    "buildEnvironmentOutsideApp": true,
+    "buildSettingNames": [
+      "APP_URL",
+      "AUTH_URL",
+      "NEXTAUTH_URL",
+      "NEXT_PUBLIC_APP_URL",
+      "AUTH_TRUST_HOST",
+      "DEPLOYMENT_ENV",
+      "SCHEDULED_TASKS_ENABLED",
+      "NEXT_PUBLIC_ENABLE_WEB_ANALYTICS",
+      "NEXT_PUBLIC_ENABLE_FUNNEL_EVENTS",
+      "NEXT_TELEMETRY_DISABLED",
+      "NEXT_PUBLIC_SENTRY_DSN",
+      "NEXT_PUBLIC_SUPPORT_EMAIL"
+    ],
+    "productionSecretsTransferred": false,
+    "productionDatabaseOrProvidersContacted": false
+  },
+  "artifacts": {
+    "revision": "763b859725fbeed66434ba9a8ff59023c103cb6d",
+    "checkedAt": "2026-10-04T21:11:40.925Z",
+    "buildId": "SdWfP5weW5oDcDEuHJvMJ",
+    "productionOrigin": "https://fieldclose.app",
+    "sitemapUrls": 24,
+    "staticHtmlCanonicalChecks": 23,
+    "stagingOriginAbsentFromCheckedHtml": true,
+    "fabricatedLastModifiedAbsent": true,
+    "runtimeVulnerabilities": 0,
+    "passed": true
+  },
+  "runtime": {
+    "developmentDependenciesPruned": true,
+    "absentPackages": [
+      "typescript",
+      "shadcn",
+      "braces",
+      "micromatch"
+    ],
+    "generatedPrismaClientPresent": true,
+    "productionAuditVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "guardedSyntheticStartupSmokePassed": true,
+    "smokeEnvironment": "Existing synthetic staging environment with outbound provider guard; temporary loopback3217 process stopped after checks",
+    "smokeChecks": [
+      "public page rendering",
+      "private login noindex",
+      "anonymous dashboard redirect and private no-store",
+      "synthetic database health",
+      "no TypeScript or development-package reinstall"
+    ],
+    "productionProviderReadinessVerified": false
+  },
+  "candidate": {
+    "path": "/srv/fieldclose-production/releases/763b859",
+    "owner": "root:root",
+    "onlyWritableAppDirectory": ".next/cache",
+    "cacheOwner": "fieldclose-prod:fieldclose-prod",
+    "cacheMode": "0700",
+    "productionCurrentLinkPresent": false,
+    "productionServiceActive": false,
+    "productionServiceEnabled": false,
+    "productionRuntimeEnvironmentInstalled": false,
+    "productionTimersActive": false,
+    "stagingServiceActive": true,
+    "stagingRelease": "3b95bf8",
+    "nginxChanged": false,
+    "dnsChanged": false
+  },
+  "systemdEnvironmentFixture": {
+    "nonSecretOnly": true,
+    "multilineSingleQuotedTrailingLfPreserved": true,
+    "ranAs": "fieldclose-prod",
+    "transientOneshotCompleted": true,
+    "fixtureFilesRemoved": true,
+    "credentialValuesPrinted": false
+  },
+  "infrastructureReview": {
+    "deploymentSafetyTestsPassedLocal": 24,
+    "deploymentSafetyTestsPassedUbuntu": 24,
+    "unitSyntaxValidatedOnUbuntu": true,
+    "reviewedHelpersInstalledInactive": true,
+    "authenticationSecretPreservedVerbatim": true,
+    "schedulerRequiresCompleteNumericSuccessCounters": true
+  },
+  "pending": [
+    "Credential creation approval and secure complete runtime environment",
+    "Read-only provider and production database verification",
+    "Trusted apex/www certificate and direct-origin HTTPS checks",
+    "Coordinated DNS and single-scheduler transition",
+    "Public release verification and sitemap submission"
+  ]
+}

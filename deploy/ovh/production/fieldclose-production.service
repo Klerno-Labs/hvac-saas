@@ -1,0 +1,35 @@
+[Unit]
+Description=FieldClose production application
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=fieldclose-prod
+Group=fieldclose-prod
+WorkingDirectory=/srv/fieldclose-production/current
+EnvironmentFile=/etc/fieldclose-production/app.env
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment="NODE_OPTIONS=--max-old-space-size=2048 --dns-result-order=ipv4first --no-network-family-autoselection"
+ExecStartPre=/usr/bin/node /usr/local/lib/fieldclose/production-env-check.mjs
+ExecStart=/usr/bin/node /srv/fieldclose-production/current/node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3001
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/fieldclose-production/current/.next/cache
+MemoryMax=4G
+TasksMax=512
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

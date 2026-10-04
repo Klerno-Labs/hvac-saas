@@ -36,6 +36,10 @@ jobs:
           cache: npm
           cache-dependency-path: app-scaffold/hvac-app/package-lock.json
 
+      - name: Validate OVH production deployment guards
+        run: node --test deploy/ovh/production/safety.test.mjs
+        working-directory: .
+
       - run: npm ci
 
       - run: npx prisma generate

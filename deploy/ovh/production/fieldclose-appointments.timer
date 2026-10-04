@@ -1,0 +1,11 @@
+[Unit]
+Description=FieldClose daily appointment reminders at 15:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 15:00:00 UTC
+AccuracySec=1s
+Persistent=false
+Unit=fieldclose-scheduled@appointments.service
+
+[Install]
+WantedBy=timers.target

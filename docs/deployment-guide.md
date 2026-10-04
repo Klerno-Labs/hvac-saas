@@ -12,7 +12,7 @@ The application and its integrated public marketing pages live in `app-scaffold/
 5. Build a candidate deployment and verify it against the intended environment before assigning production traffic. A candidate using production credentials can still change production data: run smoke checks using dedicated, authorized fixtures and do not trigger customer messages or charges incidentally.
 6. Promote the verified candidate, then complete the post-deploy checks below. Confirm the cron configuration after promotion.
 
-A candidate may be built while the database is unavailable, but it must remain unpromoted and scheduled work must stay paused. After database migrations and release checks succeed, set `SCHEDULED_TASKS_ENABLED=true` and deploy with the updated environment before enabling the scheduled workflows. Unset preserves the normal enabled behavior.
+A candidate may be built while the database is unavailable, but it must remain unpromoted and scheduled work must stay paused. After database migrations and release checks succeed, set `SCHEDULED_TASKS_ENABLED=true` and deploy with the updated environment before enabling the scheduled workflows. Only the exact value `true` enables execution; unset, `false`, and invalid values remain paused. A self-hosted service must restart to read a changed runtime environment.
 
 For an existing database created with `db push`, do not assume it is already baselined. Reconcile its actual schema with the committed migration history and mark a migration applied only after confirming the schema really includes it.
 
