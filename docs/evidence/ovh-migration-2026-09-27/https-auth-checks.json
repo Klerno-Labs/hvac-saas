@@ -1,0 +1,65 @@
+{
+  "secureSessionCookie": true,
+  "checks": [
+    {
+      "path": "/api/auth/csrf",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/api/auth/callback/credentials",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/api/auth/session",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/dashboard",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/jobs",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/customers",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/estimates",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/invoices",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/calendar",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/field",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/reports",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/settings",
+      "status": 200,
+      "passed": true
+    }
+  ]
+}

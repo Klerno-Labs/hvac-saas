@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import Twilio from 'twilio'
 import type { CollectionStage } from '@/lib/validations/collections'
 
@@ -25,15 +26,15 @@ export function isTwilioConfigured(): boolean {
   )
 }
 
-type SmsResult = { success: true; sid: string } | { success: false; error: string }
+type SmsResult = { success: true; sid: string } | { success: false; error: string; retryable?: boolean }
 
 export async function sendSms(to: string, body: string): Promise<SmsResult> {
   const client = getTwilioClient()
   const from = getFromNumber()
 
   if (!client || !from) {
-    console.log(`[sms-skipped] Twilio not configured — would send to ${to}: ${body}`)
-    return { success: false, error: 'SMS delivery not configured (Twilio env vars missing)' }
+    console.log('[sms-skipped] SMS delivery is not configured')
+    return { success: false, error: 'SMS delivery not configured (Twilio env vars missing)', retryable: true }
   }
 
   try {
@@ -43,10 +44,12 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
       body,
     })
 
-    return { success: true, sid: message.sid }
+    return message.sid ? { success: true, sid: message.sid } : { success: false, error: 'SMS acceptance could not be confirmed', retryable: false }
   } catch (error) {
-    console.error('[sms-error]', error)
-    return { success: false, error: 'Failed to send SMS' }
+    // Provider errors can contain phone numbers, message text and request data.
+    console.error('[sms-error] SMS provider request failed')
+    const status = error && typeof error === 'object' && 'status' in error ? Number(error.status) : 0
+    return { success: false, error: 'Failed to send SMS', retryable: [400, 401, 403, 404, 422, 429].includes(status) }
   }
 }
 
@@ -57,9 +60,8 @@ export async function sendAppointmentReminderSms(params: {
   orgName: string
   scheduledFor: Date
 }): Promise<SmsResult> {
-  const dateStr = params.scheduledFor.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-  const timeStr = params.scheduledFor.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  const body = `Hi ${params.customerName}, reminder from ${params.orgName}: your appointment (${params.jobTitle}) is scheduled for ${dateStr} at ${timeStr}. Reply STOP to opt out.`
+  const dateStr = formatDateOnly(params.scheduledFor)
+  const body = `Hi ${params.customerName}, reminder from ${params.orgName}: your appointment (${params.jobTitle}) is scheduled for ${dateStr}. Contact us to confirm your arrival window. Reply STOP to opt out.`
   return sendSms(params.to, body)
 }
 

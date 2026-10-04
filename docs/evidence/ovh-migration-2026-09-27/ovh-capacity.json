@@ -1,0 +1,2065 @@
+{
+  "run": "ovh-capacity",
+  "startedAt": "2026-09-27T20:44:29.045Z",
+  "scope": "Isolated compiled app, real Auth.js logins and HTTP actions; synthetic locally signed payment events, no provider calls",
+  "phases": [
+    {
+      "name": "warmup",
+      "concurrency": 10,
+      "thinkMs": 250,
+      "durationSeconds": 10.540649356000008,
+      "requestsPerSecond": 21.251062665555178,
+      "requests": 224,
+      "passed": 224,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 221.72,
+      "p95Ms": 463.32,
+      "p99Ms": 496.17,
+      "maxMs": 510,
+      "routes": {
+        "write-notes": {
+          "requests": 23,
+          "passed": 23,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 108.07,
+          "p95Ms": 169.37,
+          "p99Ms": 304.92,
+          "maxMs": 304.92
+        },
+        "write-status": {
+          "requests": 22,
+          "passed": 22,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 18.9,
+          "p95Ms": 142.8,
+          "p99Ms": 368.35,
+          "maxMs": 368.35
+        },
+        "field": {
+          "requests": 41,
+          "passed": 41,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 217.92,
+          "p95Ms": 463.32,
+          "p99Ms": 471.55,
+          "maxMs": 471.55
+        },
+        "job-detail": {
+          "requests": 43,
+          "passed": 43,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 241.78,
+          "p95Ms": 462.39,
+          "p99Ms": 489.48,
+          "maxMs": 489.48
+        },
+        "jobs": {
+          "requests": 22,
+          "passed": 22,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 258.12,
+          "p95Ms": 481.51,
+          "p99Ms": 496.17,
+          "maxMs": 496.17
+        },
+        "job-search": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 287.07,
+          "p95Ms": 480.74,
+          "p99Ms": 510,
+          "maxMs": 510
+        },
+        "job-deep-page": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 281.21,
+          "p95Ms": 481.11,
+          "p99Ms": 505.82,
+          "maxMs": 505.82
+        },
+        "calendar": {
+          "requests": 23,
+          "passed": 23,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 187.47,
+          "p95Ms": 371.98,
+          "p99Ms": 482.96,
+          "maxMs": 482.96
+        },
+        "dashboard": {
+          "requests": 4,
+          "passed": 4,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 242.61,
+          "p95Ms": 391.06,
+          "p99Ms": 391.06,
+          "maxMs": 391.06
+        },
+        "analytics": {
+          "requests": 2,
+          "passed": 2,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 113.84,
+          "p95Ms": 134.27,
+          "p99Ms": 134.27,
+          "maxMs": 134.27
+        },
+        "reports": {
+          "requests": 2,
+          "passed": 2,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 71.5,
+          "p95Ms": 173.99,
+          "p99Ms": 173.99,
+          "maxMs": 173.99
+        },
+        "invoice-deep-page": {
+          "requests": 2,
+          "passed": 2,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 188.4,
+          "p95Ms": 216.35,
+          "p99Ms": 216.35,
+          "maxMs": 216.35
+        }
+      }
+    },
+    {
+      "name": "burst-10",
+      "concurrency": 10,
+      "thinkMs": 0,
+      "durationSeconds": 20.20883728600001,
+      "requestsPerSecond": 27.61168255763845,
+      "requests": 558,
+      "passed": 558,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 333.23,
+      "p95Ms": 729.2,
+      "p99Ms": 925.33,
+      "maxMs": 1137.68,
+      "routes": {
+        "write-notes": {
+          "requests": 55,
+          "passed": 55,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 92.63,
+          "p95Ms": 466.8,
+          "p99Ms": 560.37,
+          "maxMs": 560.37
+        },
+        "write-status": {
+          "requests": 56,
+          "passed": 56,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 98.21,
+          "p95Ms": 480.77,
+          "p99Ms": 563.38,
+          "maxMs": 563.38
+        },
+        "field": {
+          "requests": 98,
+          "passed": 98,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 226.95,
+          "p95Ms": 586.93,
+          "p99Ms": 795.9,
+          "maxMs": 795.9
+        },
+        "job-detail": {
+          "requests": 106,
+          "passed": 106,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 254.52,
+          "p95Ms": 543.31,
+          "p99Ms": 620.16,
+          "maxMs": 668.5
+        },
+        "calendar": {
+          "requests": 56,
+          "passed": 56,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 464.5,
+          "p95Ms": 728.57,
+          "p99Ms": 1118.74,
+          "maxMs": 1118.74
+        },
+        "job-deep-page": {
+          "requests": 53,
+          "passed": 53,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 509.72,
+          "p95Ms": 918.9,
+          "p99Ms": 971.32,
+          "maxMs": 971.32
+        },
+        "job-search": {
+          "requests": 51,
+          "passed": 51,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 542.52,
+          "p95Ms": 858.16,
+          "p99Ms": 925.33,
+          "maxMs": 925.33
+        },
+        "jobs": {
+          "requests": 58,
+          "passed": 58,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 529.79,
+          "p95Ms": 816.29,
+          "p99Ms": 1137.68,
+          "maxMs": 1137.68
+        },
+        "dashboard": {
+          "requests": 10,
+          "passed": 10,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 408.23,
+          "p95Ms": 1089.69,
+          "p99Ms": 1089.69,
+          "maxMs": 1089.69
+        },
+        "analytics": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 102.38,
+          "p95Ms": 486.83,
+          "p99Ms": 486.83,
+          "maxMs": 486.83
+        },
+        "reports": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 300.5,
+          "p95Ms": 464.37,
+          "p99Ms": 464.37,
+          "maxMs": 464.37
+        },
+        "invoice-deep-page": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 503.22,
+          "p95Ms": 682.75,
+          "p99Ms": 682.75,
+          "maxMs": 682.75
+        }
+      }
+    },
+    {
+      "name": "burst-25",
+      "concurrency": 25,
+      "thinkMs": 0,
+      "durationSeconds": 20.308801045,
+      "requestsPerSecond": 30.47939652510393,
+      "requests": 619,
+      "passed": 619,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 695.92,
+      "p95Ms": 1660.83,
+      "p99Ms": 2085.56,
+      "maxMs": 2167.42,
+      "routes": {
+        "write-notes": {
+          "requests": 62,
+          "passed": 62,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 223.5,
+          "p95Ms": 587.73,
+          "p99Ms": 777.02,
+          "maxMs": 777.02
+        },
+        "write-status": {
+          "requests": 65,
+          "passed": 65,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 210.38,
+          "p95Ms": 516.38,
+          "p99Ms": 648.78,
+          "maxMs": 648.78
+        },
+        "field": {
+          "requests": 111,
+          "passed": 111,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 552.58,
+          "p95Ms": 955.42,
+          "p99Ms": 1072.54,
+          "maxMs": 1081.86
+        },
+        "job-detail": {
+          "requests": 114,
+          "passed": 114,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 622.24,
+          "p95Ms": 1040,
+          "p99Ms": 1178.52,
+          "maxMs": 1192.35
+        },
+        "job-deep-page": {
+          "requests": 52,
+          "passed": 52,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1449.97,
+          "p95Ms": 2081.23,
+          "p99Ms": 2147.57,
+          "maxMs": 2147.57
+        },
+        "job-search": {
+          "requests": 59,
+          "passed": 59,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1194.1,
+          "p95Ms": 2150.73,
+          "p99Ms": 2167.42,
+          "maxMs": 2167.42
+        },
+        "calendar": {
+          "requests": 67,
+          "passed": 67,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1222.56,
+          "p95Ms": 1916.21,
+          "p99Ms": 2088.89,
+          "maxMs": 2088.89
+        },
+        "jobs": {
+          "requests": 59,
+          "passed": 59,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1288.95,
+          "p95Ms": 1636.03,
+          "p99Ms": 1844.01,
+          "maxMs": 1844.01
+        },
+        "dashboard": {
+          "requests": 12,
+          "passed": 12,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 813.69,
+          "p95Ms": 1546.21,
+          "p99Ms": 1546.21,
+          "maxMs": 1546.21
+        },
+        "analytics": {
+          "requests": 6,
+          "passed": 6,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 169.66,
+          "p95Ms": 179.95,
+          "p99Ms": 179.95,
+          "maxMs": 179.95
+        },
+        "reports": {
+          "requests": 6,
+          "passed": 6,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 742.01,
+          "p95Ms": 1166.86,
+          "p99Ms": 1166.86,
+          "maxMs": 1166.86
+        },
+        "invoice-deep-page": {
+          "requests": 6,
+          "passed": 6,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 911,
+          "p95Ms": 1078.99,
+          "p99Ms": 1078.99,
+          "maxMs": 1078.99
+        }
+      }
+    },
+    {
+      "name": "burst-50",
+      "concurrency": 50,
+      "thinkMs": 0,
+      "durationSeconds": 20.234024629000007,
+      "requestsPerSecond": 32.61832542469422,
+      "requests": 660,
+      "passed": 660,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 1316.45,
+      "p95Ms": 2839.63,
+      "p99Ms": 3100,
+      "maxMs": 3168.77,
+      "routes": {
+        "write-notes": {
+          "requests": 65,
+          "passed": 65,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 473.76,
+          "p95Ms": 975.48,
+          "p99Ms": 1284.64,
+          "maxMs": 1284.64
+        },
+        "write-status": {
+          "requests": 70,
+          "passed": 70,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 436.07,
+          "p95Ms": 984.71,
+          "p99Ms": 1287.88,
+          "maxMs": 1287.88
+        },
+        "field": {
+          "requests": 120,
+          "passed": 120,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1155.48,
+          "p95Ms": 1917.65,
+          "p99Ms": 2113.89,
+          "maxMs": 2157.42
+        },
+        "job-detail": {
+          "requests": 125,
+          "passed": 125,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1233.15,
+          "p95Ms": 2024.3,
+          "p99Ms": 2059.46,
+          "maxMs": 2064.2
+        },
+        "job-deep-page": {
+          "requests": 60,
+          "passed": 60,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2414.56,
+          "p95Ms": 2841.9,
+          "p99Ms": 2903.03,
+          "maxMs": 2903.03
+        },
+        "job-search": {
+          "requests": 60,
+          "passed": 60,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2418.46,
+          "p95Ms": 3072.56,
+          "p99Ms": 3111.05,
+          "maxMs": 3111.05
+        },
+        "calendar": {
+          "requests": 70,
+          "passed": 70,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2544.02,
+          "p95Ms": 3110.16,
+          "p99Ms": 3168.77,
+          "maxMs": 3168.77
+        },
+        "jobs": {
+          "requests": 65,
+          "passed": 65,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2355.03,
+          "p95Ms": 3071.29,
+          "p99Ms": 3084.2,
+          "maxMs": 3084.2
+        },
+        "dashboard": {
+          "requests": 10,
+          "passed": 10,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1551.15,
+          "p95Ms": 2437.44,
+          "p99Ms": 2437.44,
+          "maxMs": 2437.44
+        },
+        "analytics": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 373.57,
+          "p95Ms": 398.87,
+          "p99Ms": 398.87,
+          "maxMs": 398.87
+        },
+        "reports": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1274.96,
+          "p95Ms": 1293.45,
+          "p99Ms": 1293.45,
+          "maxMs": 1293.45
+        },
+        "invoice-deep-page": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2649.05,
+          "p95Ms": 2747.06,
+          "p99Ms": 2747.06,
+          "maxMs": 2747.06
+        }
+      }
+    },
+    {
+      "name": "burst-100",
+      "concurrency": 100,
+      "thinkMs": 0,
+      "durationSeconds": 21.125768111999992,
+      "requestsPerSecond": 32.61419875231092,
+      "requests": 689,
+      "passed": 689,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 3032.88,
+      "p95Ms": 5196.02,
+      "p99Ms": 5509.86,
+      "maxMs": 5668.23,
+      "routes": {
+        "write-notes": {
+          "requests": 60,
+          "passed": 60,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 955.99,
+          "p95Ms": 1991.98,
+          "p99Ms": 2337.67,
+          "maxMs": 2337.67
+        },
+        "write-status": {
+          "requests": 70,
+          "passed": 70,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1058.72,
+          "p95Ms": 1992.83,
+          "p99Ms": 2336.57,
+          "maxMs": 2336.57
+        },
+        "field": {
+          "requests": 110,
+          "passed": 110,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2277.61,
+          "p95Ms": 3607.96,
+          "p99Ms": 3803.55,
+          "maxMs": 3806.67
+        },
+        "job-detail": {
+          "requests": 139,
+          "passed": 139,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2430.51,
+          "p95Ms": 3603.24,
+          "p99Ms": 3613.13,
+          "maxMs": 3816.16
+        },
+        "job-deep-page": {
+          "requests": 80,
+          "passed": 80,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 4579.97,
+          "p95Ms": 5165.36,
+          "p99Ms": 5317.93,
+          "maxMs": 5317.93
+        },
+        "job-search": {
+          "requests": 70,
+          "passed": 70,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 4696.64,
+          "p95Ms": 5509.86,
+          "p99Ms": 5668.23,
+          "maxMs": 5668.23
+        },
+        "jobs": {
+          "requests": 60,
+          "passed": 60,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 4840.99,
+          "p95Ms": 5282.06,
+          "p99Ms": 5432.16,
+          "maxMs": 5432.16
+        },
+        "calendar": {
+          "requests": 80,
+          "passed": 80,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 4614.94,
+          "p95Ms": 5480.18,
+          "p99Ms": 5663.86,
+          "maxMs": 5663.86
+        },
+        "dashboard": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 3153.24,
+          "p95Ms": 3830.72,
+          "p99Ms": 3836.24,
+          "maxMs": 3836.24
+        }
+      }
+    },
+    {
+      "name": "burst-200",
+      "concurrency": 200,
+      "thinkMs": 0,
+      "durationSeconds": 21.670694135999977,
+      "requestsPerSecond": 31.19420152199968,
+      "requests": 676,
+      "passed": 676,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 5952.17,
+      "p95Ms": 11481.42,
+      "p99Ms": 11933.04,
+      "maxMs": 11951.74,
+      "routes": {
+        "write-notes": {
+          "requests": 60,
+          "passed": 60,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2945.06,
+          "p95Ms": 6297.7,
+          "p99Ms": 6485.58,
+          "maxMs": 6485.58
+        },
+        "write-status": {
+          "requests": 80,
+          "passed": 80,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 871.55,
+          "p95Ms": 6274.77,
+          "p99Ms": 6514.84,
+          "maxMs": 6514.84
+        },
+        "field": {
+          "requests": 120,
+          "passed": 120,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 5282.39,
+          "p95Ms": 7451.03,
+          "p99Ms": 7473.66,
+          "maxMs": 7602.35
+        },
+        "job-detail": {
+          "requests": 120,
+          "passed": 120,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 5556.3,
+          "p95Ms": 7450.6,
+          "p99Ms": 7471.05,
+          "maxMs": 7472.05
+        },
+        "job-deep-page": {
+          "requests": 60,
+          "passed": 60,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 8371.68,
+          "p95Ms": 11421.47,
+          "p99Ms": 11427.18,
+          "maxMs": 11427.18
+        },
+        "job-search": {
+          "requests": 76,
+          "passed": 76,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 8152.86,
+          "p95Ms": 11436.59,
+          "p99Ms": 11445.34,
+          "maxMs": 11445.34
+        },
+        "jobs": {
+          "requests": 60,
+          "passed": 60,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 9780.04,
+          "p95Ms": 11815.54,
+          "p99Ms": 11832.5,
+          "maxMs": 11832.5
+        },
+        "calendar": {
+          "requests": 100,
+          "passed": 100,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 9671.16,
+          "p95Ms": 11934.74,
+          "p99Ms": 11951.59,
+          "maxMs": 11951.74
+        }
+      }
+    },
+    {
+      "name": "sustained-100",
+      "concurrency": 100,
+      "thinkMs": 500,
+      "durationSeconds": 122.56104366299999,
+      "requestsPerSecond": 30.60515713552455,
+      "requests": 3751,
+      "passed": 3751,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 2722.94,
+      "p95Ms": 4443.57,
+      "p99Ms": 5330.76,
+      "maxMs": 5601.77,
+      "routes": {
+        "write-notes": {
+          "requests": 370,
+          "passed": 370,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1677.82,
+          "p95Ms": 3272.09,
+          "p99Ms": 3924.64,
+          "maxMs": 3925.22
+        },
+        "write-status": {
+          "requests": 380,
+          "passed": 380,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 487.31,
+          "p95Ms": 2322.87,
+          "p99Ms": 2544.76,
+          "maxMs": 2548.01
+        },
+        "field": {
+          "requests": 651,
+          "passed": 651,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2671.8,
+          "p95Ms": 4103.37,
+          "p99Ms": 5092.25,
+          "maxMs": 5099.66
+        },
+        "job-detail": {
+          "requests": 700,
+          "passed": 700,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2762.42,
+          "p95Ms": 4012.57,
+          "p99Ms": 5489.29,
+          "maxMs": 5509.69
+        },
+        "job-deep-page": {
+          "requests": 350,
+          "passed": 350,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 3581.77,
+          "p95Ms": 5250.99,
+          "p99Ms": 5385.27,
+          "maxMs": 5461.08
+        },
+        "job-search": {
+          "requests": 340,
+          "passed": 340,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 3292.67,
+          "p95Ms": 4971.14,
+          "p99Ms": 5588.79,
+          "maxMs": 5601.77
+        },
+        "jobs": {
+          "requests": 390,
+          "passed": 390,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2976.42,
+          "p95Ms": 5166.95,
+          "p99Ms": 5330.92,
+          "maxMs": 5469.67
+        },
+        "calendar": {
+          "requests": 370,
+          "passed": 370,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2916.33,
+          "p95Ms": 4424.89,
+          "p99Ms": 4458.12,
+          "maxMs": 4560
+        },
+        "dashboard": {
+          "requests": 80,
+          "passed": 80,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 3744.42,
+          "p95Ms": 4550.45,
+          "p99Ms": 4555.61,
+          "maxMs": 4555.61
+        },
+        "analytics": {
+          "requests": 40,
+          "passed": 40,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1976.91,
+          "p95Ms": 2451.03,
+          "p99Ms": 2452.18,
+          "maxMs": 2452.18
+        },
+        "reports": {
+          "requests": 40,
+          "passed": 40,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1041.89,
+          "p95Ms": 1421.75,
+          "p99Ms": 1440.65,
+          "maxMs": 1440.65
+        },
+        "invoice-deep-page": {
+          "requests": 40,
+          "passed": 40,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 2729.09,
+          "p95Ms": 5248.17,
+          "p99Ms": 5252.84,
+          "maxMs": 5252.84
+        }
+      }
+    },
+    {
+      "name": "recovery-10",
+      "concurrency": 10,
+      "thinkMs": 250,
+      "durationSeconds": 20.262725428000035,
+      "requestsPerSecond": 23.442058754032246,
+      "requests": 475,
+      "passed": 475,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 182.63,
+      "p95Ms": 300.9,
+      "p99Ms": 724.6,
+      "maxMs": 761.58,
+      "routes": {
+        "write-notes": {
+          "requests": 46,
+          "passed": 46,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 79.5,
+          "p95Ms": 159.84,
+          "p99Ms": 180.64,
+          "maxMs": 180.64
+        },
+        "write-status": {
+          "requests": 47,
+          "passed": 47,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 20.81,
+          "p95Ms": 145.23,
+          "p99Ms": 273.74,
+          "maxMs": 273.74
+        },
+        "field": {
+          "requests": 86,
+          "passed": 86,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 177.68,
+          "p95Ms": 230.93,
+          "p99Ms": 490.13,
+          "maxMs": 490.13
+        },
+        "job-detail": {
+          "requests": 90,
+          "passed": 90,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 195.19,
+          "p95Ms": 281.91,
+          "p99Ms": 483.62,
+          "maxMs": 483.62
+        },
+        "job-deep-page": {
+          "requests": 44,
+          "passed": 44,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 240.56,
+          "p95Ms": 300.9,
+          "p99Ms": 743.91,
+          "maxMs": 743.91
+        },
+        "calendar": {
+          "requests": 48,
+          "passed": 48,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 129.72,
+          "p95Ms": 309.8,
+          "p99Ms": 702.46,
+          "maxMs": 702.46
+        },
+        "job-search": {
+          "requests": 43,
+          "passed": 43,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 250.24,
+          "p95Ms": 332.54,
+          "p99Ms": 761.58,
+          "maxMs": 761.58
+        },
+        "jobs": {
+          "requests": 46,
+          "passed": 46,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 226.57,
+          "p95Ms": 379.11,
+          "p99Ms": 739.09,
+          "maxMs": 739.09
+        },
+        "dashboard": {
+          "requests": 10,
+          "passed": 10,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 191.01,
+          "p95Ms": 756.4,
+          "p99Ms": 756.4,
+          "maxMs": 756.4
+        },
+        "analytics": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 90.47,
+          "p95Ms": 118.91,
+          "p99Ms": 118.91,
+          "maxMs": 118.91
+        },
+        "reports": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 165,
+          "p95Ms": 198.67,
+          "p99Ms": 198.67,
+          "maxMs": 198.67
+        },
+        "invoice-deep-page": {
+          "requests": 5,
+          "passed": 5,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 93.27,
+          "p95Ms": 264.62,
+          "p99Ms": 264.62,
+          "maxMs": 264.62
+        }
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "100 real employee credential sign-ins",
+      "passed": true
+    },
+    {
+      "name": "100 employees denied cross-company job reads and writes",
+      "passed": true
+    },
+    {
+      "name": "80 technicians denied another technician assigned job",
+      "passed": true
+    },
+    {
+      "name": "non-pricing roles denied financial analytics",
+      "passed": true
+    },
+    {
+      "name": "10 owner customer exports exact tenant and 1980 active customers",
+      "passed": true
+    },
+    {
+      "name": "100 invoices created through real authenticated server actions with unique numbers",
+      "passed": true
+    },
+    {
+      "name": "signed synthetic settlement: 100 payments, 5 concurrent duplicates each, no overcollection",
+      "passed": true
+    },
+    {
+      "name": "late failures do not reverse successful payments",
+      "passed": true
+    },
+    {
+      "name": "post-pressure: no historical balance corruption",
+      "passed": true
+    }
+  ],
+  "resources": [
+    {
+      "at": "2026-09-27T20:44:35.784Z",
+      "stage": "setup",
+      "cpu": 113,
+      "rssMiB": 387.3125
+    },
+    {
+      "at": "2026-09-27T20:44:37.780Z",
+      "stage": "setup",
+      "cpu": 111,
+      "rssMiB": 389.79296875
+    },
+    {
+      "at": "2026-09-27T20:44:39.780Z",
+      "stage": "setup",
+      "cpu": 109,
+      "rssMiB": 390.28125
+    },
+    {
+      "at": "2026-09-27T20:44:41.784Z",
+      "stage": "setup",
+      "cpu": 108,
+      "rssMiB": 391.12109375
+    },
+    {
+      "at": "2026-09-27T20:44:43.783Z",
+      "stage": "setup",
+      "cpu": 107,
+      "rssMiB": 392.37109375
+    },
+    {
+      "at": "2026-09-27T20:44:45.780Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 392.48828125
+    },
+    {
+      "at": "2026-09-27T20:44:47.787Z",
+      "stage": "setup",
+      "cpu": 109,
+      "rssMiB": 292.984375
+    },
+    {
+      "at": "2026-09-27T20:44:49.779Z",
+      "stage": "setup",
+      "cpu": 108,
+      "rssMiB": 295.14453125
+    },
+    {
+      "at": "2026-09-27T20:44:51.780Z",
+      "stage": "setup",
+      "cpu": 108,
+      "rssMiB": 298.484375
+    },
+    {
+      "at": "2026-09-27T20:44:53.780Z",
+      "stage": "setup",
+      "cpu": 107,
+      "rssMiB": 299.5078125
+    },
+    {
+      "at": "2026-09-27T20:44:55.781Z",
+      "stage": "setup",
+      "cpu": 107,
+      "rssMiB": 302.9296875
+    },
+    {
+      "at": "2026-09-27T20:44:57.781Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 307.67578125
+    },
+    {
+      "at": "2026-09-27T20:44:59.781Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 309.57421875
+    },
+    {
+      "at": "2026-09-27T20:45:01.780Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 310.72265625
+    },
+    {
+      "at": "2026-09-27T20:45:03.780Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 311.44921875
+    },
+    {
+      "at": "2026-09-27T20:45:05.779Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 311.71484375
+    },
+    {
+      "at": "2026-09-27T20:45:07.779Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 311.73046875
+    },
+    {
+      "at": "2026-09-27T20:45:09.780Z",
+      "stage": "setup",
+      "cpu": 106,
+      "rssMiB": 312.21484375
+    },
+    {
+      "at": "2026-09-27T20:45:11.780Z",
+      "stage": "setup",
+      "cpu": 105,
+      "rssMiB": 318.55859375
+    },
+    {
+      "at": "2026-09-27T20:45:13.780Z",
+      "stage": "setup",
+      "cpu": 105,
+      "rssMiB": 324.83203125
+    },
+    {
+      "at": "2026-09-27T20:45:15.782Z",
+      "stage": "setup",
+      "cpu": 105,
+      "rssMiB": 325.01953125
+    },
+    {
+      "at": "2026-09-27T20:45:17.780Z",
+      "stage": "setup",
+      "cpu": 105,
+      "rssMiB": 325.17578125
+    },
+    {
+      "at": "2026-09-27T20:45:19.780Z",
+      "stage": "setup",
+      "cpu": 105,
+      "rssMiB": 325.44140625
+    },
+    {
+      "at": "2026-09-27T20:45:21.780Z",
+      "stage": "setup",
+      "cpu": 104,
+      "rssMiB": 325.60546875
+    },
+    {
+      "at": "2026-09-27T20:45:23.872Z",
+      "stage": "boundaries",
+      "cpu": 107,
+      "rssMiB": 345.34375
+    },
+    {
+      "at": "2026-09-27T20:45:25.801Z",
+      "stage": "boundaries",
+      "cpu": 108,
+      "rssMiB": 414.73828125
+    },
+    {
+      "at": "2026-09-27T20:45:27.789Z",
+      "stage": "boundaries",
+      "cpu": 110,
+      "rssMiB": 467.8828125
+    },
+    {
+      "at": "2026-09-27T20:45:29.899Z",
+      "stage": "boundaries",
+      "cpu": 111,
+      "rssMiB": 496.265625
+    },
+    {
+      "at": "2026-09-27T20:45:31.793Z",
+      "stage": "workflow",
+      "cpu": 112,
+      "rssMiB": 538.77734375
+    },
+    {
+      "at": "2026-09-27T20:45:33.806Z",
+      "stage": "workflow",
+      "cpu": 112,
+      "rssMiB": 557.0859375
+    },
+    {
+      "at": "2026-09-27T20:45:35.796Z",
+      "stage": "workflow",
+      "cpu": 114,
+      "rssMiB": 579.7109375
+    },
+    {
+      "at": "2026-09-27T20:45:37.800Z",
+      "stage": "workflow",
+      "cpu": 116,
+      "rssMiB": 602.17578125
+    },
+    {
+      "at": "2026-09-27T20:45:39.797Z",
+      "stage": "warmup",
+      "cpu": 116,
+      "rssMiB": 639.86328125
+    },
+    {
+      "at": "2026-09-27T20:45:41.798Z",
+      "stage": "warmup",
+      "cpu": 115,
+      "rssMiB": 662.05859375
+    },
+    {
+      "at": "2026-09-27T20:45:43.799Z",
+      "stage": "warmup",
+      "cpu": 114,
+      "rssMiB": 680.828125
+    },
+    {
+      "at": "2026-09-27T20:45:45.800Z",
+      "stage": "warmup",
+      "cpu": 114,
+      "rssMiB": 700.7109375
+    },
+    {
+      "at": "2026-09-27T20:45:47.798Z",
+      "stage": "warmup",
+      "cpu": 113,
+      "rssMiB": 720.66015625
+    },
+    {
+      "at": "2026-09-27T20:45:49.816Z",
+      "stage": "burst-10",
+      "cpu": 113,
+      "rssMiB": 741.828125
+    },
+    {
+      "at": "2026-09-27T20:45:51.807Z",
+      "stage": "burst-10",
+      "cpu": 114,
+      "rssMiB": 765.24609375
+    },
+    {
+      "at": "2026-09-27T20:45:53.815Z",
+      "stage": "burst-10",
+      "cpu": 115,
+      "rssMiB": 793.9921875
+    },
+    {
+      "at": "2026-09-27T20:45:55.803Z",
+      "stage": "burst-10",
+      "cpu": 115,
+      "rssMiB": 819.796875
+    },
+    {
+      "at": "2026-09-27T20:45:57.846Z",
+      "stage": "burst-10",
+      "cpu": 116,
+      "rssMiB": 845.26953125
+    },
+    {
+      "at": "2026-09-27T20:45:59.832Z",
+      "stage": "burst-10",
+      "cpu": 116,
+      "rssMiB": 858.68359375
+    },
+    {
+      "at": "2026-09-27T20:46:01.857Z",
+      "stage": "burst-10",
+      "cpu": 117,
+      "rssMiB": 874.5078125
+    },
+    {
+      "at": "2026-09-27T20:46:03.804Z",
+      "stage": "burst-10",
+      "cpu": 117,
+      "rssMiB": 892.96875
+    },
+    {
+      "at": "2026-09-27T20:46:05.804Z",
+      "stage": "burst-10",
+      "cpu": 118,
+      "rssMiB": 918.671875
+    },
+    {
+      "at": "2026-09-27T20:46:07.812Z",
+      "stage": "burst-10",
+      "cpu": 118,
+      "rssMiB": 945.67578125
+    },
+    {
+      "at": "2026-09-27T20:46:09.811Z",
+      "stage": "burst-25",
+      "cpu": 119,
+      "rssMiB": 977.5390625
+    },
+    {
+      "at": "2026-09-27T20:46:11.815Z",
+      "stage": "burst-25",
+      "cpu": 119,
+      "rssMiB": 1003.62890625
+    },
+    {
+      "at": "2026-09-27T20:46:13.819Z",
+      "stage": "burst-25",
+      "cpu": 119,
+      "rssMiB": 1025.9453125
+    },
+    {
+      "at": "2026-09-27T20:46:15.989Z",
+      "stage": "burst-25",
+      "cpu": 120,
+      "rssMiB": 1042.55859375
+    },
+    {
+      "at": "2026-09-27T20:46:17.839Z",
+      "stage": "burst-25",
+      "cpu": 120,
+      "rssMiB": 1063.22265625
+    },
+    {
+      "at": "2026-09-27T20:46:19.826Z",
+      "stage": "burst-25",
+      "cpu": 120,
+      "rssMiB": 1094.8046875
+    },
+    {
+      "at": "2026-09-27T20:46:21.819Z",
+      "stage": "burst-25",
+      "cpu": 121,
+      "rssMiB": 1104.52734375
+    },
+    {
+      "at": "2026-09-27T20:46:23.820Z",
+      "stage": "burst-25",
+      "cpu": 121,
+      "rssMiB": 1106.8515625
+    },
+    {
+      "at": "2026-09-27T20:46:25.846Z",
+      "stage": "burst-25",
+      "cpu": 122,
+      "rssMiB": 1107.0859375
+    },
+    {
+      "at": "2026-09-27T20:46:27.813Z",
+      "stage": "burst-25",
+      "cpu": 122,
+      "rssMiB": 1106.046875
+    },
+    {
+      "at": "2026-09-27T20:46:29.866Z",
+      "stage": "burst-50",
+      "cpu": 123,
+      "rssMiB": 1113.109375
+    },
+    {
+      "at": "2026-09-27T20:46:31.817Z",
+      "stage": "burst-50",
+      "cpu": 123,
+      "rssMiB": 1117.16015625
+    },
+    {
+      "at": "2026-09-27T20:46:33.844Z",
+      "stage": "burst-50",
+      "cpu": 124,
+      "rssMiB": 1115.56640625
+    },
+    {
+      "at": "2026-09-27T20:46:35.824Z",
+      "stage": "burst-50",
+      "cpu": 124,
+      "rssMiB": 1119.66015625
+    },
+    {
+      "at": "2026-09-27T20:46:37.817Z",
+      "stage": "burst-50",
+      "cpu": 124,
+      "rssMiB": 1121.27734375
+    },
+    {
+      "at": "2026-09-27T20:46:39.826Z",
+      "stage": "burst-50",
+      "cpu": 125,
+      "rssMiB": 1121.3125
+    },
+    {
+      "at": "2026-09-27T20:46:41.817Z",
+      "stage": "burst-50",
+      "cpu": 125,
+      "rssMiB": 1121.8984375
+    },
+    {
+      "at": "2026-09-27T20:46:43.822Z",
+      "stage": "burst-50",
+      "cpu": 125,
+      "rssMiB": 1123.66796875
+    },
+    {
+      "at": "2026-09-27T20:46:45.817Z",
+      "stage": "burst-50",
+      "cpu": 126,
+      "rssMiB": 1123.734375
+    },
+    {
+      "at": "2026-09-27T20:46:47.823Z",
+      "stage": "burst-50",
+      "cpu": 126,
+      "rssMiB": 1123.9375
+    },
+    {
+      "at": "2026-09-27T20:46:49.822Z",
+      "stage": "burst-100",
+      "cpu": 126,
+      "rssMiB": 1127.9921875
+    },
+    {
+      "at": "2026-09-27T20:46:51.822Z",
+      "stage": "burst-100",
+      "cpu": 127,
+      "rssMiB": 1129.06640625
+    },
+    {
+      "at": "2026-09-27T20:46:53.828Z",
+      "stage": "burst-100",
+      "cpu": 127,
+      "rssMiB": 1133.45703125
+    },
+    {
+      "at": "2026-09-27T20:46:55.832Z",
+      "stage": "burst-100",
+      "cpu": 128,
+      "rssMiB": 1133.953125
+    },
+    {
+      "at": "2026-09-27T20:46:58.030Z",
+      "stage": "burst-100",
+      "cpu": 128,
+      "rssMiB": 1134.62890625
+    },
+    {
+      "at": "2026-09-27T20:46:59.830Z",
+      "stage": "burst-100",
+      "cpu": 128,
+      "rssMiB": 1135.58984375
+    },
+    {
+      "at": "2026-09-27T20:47:01.823Z",
+      "stage": "burst-100",
+      "cpu": 128,
+      "rssMiB": 1136.1640625
+    },
+    {
+      "at": "2026-09-27T20:47:03.833Z",
+      "stage": "burst-100",
+      "cpu": 129,
+      "rssMiB": 1136.796875
+    },
+    {
+      "at": "2026-09-27T20:47:05.820Z",
+      "stage": "burst-100",
+      "cpu": 129,
+      "rssMiB": 1136.9140625
+    },
+    {
+      "at": "2026-09-27T20:47:07.835Z",
+      "stage": "burst-100",
+      "cpu": 129,
+      "rssMiB": 1137.4609375
+    },
+    {
+      "at": "2026-09-27T20:47:09.882Z",
+      "stage": "burst-100",
+      "cpu": 129,
+      "rssMiB": 1138.04296875
+    },
+    {
+      "at": "2026-09-27T20:47:11.833Z",
+      "stage": "burst-200",
+      "cpu": 129,
+      "rssMiB": 1138.11328125
+    },
+    {
+      "at": "2026-09-27T20:47:13.866Z",
+      "stage": "burst-200",
+      "cpu": 130,
+      "rssMiB": 1138.13671875
+    },
+    {
+      "at": "2026-09-27T20:47:15.837Z",
+      "stage": "burst-200",
+      "cpu": 130,
+      "rssMiB": 1138.4453125
+    },
+    {
+      "at": "2026-09-27T20:47:17.830Z",
+      "stage": "burst-200",
+      "cpu": 130,
+      "rssMiB": 1155.21484375
+    },
+    {
+      "at": "2026-09-27T20:47:19.827Z",
+      "stage": "burst-200",
+      "cpu": 130,
+      "rssMiB": 1155.4609375
+    },
+    {
+      "at": "2026-09-27T20:47:21.833Z",
+      "stage": "burst-200",
+      "cpu": 131,
+      "rssMiB": 1156.9921875
+    },
+    {
+      "at": "2026-09-27T20:47:24.004Z",
+      "stage": "burst-200",
+      "cpu": 131,
+      "rssMiB": 1157.01171875
+    },
+    {
+      "at": "2026-09-27T20:47:25.840Z",
+      "stage": "burst-200",
+      "cpu": 131,
+      "rssMiB": 1158.640625
+    },
+    {
+      "at": "2026-09-27T20:47:27.863Z",
+      "stage": "burst-200",
+      "cpu": 132,
+      "rssMiB": 1159.01953125
+    },
+    {
+      "at": "2026-09-27T20:47:29.833Z",
+      "stage": "burst-200",
+      "cpu": 132,
+      "rssMiB": 1159.23828125
+    },
+    {
+      "at": "2026-09-27T20:47:31.844Z",
+      "stage": "burst-200",
+      "cpu": 132,
+      "rssMiB": 1163.609375
+    },
+    {
+      "at": "2026-09-27T20:47:33.916Z",
+      "stage": "sustained-100",
+      "cpu": 132,
+      "rssMiB": 1163.67578125
+    },
+    {
+      "at": "2026-09-27T20:47:35.863Z",
+      "stage": "sustained-100",
+      "cpu": 132,
+      "rssMiB": 1163.7265625
+    },
+    {
+      "at": "2026-09-27T20:47:37.891Z",
+      "stage": "sustained-100",
+      "cpu": 132,
+      "rssMiB": 1163.7265625
+    },
+    {
+      "at": "2026-09-27T20:47:39.853Z",
+      "stage": "sustained-100",
+      "cpu": 132,
+      "rssMiB": 1163.76171875
+    },
+    {
+      "at": "2026-09-27T20:47:41.915Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1163.78125
+    },
+    {
+      "at": "2026-09-27T20:47:43.869Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1163.8203125
+    },
+    {
+      "at": "2026-09-27T20:47:45.855Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1163.859375
+    },
+    {
+      "at": "2026-09-27T20:47:47.850Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1163.859375
+    },
+    {
+      "at": "2026-09-27T20:47:49.844Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1163.8984375
+    },
+    {
+      "at": "2026-09-27T20:47:51.913Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1163.8984375
+    },
+    {
+      "at": "2026-09-27T20:47:53.846Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:47:55.858Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:47:57.847Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:47:59.899Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:01.914Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:03.884Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:05.891Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:07.854Z",
+      "stage": "sustained-100",
+      "cpu": 133,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:09.863Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:11.891Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:13.898Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:15.887Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1164.05078125
+    },
+    {
+      "at": "2026-09-27T20:48:17.858Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1165.51171875
+    },
+    {
+      "at": "2026-09-27T20:48:19.888Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1165.59375
+    },
+    {
+      "at": "2026-09-27T20:48:21.855Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1165.59375
+    },
+    {
+      "at": "2026-09-27T20:48:24.031Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1165.64453125
+    },
+    {
+      "at": "2026-09-27T20:48:25.864Z",
+      "stage": "sustained-100",
+      "cpu": 134,
+      "rssMiB": 1165.6796875
+    },
+    {
+      "at": "2026-09-27T20:48:28.151Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.68359375
+    },
+    {
+      "at": "2026-09-27T20:48:29.868Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.68359375
+    },
+    {
+      "at": "2026-09-27T20:48:31.936Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.6875
+    },
+    {
+      "at": "2026-09-27T20:48:33.869Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.6875
+    },
+    {
+      "at": "2026-09-27T20:48:35.882Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.6875
+    },
+    {
+      "at": "2026-09-27T20:48:37.869Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.7109375
+    },
+    {
+      "at": "2026-09-27T20:48:39.876Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.7109375
+    },
+    {
+      "at": "2026-09-27T20:48:41.957Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.7109375
+    },
+    {
+      "at": "2026-09-27T20:48:43.867Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.7109375
+    },
+    {
+      "at": "2026-09-27T20:48:45.871Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.7265625
+    },
+    {
+      "at": "2026-09-27T20:48:47.876Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.734375
+    },
+    {
+      "at": "2026-09-27T20:48:49.867Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.734375
+    },
+    {
+      "at": "2026-09-27T20:48:51.866Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.734375
+    },
+    {
+      "at": "2026-09-27T20:48:53.874Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.328125
+    },
+    {
+      "at": "2026-09-27T20:48:55.877Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.328125
+    },
+    {
+      "at": "2026-09-27T20:48:57.944Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:48:59.875Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:01.921Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:03.902Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:05.880Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:07.885Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:09.892Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:11.879Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:13.887Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:15.889Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:17.880Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.33984375
+    },
+    {
+      "at": "2026-09-27T20:49:20.099Z",
+      "stage": "sustained-100",
+      "cpu": 135,
+      "rssMiB": 1165.36328125
+    },
+    {
+      "at": "2026-09-27T20:49:21.883Z",
+      "stage": "sustained-100",
+      "cpu": 136,
+      "rssMiB": 1165.37890625
+    },
+    {
+      "at": "2026-09-27T20:49:23.881Z",
+      "stage": "sustained-100",
+      "cpu": 136,
+      "rssMiB": 1165.40625
+    },
+    {
+      "at": "2026-09-27T20:49:26.014Z",
+      "stage": "sustained-100",
+      "cpu": 136,
+      "rssMiB": 1165.4375
+    },
+    {
+      "at": "2026-09-27T20:49:27.884Z",
+      "stage": "sustained-100",
+      "cpu": 136,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:29.900Z",
+      "stage": "sustained-100",
+      "cpu": 136,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:31.887Z",
+      "stage": "sustained-100",
+      "cpu": 136,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:33.889Z",
+      "stage": "sustained-100",
+      "cpu": 136,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:35.893Z",
+      "stage": "recovery-10",
+      "cpu": 136,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:37.940Z",
+      "stage": "recovery-10",
+      "cpu": 135,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:39.892Z",
+      "stage": "recovery-10",
+      "cpu": 135,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:41.889Z",
+      "stage": "recovery-10",
+      "cpu": 135,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:43.894Z",
+      "stage": "recovery-10",
+      "cpu": 134,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:45.894Z",
+      "stage": "recovery-10",
+      "cpu": 134,
+      "rssMiB": 1165.53125
+    },
+    {
+      "at": "2026-09-27T20:49:47.893Z",
+      "stage": "recovery-10",
+      "cpu": 134,
+      "rssMiB": 1165.5390625
+    },
+    {
+      "at": "2026-09-27T20:49:49.891Z",
+      "stage": "recovery-10",
+      "cpu": 133,
+      "rssMiB": 1165.5390625
+    },
+    {
+      "at": "2026-09-27T20:49:51.901Z",
+      "stage": "recovery-10",
+      "cpu": 133,
+      "rssMiB": 1165.5390625
+    },
+    {
+      "at": "2026-09-27T20:49:53.895Z",
+      "stage": "recovery-10",
+      "cpu": 133,
+      "rssMiB": 1165.6015625
+    }
+  ],
+  "errors": {},
+  "requests": 9132,
+  "buildId": "W775dyzNTTnNlAIYVq5fs",
+  "fixture": {
+    "user": 100,
+    "organizationMember": 100,
+    "customer": 20000,
+    "job": 180100,
+    "estimate": 180000,
+    "estimateLineItem": 180000,
+    "invoice": 162000,
+    "invoiceLineItem": 162000,
+    "payment": 149540,
+    "jobNote": 162000,
+    "activityEvent": 540000,
+    "organization": 10
+  },
+  "leakedResponses": 0,
+  "finishedAt": "2026-09-27T20:49:55.173Z",
+  "completed": true,
+  "total": {
+    "requests": 9132,
+    "passed": 9132,
+    "failed": 0,
+    "errorRate": 0,
+    "p50Ms": 1747.13,
+    "p95Ms": 5469.67,
+    "p99Ms": 9972.61,
+    "maxMs": 11951.74
+  },
+  "peakServerRssMiB": 1165.734375,
+  "localOnly": true
+}

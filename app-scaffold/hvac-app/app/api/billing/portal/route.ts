@@ -2,12 +2,22 @@ import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
 import { db } from '@/lib/db'
 import { getStripe } from '@/lib/stripe'
+import { billingPortalConfigurationId } from '@/lib/billing-portal'
+import { supportEmail } from '@/lib/support'
 
 export async function POST() {
   // requireAuth (not requireActiveSubscription) so frozen orgs can still reach the portal to pay
-  const { organizationId, organization } = await requireAuth()
+  const { organizationId, organization, role } = await requireAuth()
+  if (role !== 'owner') return NextResponse.json({error: 'Only organization owners can manage billing'}, {status: 403})
 
-  const stripe = getStripe()
+  let configuration: string | undefined
+  try { configuration = billingPortalConfigurationId() } catch {
+    return NextResponse.json({ error: `Billing portal setup needs attention. Please contact support at ${supportEmail}.` }, { status: 503 })
+  }
+  let stripe: ReturnType<typeof getStripe>
+  try { stripe = getStripe() } catch {
+    return NextResponse.json({ error: `Billing is temporarily unavailable. Contact ${supportEmail} for help.` }, { status: 503 })
+  }
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
 
   let { stripeCustomerId } = organization
@@ -16,7 +26,7 @@ export async function POST() {
     const customer = await stripe.customers.create({
       name: organization.name,
       metadata: { organizationId },
-    })
+    }, {idempotencyKey: `fieldclose-customer-${organizationId}`})
     stripeCustomerId = customer.id
     await db.organization.update({
       where: { id: organizationId },
@@ -27,6 +37,7 @@ export async function POST() {
   const session = await stripe.billingPortal.sessions.create({
     customer: stripeCustomerId,
     return_url: `${appUrl}/settings/billing`,
+    ...(configuration ? { configuration } : {}),
   })
 
   return NextResponse.json({ url: session.url })

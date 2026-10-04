@@ -1,98 +1,48 @@
-# Known Issues and Launch Risks
+# Known issues and release gates
 
-Updated assessment as of the completion of all pre-launch work.
+Payment, deployment, recovery, email, reminder and photo status updated on September 27, 2026 (UTC); other rows retain their last observed evidence. Local implementation and a successful build do not establish production readiness. The current self-service work is described in [self-service-launch.md](self-service-launch.md); earlier checks remain historical evidence for their recorded revisions.
 
-## Launch Blockers
+## September 27 everyday-workflow hardening
 
-### Stripe Webhook Must Be Configured
-- **Risk**: High (payment flow)
-- **Status**: Webhook endpoint exists at `/api/stripe/webhook` but requires Stripe Dashboard configuration.
-- **Action required**: Create webhook in Stripe Dashboard pointing to `https://yourdomain.com/api/stripe/webhook` with events: `checkout.session.completed`, `checkout.session.expired`, `account.updated`. Set the signing secret as `STRIPE_WEBHOOK_SECRET`.
+Revision `5f008b0` fixes the crowded calendar, overlapping document saves, review concurrency, CSV imports, invalid numeric/date inputs, two server-rendering page crashes, optional sign-in availability and operational page access. Published as `dpl_BnDL2LfVaGwGgwC1jQo67jACinzy`; candidate and public checks each passed 24 routes plus eight metadata/access checks with exact alias/revision verification. The final 100-employee run passed 107,673 requests, including ten sustained minutes, with zero unexpected failures and 9/9 integrity checks. Local results: 1,455 unit tests, 134 PostgreSQL integration tests, type checking/build, 45 rendered-page/PDF/provider checks, and 23 real-auth photo/reset checks passed. Calendar P95 at 200 local outstanding requests fell from 11.41s to 1.49s in the focused repeat. See [the dated hardening report](evidence/release-hardening-2026-09-27/report.md) for exact scope and current publication evidence.
 
-### Production Environment Variables
-- **Risk**: High
-- **Status**: `.env` is configured for local development. Production deployment requires setting `AUTH_URL`, `APP_URL`, and switching Stripe keys to live mode.
-- **Action required**: See `docs/deploy-vercel.md` for the full checklist.
+**Commercial hosting is an open gate:** the existing Vercel team is on Hobby and its dashboard reports exhausted free CPU resources. The owner declined Vercel on September 27. Do not purchase or upgrade Vercel; compare a non-Vercel host before migration. See [hosting alternatives](hosting-alternatives-2026-09-27.md). Local tests do not close live financial, hosted capacity, actual scheduled invocation, outage/recovery or operator-response gates. Unrestricted customer release remains unapproved.
 
-## Resolved (Previously Blockers)
+## September 27 pressure-test follow-up
 
-### ~~Database Migrations Not Applied~~
-- **Resolved**: Baseline migration created at `prisma/migrations/0001_initial_schema/` and marked as applied. Future schema changes use `prisma migrate dev` / `prisma migrate deploy`.
+The isolated 10-company / 100-employee, three-year data experiment completed 83,522 HTTP requests. A company financial-role authorization defect was fixed in `139de1a` and published as `dpl_BQRjQ3wwSJmmsutkpatewjRRTk97`; this supersedes the deployment row below. Candidate and public checks each passed 24 routes plus eight metadata/access checks; public database health is OK. Full CI, 1,427 unit tests, type checking and build passed. Corrected pressure checks passed, including all 90 restricted employees. Calendar P95 reached 11.41 seconds at 200 simultaneous requests and remains a performance priority. Local testing does not establish hosted capacity or unattended readiness. See [full simulation report](evidence/three-year-simulation-2026-09-27/report.md). Earlier provider evidence and remaining operating gates below remain applicable.
 
-### ~~AUTH_SECRET Must Be Changed~~
-- **Resolved**: A secure secret is set in `.env`. Production deployment should generate a new one.
+## Release evidence and remaining operating gates
 
-### ~~No Email Delivery~~
-- **Resolved**: Email delivery wired into estimate sending, invoice sending, collections automation, and password reset via Resend.
+| Area | Last observed state | Remaining operating checks |
+| --- | --- | --- |
+| Database | Separate `fieldclose` project `lcdammkhivlabinxmzja` connects, has all ten migrations, and has no Prisma schema drift. Both the empty post-migration backup and a later snapshot containing the first owner and authorized internal records restored correctly into separate isolated local databases. Counts, content checksums and schema matched for the populated snapshot. SSL enforcement is enabled. The old connection is preserved as encrypted `LEGACY_DATABASE_URL`. | Continue backup verification as data is introduced. The original project's data remains unknown and unrecovered; do not claim it was migrated or erase its recovery trail. |
+| Deployment | `dpl_npJvDDwFEywEHGLKE2bAtCg6Sf16` (application `06b5b7b`) serves `fieldclose.app` with live payment, Sentry and enabled scheduler configuration. Final candidate and public checks each passed 24 routes plus eight metadata/access checks. Public health is 200/database OK. Full GitHub CI, 1,418 local unit tests, 128 PostgreSQL integration tests, type checking and build passed. Current webhook endpoints reject missing signatures; the earlier nine signed boundary probes remain historical evidence on the unchanged configuration. | Publication does not complete the remaining provider and operating gates. Keep internal verification records clearly labeled and do not send them to real customers. |
+| Payments | Dedicated restricted live key, matching publishable key, verified $49/$99 prices, distinct platform/Connect signing secrets and dedicated FieldClose portal are deployed. Correctly scoped replacement destinations are enabled at `2025-02-24.acacia`; only superseded FieldClose destinations are disabled. Shared-account and concurrent billing regressions pass; nine synthetic signed checks passed on the earlier public deployment with the same signing configuration. Temporary setup-key revocation was UI-confirmed after a fresh Stripe reload on September 27 at 13:29 UTC; the runtime key remains present. | Completed Starter/Pro sandbox Checkouts, period-end portal cancellations and connected-invoice settlement are now verified through actual provider events and isolated local ledger state. Final customer-portal Checkout and simulated Terminal cancellation/collection/capture passed against the final isolated build, with signed provider events, ledger checks and GET-only provider confirmation. Shared cross-channel concurrency tests passed; final deployment is verified. Complete live financial workflows remain unverified; sandbox settlement is not a real charge or bank payout. Revocation evidence is the dashboard state, not an API 401 test; the temporary secret had already been cleared from memory. See [runtime verification](stripe-runtime-verification.md) and [activation steps](live-payments-activation.md). |
+| Email and support | Production is configured to use `FieldClose <noreply@pegrio.com>` on the verified parent-business domain. Resend confirms the single authorized verification email delivered. At 13:37 UTC, the owner reported password recovery completed and fresh authenticated access to the existing workspace was observed on `fieldclose.app/dashboard`. Reset-message contents and provider delivery status were not inspected. Published support links use the designated `pegriollc@gmail.com` inbox. | Estimate and zero-balance invoice delivery were each confirmed once by Resend to the approved internal inbox, with real portal rendering checked. The final canonical $0 invoice shows No payment due without a payment action or internal notes. Isolated real-auth HTTP tests verify reset/session failure paths. Starter invitation delivery remains untested because of the one-seat plan limit; do not bypass it. Establish failure/bounce monitoring and response coverage. Owner-reported recovery does not independently prove reset-email delivery. Dedicated FieldClose sender/alias forwarding remains unverified. |
+| Photos | The private bucket has approved, bucket-scoped Object Read & Write credentials; public managed access remains disabled. At 13:37 UTC, one synthetic 99-byte PNG uploaded through the existing internal job's form and rendered at 32×32 after a full reload. The exact asset's cookie-free application request returned 401 JSON with private/no-store headers and no image. Authenticated retrieval was observed in the browser, without HTTP instrumentation. | Hosted cross-tenant, unassigned-technician, customer-portal and storage-failure checks remain open. All 23 isolated real-auth HTTP checks passed against the built app, including these boundaries and reset-session invalidation; local file-storage evidence remains separate from production R2. See [dated app verification](email-and-photo-storage.md#application-photo-verification--september-27-2026-1337-utc). |
+| Scheduled work and SMS | The final public release captures `SCHEDULED_TASKS_ENABLED=true`; provider cron definitions match that deployment. All three authenticated public routes returned 200 with zero work/errors and unchanged aggregate state after promotion. The earlier controlled candidate delivered exactly one approved email reminder; rerunning sent zero. Its temporary job was returned to an unscheduled draft. Twilio is unconfigured. | Observe actual calendar invocation and missed-run handling; authenticated checks and configured schedules do not prove future execution. Configure SMS only if offered, and assign someone to investigate failures. |
+| Error monitoring | The approved `fieldclose` Sentry project and browser/server routing are deployed. Two synthetic local server errors were received; the first critical alert reached the approved inbox. An included minute-by-minute health monitor is enabled and its GET/HTTP200 test passed; a provider-generated notification test also reached the inbox. | Deliberate hosted/browser hook verification, actual outage/recovery delivery and response coverage remain unverified. Provider test notifications do not prove incident transitions; source maps are unconfigured. See [monitoring evidence](monitoring-and-support.md). |
 
-### ~~No Password Reset Flow~~
-- **Resolved**: Full forgot-password → email → reset-password flow implemented and working.
+Environment changes only affect newly created deployments; existing deployments retain their captured connection. See [the deployment sequence](deployment-guide.md), [Vercel configuration](deploy-vercel.md), and [the recorded release](release-2026-09-26.md).
 
-### ~~No Customer Edit/Delete~~
-- **Resolved**: Customer edit page and soft-delete (with `deletedAt` field) implemented. Deleted customers are hidden from all listings.
+## Current product boundaries
 
-### ~~No CI/CD Pipeline~~
-- **Resolved**: GitHub Actions workflow at `.github/workflows/ci.yml` runs type-check, build, and tests on push/PR to main.
+- **Payment amounts:** portal checkout collects a full invoice amount. Adjusted balances, deposits, and existing estimate payments require deliberate reconciliation; automatic estimate conversion stops when those amounts are present. There is no self-service refund flow in the app.
+- **Accounting:** direct QuickBooks and Xero connections are unavailable. Owner CSV exports cover customer, job, invoice, and payment summaries. They are not a complete workspace backup; exports over 50,000 records fail rather than silently truncate.
+- **Offline work:** only supported job-status and proof-of-work text updates queue locally. Photos, signatures, approvals, payments, and field-view quick actions require connectivity. Verify saved changes after reconnecting; browser storage is not a backup.
+- **Files:** proof-of-work photos support JPG, PNG, and WebP up to 4 MB per file. Storage configuration and access-policy review remain deployment responsibilities.
+- **Membership:** an account uses one workspace context. Invitation acceptance rejects a different recipient email and ambiguous membership in another business. Starter permits one team member; plan and role restrictions still apply.
+- **Trades:** reusable trade profiles personalize examples, wording, and drafts. They do not provide specialized inspection, permit, refrigerant, pesticide, or other regulatory workflows. Representative trade pilots remain necessary.
+- **AI:** generated scope and unpriced draft items require human review and business-set prices. OpenAI was unconfigured in the production preflight; local template fallback is available.
+- **Automation:** provider acceptance is not proof that a message reached an inbox or phone. Appointment reminder recovery does not promise exactly-once external delivery. Keep an operational owner for retries, partial delivery, and provider uncertainty; see [delivery guarantees](auth-entry-hardening.md).
 
-### ~~No Automated Tests~~
-- **Resolved**: Vitest test suite with 24 tests covering validation schemas (customer, estimate, invoice) and portal utilities.
+## Implemented scope and evidence boundaries
 
-## Non-Blockers (Accept for Beta)
+The original scaffold gaps for auth/onboarding, password reset, customer/job workflows, search and pagination on core lists, proof-of-work uploads, scoped access, and estimate-to-invoice conversion have implementation and regression coverage. Document numbers now use organization locking and collision-aware allocation rather than the old unguarded count-based approach. Email status actions and team invitations expose delivery failure and explicit retry.
 
-### Invoice Number Race Condition
-- **Risk**: Low (single-user MVP)
-- **Status**: Invoice and estimate numbers generated via `count + 1` which could race under concurrent requests.
-- **Recommendation**: Acceptable for single-user beta. Switch to database sequence or atomic increment for scale.
+The new public tour, searchable Help Center, plan chooser, paperwork calculator, persistent setup guide, customer import screen, and service-price creation screen are present in the working application. None of these statements certifies the deployed integrations or all possible tenant-access paths. Retain targeted access, concurrency, browser, and operational verification for each release.
 
-### Portal Tokens Not Rate-Limited
-- **Risk**: Low
-- **Status**: Portal token validation has no rate limiting. Brute-force on 64-character hex tokens is computationally infeasible but rate limiting would be defense in depth.
-- **Recommendation**: Add rate limiting to portal routes if traffic warrants it.
+The onboarding follow-up corrects inconsistent note visibility: notes are explicitly internal and excluded from shareable estimate/invoice PDFs, including staff downloads. Stored notes remain available to staff. Regression tests and rendered PDF checks pass locally; actual authorized production emails and customer portals were also checked for absence of internal notes. The earlier protected `7878c6f` candidate used the previous behavior. The owner-authorized sample estimate was retained as a draft during that historical check; a later explicitly authorized internal delivery sent it once to the designated test inbox. Internal notes were absent from the actual email and portal content.
 
-### Accounting Sync Is Placeholder
-- **Risk**: Low
-- **Status**: Accounting sync creates local tracking records but does not call real QuickBooks/Xero APIs.
-- **Recommendation**: Implement real provider API integration when a customer needs it.
-
-### No Pagination on List Pages
-- **Risk**: Low
-- **Status**: Customer, job, estimate, and invoice lists load all records. Fine for beta.
-- **Recommendation**: Add pagination when any list exceeds ~100 records.
-
-### No Search/Filter
-- **Risk**: Low
-- **Status**: No search or filter functionality on list pages.
-- **Recommendation**: Add as usage grows and users need to find specific records.
-
-### No IP Address in Audit Logs
-- **Risk**: Low
-- **Status**: Audit log model accepts `ipAddress` but server actions don't capture it.
-- **Recommendation**: Extract from request headers in middleware if needed.
-
-### Single Organization Per User
-- **Risk**: Low
-- **Status**: Users can only belong to one organization. Team invite flow exists but is basic.
-- **Recommendation**: Sufficient for target market (1-5 technician shops).
-
-## Architecture Notes
-
-### What's Solid
-- Multi-tenant isolation enforced on every query (organizationId scoping)
-- Webhook-confirmed payment truth (never optimistic)
-- Server-side validation on all writes (Zod)
-- Admin role enforcement on sensitive actions
-- Audit trail for admin/security events
-- Security headers via middleware
-- Portal token-based access with expiration and revocation
-- AI draft with graceful fallback when no API key configured
-- Email delivery for estimates, invoices, collections, and password reset
-- Soft-delete for customers preserving referential integrity
-- CI/CD pipeline with type-check, build, and test
-- Proper migration history for database schema
-
-### Post-Launch Improvements
-- Real accounting provider integration (QuickBooks/Xero)
-- Pagination and search on list pages
-- Rate limiting on portal and auth routes
-- File upload for proof-of-work photos
-- SMS notifications for collections
+Custom public funnel events are disabled unless `NEXT_PUBLIC_ENABLE_FUNNEL_EVENTS=true`. The current Vercel account remains Hobby while a non-Vercel replacement is evaluated; custom-event collection requires an eligible plan and explicit enablement. Public page views are separate from custom events. No paid acquisition or outbound marketing campaign was launched as part of this work.

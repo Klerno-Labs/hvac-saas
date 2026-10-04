@@ -33,7 +33,6 @@ type EstimatePdfProps = {
   customerPhone: string | null
   scopeOfWork: string | null
   terms: string | null
-  notes: string | null
   lineItems: { name: string; description: string | null; quantity: number; unitPriceCents: number; lineTotalCents: number }[]
   subtotalCents: number
   taxCents: number
@@ -113,13 +112,6 @@ export function EstimatePdf(p: EstimatePdfProps) {
           <View style={s.box}>
             <Text style={s.label}>Terms</Text>
             <Text>{p.terms}</Text>
-          </View>
-        ) : null}
-
-        {p.notes ? (
-          <View style={s.box}>
-            <Text style={s.label}>Notes</Text>
-            <Text>{p.notes}</Text>
           </View>
         ) : null}
 

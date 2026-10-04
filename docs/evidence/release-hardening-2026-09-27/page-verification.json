@@ -1,0 +1,235 @@
+{
+  "checkedAt": "2026-09-27T17:24:07.302Z",
+  "scope": "Actual compiled HTTP rendering with a real owner login; separate from browser interaction tests",
+  "results": [
+    {
+      "path": "/dashboard",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/field",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/customers",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/customers/new",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/customers/cmuk2pr0p00023en2nfwhot36",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/customers/cmuk2pr0p00023en2nfwhot36/edit",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/customers/cmuk2pr0p00023en2nfwhot36/equipment/new",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/jobs",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/jobs?day=2026-09-28",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/jobs/new",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/jobs/cmuk2pxz800083en243uadknx",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/jobs/cmuk2pxz800083en243uadknx/proof-of-work",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/calendar",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/calendar?month=2026-02",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/calendar?month=garbage",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/estimates",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/estimates/new?jobId=cmuk2pxz800083en243uadknx",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/estimates/cmuk2q5yj000f3en2jt9dnzru",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/invoices",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/invoices/new?jobId=cmuk2pxz800083en243uadknx",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/invoices/cmuk2qljz000x3en2xbevox5a",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/pricebook",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/pricebook/new",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/pricebook/import",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/inventory",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/inventory/new",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/inventory/cmuk2tss5001m3en289067aaf",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/inventory/cmuk2tss5001m3en289067aaf/edit",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/reminders",
+      "status": 200,
+      "ok": true,
+      "correctReminderDay": true
+    },
+    {
+      "path": "/reminders/new",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/recurring",
+      "status": 200,
+      "ok": true,
+      "correctRecurringDay": true
+    },
+    {
+      "path": "/recurring/new",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/recurring/cmuk2xa6s00213en2ji1ilrrq",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/reports",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/settings",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/settings/billing",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/settings/audit",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/settings/referrals",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/settings/import",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/setup",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/setup/business",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/reviews/[synthetic-token]",
+      "status": 200,
+      "ok": true,
+      "privateHeaders": true
+    },
+    {
+      "path": "/api/invoices/[fixture]/pdf",
+      "status": 200,
+      "ok": true,
+      "bytes": 2838
+    },
+    {
+      "path": "/api/estimates/[fixture]/pdf",
+      "status": 200,
+      "ok": true,
+      "bytes": 2856
+    },
+    {
+      "check": "unconfigured-GitHub-not-offered",
+      "ok": true
+    }
+  ]
+}

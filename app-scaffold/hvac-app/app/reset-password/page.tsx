@@ -24,14 +24,12 @@ function ResetForm() {
 
     const formData = new FormData(e.currentTarget)
     formData.set('token', token)
-    const result = await resetPassword(formData)
-
-    if (result.success) {
-      setDone(true)
-    } else {
-      setError(result.error)
-    }
-    setLoading(false)
+    try {
+      const result = await resetPassword(formData)
+      if (result.success) setDone(true)
+      else setError(result.error)
+    } catch { setError('The connection was interrupted. Try logging in with your new password, or request another reset link.') }
+    finally { setLoading(false) }
   }
 
   if (!token) {
@@ -51,7 +49,7 @@ function ResetForm() {
     return (
       <div className="text-center">
         <p className="text-sm text-primary mb-4 p-3 bg-primary/10 rounded-lg">
-          Password reset successfully!
+          Password reset successfully. Please log in again on your devices.
         </p>
         <Link href="/login" className="text-sm text-primary hover:underline">
           Log in with your new password
@@ -63,12 +61,12 @@ function ResetForm() {
   return (
     <>
       {error && (
-        <div className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">{error}</div>
+        <div role="alert" className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">{error}</div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="password">New password</Label>
-          <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
+          <Input id="password" name="password" type="password" required minLength={8} maxLength={72} autoComplete="new-password" />
         </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? 'Resetting...' : 'Reset password'}

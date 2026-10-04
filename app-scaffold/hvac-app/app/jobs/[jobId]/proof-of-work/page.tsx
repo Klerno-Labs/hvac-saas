@@ -1,3 +1,5 @@
+import { jobAccessWhere } from '@/lib/mutation-access'
+import { photoReadUrl } from '@/lib/photo-url'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
@@ -6,11 +8,12 @@ import { ProofOfWorkForm } from './form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function ProofOfWorkPage({ params }: { params: Promise<{ jobId: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
+  const { organizationId } = context
   const { jobId } = await params
 
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
+    where: { id: jobId, ...jobAccessWhere(context) },
     include: { customer: true, assets: { orderBy: { createdAt: 'asc' } } },
   })
 
@@ -49,7 +52,7 @@ export default async function ProofOfWorkPage({ params }: { params: Promise<{ jo
             }}
             existingAssets={job.assets.map((a) => ({
               id: a.id,
-              fileUrl: a.fileUrl,
+              fileUrl: photoReadUrl(a),
               fileType: a.fileType,
             }))}
           />

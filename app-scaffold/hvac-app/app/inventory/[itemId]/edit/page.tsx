@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import { EditInventoryForm } from './form'
@@ -8,7 +8,7 @@ export default async function EditInventoryItemPage({
 }: {
   params: Promise<{ itemId: string }>
 }) {
-  const { organizationId } = await requireAuth()
+  const { organizationId } = await requirePageCapability('manageInventory')
   const { itemId } = await params
 
   const item = await db.inventoryItem.findFirst({

@@ -1,11 +1,12 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { nextDocumentNumber } from '@/lib/document-number'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createEstimateSchema } from '@/lib/validations/estimate'
 import { generateEstimateDraft } from '@/lib/ai'
-import { canDo } from '@/lib/permissions'
+import { getTradeProfile } from '@/lib/trades'
 
 type CreateEstimateResult =
   | { success: true; estimateId: string }
@@ -20,24 +21,9 @@ export async function createEstimate(input: {
   lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number }[]
   aiDraftUsed: boolean
 }): Promise<CreateEstimateResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-  if (!canDo(membership.role, 'editPricing')) {
-    return { success: false, error: 'You do not have permission to create estimates' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('editPricing')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { userId, organizationId } = access.context
 
   const parsed = createEstimateSchema.safeParse(input)
   if (!parsed.success) {
@@ -68,11 +54,9 @@ export async function createEstimate(input: {
   const taxCents = data.taxCents
   const totalCents = subtotalCents + taxCents
 
-  // Generate estimate number
-  const count = await db.estimate.count({ where: { organizationId } })
-  const estimateNumber = `EST-${String(count + 1).padStart(4, '0')}`
-
-  const estimate = await db.estimate.create({
+  const estimate = await db.$transaction(async tx => {
+    const estimateNumber = await nextDocumentNumber(tx, organizationId, 'estimate')
+    return tx.estimate.create({
     data: {
       organizationId,
       jobId: data.jobId,
@@ -89,6 +73,7 @@ export async function createEstimate(input: {
         create: lineItemsWithTotals,
       },
     },
+  })
   })
 
   await trackEvent({
@@ -108,22 +93,9 @@ type AiDraftResult =
   | { success: false; error: string }
 
 export async function generateAiDraft(jobId: string): Promise<AiDraftResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-  if (!canDo(membership.role, 'editPricing')) {
-    return { success: false, error: 'You do not have permission to create estimates' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('editPricing')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, membership, userId, organizationId } = access.context
 
   const job = await db.job.findFirst({
     where: { id: jobId, organizationId },
@@ -149,6 +121,7 @@ export async function generateAiDraft(jobId: string): Promise<AiDraftResult> {
         city: job.customer.city,
         state: job.customer.state,
       },
+      getTradeProfile(membership.organization.tradeType),
     )
 
     await trackEvent({

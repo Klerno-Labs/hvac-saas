@@ -1,120 +1,52 @@
-# Launch Checklist
+# FieldClose release checklist
 
-Pre-launch validation checklist for the HVAC SaaS application. Each item should be verified before allowing real users.
+Current local verification and remaining commercial/operating gates are recorded in [the September 27 hardening report](evidence/release-hardening-2026-09-27/report.md). Earlier evidence is retained in `readiness-2026-09-26.md`. The boxes below are production release gates, not claims that these services have been exercised.
 
-## Environment Configuration
+## Deployment and recovery
 
-- [ ] `DATABASE_URL` set to production PostgreSQL instance
-- [ ] `AUTH_SECRET` set to unique production value (NOT the default)
-- [ ] `AUTH_URL` set to production URL (e.g., `https://app.yourdomain.com`)
-- [ ] `APP_URL` set to production URL
-- [ ] `STRIPE_SECRET_KEY` set to live Stripe key (or test key for beta)
-- [ ] `STRIPE_WEBHOOK_SECRET` set from Stripe Dashboard
-- [ ] `STRIPE_PUBLISHABLE_KEY` set
-- [ ] `COLLECTIONS_CRON_SECRET` set to a secure random value
-- [ ] `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` set if using GitHub OAuth
-- [ ] No `.env` files committed to repository
-- [ ] No insecure default values remain in production env
+- [ ] Confirm which host serves the marketing site and which serves the application. The existing app uses fieldclose.app; verify a separate application origin before moving marketing to the root.
+- [ ] Configure canonical origins, HTTPS, authentication secret, database connection and allowed callback URLs. Keep credentials out of source control.
+- [ ] Rehearse all migrations on a representative sanitized production copy, including `0005_reconcile_product_schema` and `0006_estimate_invoice_link`.
+- [ ] Demonstrate database backup restoration and a compatible application rollback.
+- [ ] Run unit/integration tests, typecheck, production build and dependency audit in CI.
+- [ ] Verify monitoring, alert ownership and support contacts. `/api/health` must reflect actual readiness; do not silence failures.
 
-## Database
+## First complete customer journey
 
-- [ ] Production database provisioned and accessible
-- [ ] `npx prisma migrate deploy` run successfully
-- [ ] Database backups configured
-- [ ] Connection pool settings appropriate for expected load
+- [ ] Signup → trade selection → organization → customer → scheduled/assigned job.
+- [ ] Price an estimate explicitly, send to an authorized test recipient, approve from a phone, and create the linked draft invoice.
+- [ ] Verify scope, quantity, prices, tax and customer information before sending. Repeated conversion must open the same invoice.
+- [ ] Confirm email success/failure states and explicit resend behavior.
+- [ ] Test decline, invalid/expired/revoked portal tokens and keyboard-only approval.
+- [ ] Confirm draft estimates and invoices cannot be downloaded through customer tokens.
+- [ ] Confirm a technician can see their assigned work and customer-facing documents but cannot access unrelated jobs, cost catalogs, invitation tokens, billing controls or organization-wide financial reports.
+- [ ] Test invitation acceptance, wrong-account rejection, password reset, staff removal and session behavior on representative devices.
 
-## Build and Deploy
+## Payment and subscription truth
 
-- [ ] `npm run build` completes without errors
-- [ ] Application starts and serves requests
-- [ ] HTTPS configured (via platform or reverse proxy)
-- [ ] Custom domain configured if applicable
+- [ ] In Stripe test mode, validate Connect onboarding, account capability changes, configured prices, fees and billing portal recovery.
+- [ ] Verify signed webhook delivery for Checkout, PaymentIntent, subscription and connected-account events used by the configured endpoints.
+- [ ] Confirm a completed but unpaid asynchronous checkout does not mark an invoice paid. Only a confirmed, matching payment can do so.
+- [ ] Exercise successful payment, delayed success/failure, repeated/out-of-order delivery and webhook retry after a transient database failure.
+- [ ] Verify amount, currency, account and organization mismatches remain unsettled and alert an operator.
+- [ ] Test card collection through Terminal with real supported test hardware if enabled.
+- [ ] Validate trial expiry, canceled subscription replacement, read-only organizations, and recovery through owner billing settings.
+- [ ] Confirm payment redirects and manual staff edits cannot mark invoices paid; paid/void documents cannot be reopened.
 
-## Auth Verification
+## Field operations and trade pilots
 
-- [ ] Signup creates user and redirects to login
-- [ ] Login with credentials works
-- [ ] Login with GitHub OAuth works (if configured)
-- [ ] Unauthenticated users redirected to /login
-- [ ] Users without org redirected to /onboarding
-- [ ] Org creation works and creates owner membership
+- [ ] Verify uploads with configured private storage and authorized test files.
+- [ ] Test recurring generation, membership pause, month-end dates and scheduled execution in the deployed environment.
+- [ ] Verify inventory use and insufficient-stock feedback during simultaneous real-device work.
+- [ ] Test offline disconnect/reconnect, retries, logout and account switching before advertising offline completeness.
+- [ ] Verify SMS/email delivery, appointment reminders and collections schedules with authorized recipients.
+- [ ] Confirm business summaries match a known dataset, including more than ten invoices and due-today dates.
+- [ ] Run representative HVAC operator tasks and record completion/errors/time before broad release; repeat for each new trade.
 
-## Core Workflow Verification
+## Explicit product boundaries
 
-- [ ] Customer creation works with validation
-- [ ] Job creation linked to customer works
-- [ ] Estimate creation from job works
-- [ ] AI draft generation works (or falls back to template if no OPENAI_API_KEY)
-- [ ] Proof of work recording sets job to completed
-- [ ] Invoice creation from job works (seeds from estimate if available)
-- [ ] Invoice status updates work (draft → sent → paid/void)
-- [ ] Dashboard shows real metrics
-- [ ] Reminders creation and status update work
-
-## Stripe / Payment Verification
-
-- [ ] Organization can start Stripe Connect onboarding
-- [ ] Stripe onboarding callback refreshes connection state
-- [ ] Payment link creation works for sent invoices
-- [ ] Stripe Checkout session loads for customer
-- [ ] Webhook endpoint receives and processes events:
-  - [ ] `checkout.session.completed` marks invoice as paid
-  - [ ] `checkout.session.expired` clears checkout session
-  - [ ] `account.updated` refreshes org connection state
-- [ ] Invoice NOT marked paid from redirect alone (only from webhook)
-
-## Collections Verification
-
-- [ ] Collections policy can be enabled/configured in settings
-- [ ] `/api/collections/run` creates attempts for overdue invoices
-- [ ] Paid invoices are excluded from collections
-- [ ] Paused invoices are excluded from collections
-- [ ] Collections cron endpoint requires bearer token in production
-
-## Portal Verification
-
-- [ ] Portal link generation works from customer detail page
-- [ ] Portal link opens customer dashboard with correct data
-- [ ] Portal shows only customer-visible data (no internal notes)
-- [ ] Portal invoice detail shows line items and totals
-- [ ] Portal payment button creates checkout session
-- [ ] Portal does not expose other customers' data
-- [ ] Expired/revoked tokens return 404
-
-## Accounting Sync Verification
-
-- [ ] Accounting provider can be configured in settings
-- [ ] Manual sync creates sync records
-- [ ] Sync status visible in reports page
-
-## Admin / Audit Verification
-
-- [ ] Settings changes require owner role
-- [ ] Non-owner users see access denied for sensitive actions
-- [ ] Audit log records for settings changes
-- [ ] Audit log viewer accessible to owners only
-- [ ] Audit log does not expose secrets in metadata
-
-## Security
-
-- [ ] Security headers present on responses (X-Content-Type-Options, X-Frame-Options)
-- [ ] Webhook signature verification working
-- [ ] No secrets in client-side code or error responses
-- [ ] Portal routes isolated from admin routes
-- [ ] Cross-tenant data isolation verified (create two orgs, verify no leakage)
-
-## Monitoring
-
-- [ ] Health check endpoint returns 200: `GET /api/health`
-- [ ] Health check reports database connectivity
-- [ ] Health check reports env configuration status
-- [ ] Application error logging visible in platform (Vercel/Railway logs)
-- [ ] Stripe webhook delivery monitored in Stripe Dashboard
-
-## Post-Launch
-
-- [ ] First real user can complete full signup → invoice → payment flow
-- [ ] Webhook events processing correctly for real payments
-- [ ] Audit log capturing real admin actions
-- [ ] Collections automation running on schedule (if enabled)
-- [ ] Health check monitoring set up (e.g., Uptime Robot, Better Uptime)
+- Real QuickBooks/Xero sync is unavailable; CSV export is the supported handoff. Do not advertise an integration as complete.
+- Estimates with deposits or existing payments cannot automatically convert until those amounts can be reconciled safely. Partial balances also need a deliberate checkout/reconciliation flow.
+- Shared trade profiles do not certify specialized permits, chemical/treatment logs, refrigerant logs, inspection forms or trade regulations.
+- Verify privacy, retention, refund, security and support promises against implemented operations and vendor configuration before release.
+- Do not claim enterprise feature parity, load capacity, uptime, a quality percentile or superior business outcomes without supporting evidence.

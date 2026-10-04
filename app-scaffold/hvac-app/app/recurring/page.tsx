@@ -1,4 +1,5 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { formatDateOnly } from '@/lib/format'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,7 +8,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function RecurringJobsPage() {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('manageJobs')
 
   const recurringJobs = await db.recurringJob.findMany({
     where: { organizationId },
@@ -88,7 +89,7 @@ function RecurringJobCard({ recurringJob }: { recurringJob: RecurringJobWithCust
   const isDue = recurringJob.isActive && new Date(recurringJob.nextDueDate) <= new Date()
 
   return (
-    <Link href={`/recurring/${recurringJob.id}` as never} className="no-underline text-inherit">
+    <div>
       <Card className={cn(
         'hover:shadow-md transition-shadow cursor-pointer',
         !recurringJob.isActive && 'opacity-60',
@@ -98,7 +99,7 @@ function RecurringJobCard({ recurringJob }: { recurringJob: RecurringJobWithCust
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-sm">{recurringJob.title}</span>
+                <Link href={`/recurring/${recurringJob.id}` as never} className="font-semibold text-sm hover:underline">{recurringJob.title}</Link>
                 <Badge variant={recurringJob.isActive ? 'default' : 'secondary'}>
                   {recurringJob.isActive ? 'Active' : 'Inactive'}
                 </Badge>
@@ -107,7 +108,7 @@ function RecurringJobCard({ recurringJob }: { recurringJob: RecurringJobWithCust
               </div>
 
               <div className="flex gap-3 text-xs text-muted-foreground">
-                <span>Next due: {new Date(recurringJob.nextDueDate).toLocaleDateString()}</span>
+                <span>Next due: {formatDateOnly(recurringJob.nextDueDate)}</span>
                 {recurringJob.lastGeneratedAt && (
                   <span>Last generated: {new Date(recurringJob.lastGeneratedAt).toLocaleDateString()}</span>
                 )}
@@ -117,7 +118,6 @@ function RecurringJobCard({ recurringJob }: { recurringJob: RecurringJobWithCust
                 <Link
                   href={`/customers/${recurringJob.customer.id}` as never}
                   className="text-primary hover:underline"
-                  onClick={(e) => e.stopPropagation()}
                 >
                   {recurringJob.customer.firstName} {recurringJob.customer.lastName || ''}
                 </Link>
@@ -126,6 +126,6 @@ function RecurringJobCard({ recurringJob }: { recurringJob: RecurringJobWithCust
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </div>
   )
 }

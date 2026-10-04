@@ -1,174 +1,217 @@
-import { requireActiveSubscription } from '@/lib/session'
-import { db } from '@/lib/db'
-import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { GettingStartedChecklist } from '@/app/components/getting-started-checklist'
+import { requireActiveSubscription } from "@/lib/session";
+import { db } from "@/lib/db";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ArrowUpRight, Plus, CalendarDays, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { GettingStartedChecklist } from "@/app/components/getting-started-checklist";
+import { getBusinessSummary, formatMoney } from "@/lib/business-summary";
+import { canDo } from "@/lib/permissions";
+import { isDueDatePast } from "@/lib/format";
+import { getActivationReadiness } from "@/lib/activation-readiness";
 
 export default async function DashboardPage() {
-  const { organization, organizationId } = await requireActiveSubscription()
-
-  const [
-    customerCount,
-    activeJobCount,
-    completedJobCount,
-    outstandingInvoices,
-    overdueInvoices,
-    stalledJobCount,
-  ] = await Promise.all([
-    db.customer.count({ where: { organizationId } }),
-    db.job.count({ where: { organizationId, status: { in: ['draft', 'scheduled', 'in_progress'] } } }),
-    db.job.count({ where: { organizationId, status: 'completed' } }),
-    db.invoice.findMany({
-      where: { organizationId, status: { notIn: ['paid', 'void'] } },
-      include: { customer: true },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    }),
-    db.invoice.findMany({
-      where: { organizationId, status: 'sent', dueDate: { lt: new Date() } },
-      include: { customer: true },
-      take: 5,
-    }),
-    db.job.count({
+  const { organization, organizationId, role } =
+    await requireActiveSubscription();
+  if (!canDo(role, "viewAllJobs")) redirect("/field");
+  const canViewMoney = canDo(role, "editPricing");
+  const now = new Date();
+  const [summary, upcomingJobs, readiness] = await Promise.all([
+    canViewMoney
+      ? getBusinessSummary(organizationId, now, organization.timezone)
+      : null,
+    db.job.findMany({
       where: {
         organizationId,
-        status: 'in_progress',
-        updatedAt: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+        status: { in: ["scheduled", "in_progress"] },
       },
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        assignedTo: { select: { name: true } },
+      },
+      orderBy: [
+        { status: "asc" },
+        { scheduledFor: { sort: "asc", nulls: "first" } },
+      ],
+      take: 6,
     }),
-  ])
-
-  const totalOutstandingCents = outstandingInvoices.reduce((sum, inv) => sum + inv.outstandingCents, 0)
-
+    canDo(role, "manageBilling")
+      ? getActivationReadiness({ organizationId, organization, role }, now)
+      : null,
+  ]);
+  const paymentSetup = readiness?.steps.find((step) => step.id === "payments");
   return (
-    <main className="max-w-[1200px] mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">{organization.name}</p>
+    <main className="workspace-page">
+      <div className="workspace-heading">
+        <div>
+          <p className="workspace-kicker">{organization.name}</p>
+          <h1>Keep the work moving.</h1>
+          <p>Your jobs, next steps, and the details that need attention.</p>
+        </div>
+        {canDo(role, "manageJobs") && (
+          <Link href="/jobs/new" className="button">
+            <Plus size={18} aria-hidden="true" />
+            New job
+          </Link>
+        )}
       </div>
-
-      {organization.onboardingStatus !== 'completed' && (
-        <GettingStartedChecklist organizationId={organizationId} />
+      {readiness &&
+        organization.onboardingStatus !== "completed" && (
+          <GettingStartedChecklist readiness={readiness} />
+        )}
+      {summary && (
+        <section className="business-metrics" aria-label="Business overview">
+          <Link href="/reports">
+            <span>Collected · last 30 days</span>
+            <strong>{formatMoney(summary.collectedCents)}</strong>
+            <small>
+              {summary.collectedCount} confirmed payment
+              {summary.collectedCount === 1 ? "" : "s"}
+            </small>
+          </Link>
+          <Link href="/invoices">
+            <span>Outstanding</span>
+            <strong>{formatMoney(summary.receivableCents)}</strong>
+            <small>
+              {summary.receivableCount} sent invoice
+              {summary.receivableCount === 1 ? "" : "s"} with a balance
+            </small>
+          </Link>
+          <Link href="/invoices?status=overdue">
+            <span>Overdue</span>
+            <strong>{formatMoney(summary.overdueCents)}</strong>
+            <small>
+              {summary.overdueCount} invoice
+              {summary.overdueCount === 1 ? " needs" : "s need"} attention
+            </small>
+          </Link>
+        </section>
       )}
-
-      {/* Metric cards — 3 headline numbers */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Link href="/customers" className="no-underline text-inherit">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Customers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{customerCount}</p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/jobs" className="no-underline text-inherit">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active jobs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{activeJobCount}</p>
-              <p className="text-xs text-muted-foreground mt-1">{completedJobCount} completed</p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/invoices" className="no-underline text-inherit">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className={`text-3xl font-bold ${totalOutstandingCents > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                {formatCents(totalOutstandingCents)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {outstandingInvoices.length} invoice{outstandingInvoices.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Stripe status — single narrow card, not a row */}
-      <div className="mb-8 max-w-xs">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Stripe</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant={organization.stripeChargesEnabled ? 'default' : 'secondary'}>
-              {organization.stripeChargesEnabled ? 'Connected' : 'Not connected'}
-            </Badge>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Weekly habit nudge — stalled jobs (no update in 3+ days) */}
-      {stalledJobCount > 0 && (
-        <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-          {stalledJobCount} job{stalledJobCount !== 1 ? 's' : ''} in progress with no update in 3+ days.{' '}
-          <Link href="/jobs" className="underline font-medium">Review jobs →</Link>
+      {paymentSetup && !paymentSetup.complete && organization.onboardingStatus === "completed" && (
+        <div className="workspace-notice">
+          <div>
+            <strong>Customer payments · {paymentSetup.status}</strong>
+            <p>
+              {paymentSetup.description}
+            </p>
+          </div>
+          <Link
+            href="/setup#payments"
+            className="inline-flex items-center gap-2 font-semibold underline underline-offset-4"
+          >
+            Payment settings
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
         </div>
       )}
-
-      {/* Needs attention — overdue invoices only */}
-      {overdueInvoices.length > 0 && (
-        <Card className="mb-6 border-l-4 border-l-amber-500">
-          <CardHeader>
-            <CardTitle className="text-lg">Needs attention</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="workspace-columns">
+        <section className="workspace-panel">
+          <div className="panel-heading">
             <div>
-              <p className="text-sm font-semibold mb-2">Overdue invoices</p>
-              {overdueInvoices.map((inv) => (
-                <Link key={inv.id} href={`/invoices/${inv.id}` as never} className="no-underline text-inherit">
-                  <div className="flex justify-between py-2 border-b cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded">
-                    <span className="text-sm">#{inv.invoiceNumber} — {inv.customer.firstName} {inv.customer.lastName || ''}</span>
-                    <span className="text-sm font-semibold text-amber-600">{formatCents(inv.outstandingCents)}</span>
-                  </div>
-                </Link>
-              ))}
+              <p className="workspace-kicker">On the calendar</p>
+              <h2>Scheduled & active</h2>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Outstanding invoices — full width */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Outstanding invoices</CardTitle>
-          <Link href="/invoices" className="text-xs text-muted-foreground hover:underline">View all</Link>
-        </CardHeader>
-        <CardContent>
-          {outstandingInvoices.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No outstanding invoices.</p>
+            <Link href="/calendar" aria-label="View full calendar">
+              <CalendarDays size={20} />
+            </Link>
+          </div>
+          {upcomingJobs.length ? (
+            <ul className="work-list">
+              {upcomingJobs.map((job) => (
+                <li key={job.id}>
+                  <Link href={`/jobs/${job.id}` as never}>
+                    <div>
+                      <strong>{job.title}</strong>
+                      <p>
+                        {job.customer.firstName} {job.customer.lastName} ·{" "}
+                        {job.assignedTo?.name || "Unassigned"}
+                      </p>
+                    </div>
+                    <div className="work-list-end">
+                      <time dateTime={job.scheduledFor?.toISOString()}>
+                        {job.scheduledFor?.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          timeZone: "UTC",
+                        })}
+                      </time>
+                      <Badge variant="outline">
+                        {job.status.replaceAll("_", " ")}
+                      </Badge>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           ) : (
-            outstandingInvoices.map((inv) => (
-              <Link key={inv.id} href={`/invoices/${inv.id}` as never} className="no-underline text-inherit">
-                <div className="flex justify-between items-center py-2 border-b cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded">
-                  <div>
-                    <span className="text-sm font-medium">#{inv.invoiceNumber}</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {inv.customer.firstName} {inv.customer.lastName || ''}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{formatCents(inv.outstandingCents)}</span>
-                    <Badge variant="outline" className="text-[10px]">{inv.status}</Badge>
-                  </div>
-                </div>
+            <div className="workspace-empty">
+              <CalendarDays size={28} aria-hidden="true" />
+              <h3>Your schedule has room.</h3>
+              <p>Schedule a job to see the next visit here.</p>
+              <Link href="/jobs">
+                Review jobs <ArrowRight size={16} aria-hidden="true" />
               </Link>
-            ))
+            </div>
           )}
-        </CardContent>
-      </Card>
+          <Link href="/jobs" className="panel-footer">
+            View all jobs <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </section>
+        {summary && (
+          <section className="workspace-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="workspace-kicker">From work to paid</p>
+                <h2>Open invoices</h2>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {summary.receivableCount} total
+              </span>
+            </div>
+            {summary.recentInvoices.length ? (
+              <ul className="work-list">
+                {summary.recentInvoices.map((inv) => (
+                  <li key={inv.id}>
+                    <Link href={`/invoices/${inv.id}` as never}>
+                      <div>
+                        <strong>{inv.invoiceNumber}</strong>
+                        <p>
+                          {inv.customer.firstName} {inv.customer.lastName}
+                        </p>
+                      </div>
+                      <div className="work-list-end">
+                        <strong>{formatMoney(inv.outstandingCents)}</strong>
+                        <Badge variant="outline">
+                          {inv.status === "overdue" ||
+                          (inv.dueDate &&
+                            isDueDatePast(
+                              inv.dueDate,
+                              now,
+                              organization.timezone,
+                            ))
+                            ? "Overdue"
+                            : "Sent"}
+                        </Badge>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="workspace-empty">
+                <h3>No outstanding invoices.</h3>
+                <p>Sent invoices with unpaid balances will appear here.</p>
+                <Link href="/estimates">
+                  Review estimates <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </div>
+            )}
+            <Link href="/invoices" className="panel-footer">
+              View all invoices <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </section>
+        )}
+      </div>
     </main>
-  )
-}
-
-function formatCents(cents: number): string {
-  return '$' + (cents / 100).toFixed(2)
+  );
 }

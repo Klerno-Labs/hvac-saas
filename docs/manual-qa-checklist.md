@@ -1,6 +1,6 @@
 # Manual QA Checklist
 
-Structured manual testing plan for the HVAC SaaS application. Cover each section before release.
+Structured manual testing plan for the HVAC SaaS application. Cover each section before release. These unchecked boxes are a reusable test plan, not the executed result ledger. See [dated verification](evidence/release-hardening-2026-09-27/report.md) for actual results and remaining gates.
 
 ## Test Conventions
 - Test as **User A** (owner of Org A) unless noted otherwise
@@ -96,7 +96,7 @@ Structured manual testing plan for the HVAC SaaS application. Cover each section
 - [ ] Invoice list shows only org's invoices
 
 ### Invoice Status
-- [ ] Status can be updated (draft → sent → paid/void/overdue)
+- [ ] Draft invoices can be issued; valid void/overdue transitions are enforced. Paid status requires a matching verified payment webhook and cannot be selected manually.
 - [ ] Only draft invoices can be edited
 - [ ] Outstanding amount updates correctly per status
 
@@ -155,7 +155,7 @@ Structured manual testing plan for the HVAC SaaS application. Cover each section
 ### Collections Policy
 - [ ] Settings → Collections section visible
 - [ ] Enable/disable toggle works
-- [ ] Day thresholds validated (second > first > final)
+- [ ] Day thresholds validated (final > second > first)
 - [ ] Only owners can modify collections policy
 
 ### Automation
@@ -195,13 +195,13 @@ Structured manual testing plan for the HVAC SaaS application. Cover each section
 
 ---
 
-## Feature 9: Accounting Sync and Reporting
+## Feature 9: Accounting Export and Reporting
 
 ### Accounting Settings
 - [ ] Settings → Accounting section visible
-- [ ] Select provider and mark as connected
-- [ ] "Sync now" processes records
-- [ ] Sync results displayed
+- [ ] QuickBooks/Xero connection and sync are clearly unavailable; attempts cannot mark a provider connected
+- [ ] Owner CSV export succeeds with the expected records and safe cell escaping
+- [ ] Exports above the documented limit return a clear error instead of truncating
 - [ ] Only owners can modify accounting settings
 
 ### Reports
@@ -209,7 +209,7 @@ Structured manual testing plan for the HVAC SaaS application. Cover each section
 - [ ] Receivables breakdown by status accurate
 - [ ] Overdue invoices listed with days overdue
 - [ ] Recent payments shown
-- [ ] Sync status visible when accounting connected
+- [ ] Accounting availability language does not imply a live provider connection
 - [ ] Empty org shows safe empty states
 
 ---

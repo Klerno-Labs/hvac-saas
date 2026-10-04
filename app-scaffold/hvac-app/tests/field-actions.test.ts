@@ -17,7 +17,7 @@ describe('field actions', () => {
     vi.mocked(auth).mockResolvedValue({ user: { id: 'u1', name: 'Tech One' } } as never)
 
     const { db } = await import('@/lib/db')
-    vi.mocked(db.organizationMember.findFirst).mockResolvedValue({ organizationId: 'org1' } as never)
+    vi.mocked(db.organizationMember.findFirst).mockResolvedValue({ organizationId: 'org1', role: 'owner', organization: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null },} as never)
     vi.mocked(db.job.findFirst).mockResolvedValue({
       id: 'j1',
       status: 'scheduled',
@@ -27,7 +27,7 @@ describe('field actions', () => {
     vi.mocked(db.jobNote.upsert).mockResolvedValue({} as never)
 
     const { trackEvent } = await import('@/lib/events')
-    vi.mocked(trackEvent).mockResolvedValue(undefined)
+    vi.mocked(trackEvent).mockResolvedValue({} as never)
   })
 
   afterEach(() => {
@@ -57,6 +57,18 @@ describe('field actions', () => {
       )
     })
 
+    it('limits technicians to their immutable user assignment', async () => {
+      const { db } = await import('@/lib/db')
+      const { updateFieldJobStatus } = await import('@/app/field/actions')
+      vi.mocked(db.organizationMember.findFirst).mockResolvedValue({ organizationId: 'org1', role: 'technician', organization: {
+        subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null,
+      } } as never)
+      vi.mocked(db.job.findFirst).mockResolvedValue(null)
+      expect((await updateFieldJobStatus('someone-elses-job', 'completed')).success).toBe(false)
+      expect(db.job.findFirst).toHaveBeenCalledWith({ where: { id: 'someone-elses-job', organizationId: 'org1', assignedUserId: 'u1' } })
+      expect(db.job.update).not.toHaveBeenCalled()
+    })
+
     it('rejects an invalid status without touching the DB', async () => {
       const { updateFieldJobStatus } = await import('@/app/field/actions')
       const { db } = await import('@/lib/db')
@@ -74,7 +86,7 @@ describe('field actions', () => {
       const { updateFieldJobStatus } = await import('@/app/field/actions')
       const result = await updateFieldJobStatus('j1', 'in_progress')
 
-      expect(result).toEqual({ success: false, error: 'Not authenticated' })
+      expect(result).toEqual({ success: false, error: 'You must be logged in' })
     })
   })
 

@@ -1,0 +1,53 @@
+{
+  "run": "ovh-session-revocation",
+  "startedAt": "2026-09-27T22:40:46.406Z",
+  "scope": "Isolated compiled app, real Auth.js logins and HTTP actions; synthetic locally signed payment events, no provider calls",
+  "phases": [],
+  "checks": [
+    {
+      "name": "two real employee credential sign-ins",
+      "passed": true
+    },
+    {
+      "name": "role changes take effect on the next request",
+      "passed": true
+    },
+    {
+      "name": "password changes invalidate an existing session on the next request",
+      "passed": true
+    }
+  ],
+  "resources": [],
+  "errors": {},
+  "requests": 11,
+  "buildId": "Jv0FoWu5yS3WAcOVUJ6j5",
+  "fixture": {
+    "user": 100,
+    "organizationMember": 100,
+    "customer": 20000,
+    "job": 180100,
+    "estimate": 180000,
+    "estimateLineItem": 180000,
+    "invoice": 162000,
+    "invoiceLineItem": 162000,
+    "payment": 149540,
+    "jobNote": 162000,
+    "activityEvent": 540000,
+    "organization": 10
+  },
+  "leakedResponses": 0,
+  "finishedAt": "2026-09-27T22:40:51.778Z",
+  "completed": true,
+  "total": {
+    "requests": 11,
+    "passed": 11,
+    "failed": 0,
+    "errorRate": 0,
+    "p50Ms": 35.72,
+    "p95Ms": 916.31,
+    "p99Ms": 916.31,
+    "maxMs": 916.31
+  },
+  "peakServerRssMiB": 0,
+  "localOnly": true
+}

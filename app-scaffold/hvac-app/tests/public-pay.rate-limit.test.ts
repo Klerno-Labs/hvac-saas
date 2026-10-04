@@ -17,17 +17,16 @@ vi.mock('@/lib/stripe', () => ({
   getStripe: vi.fn(),
 }))
 
-vi.mock('@/lib/db', () => ({
-  db: {
-    organization: { findUnique: vi.fn() },
-    invoice: { findFirst: vi.fn(), update: vi.fn() },
-    payment: { findUnique: vi.fn(), create: vi.fn() },
-  },
+vi.mock('@/lib/invoice-payment-attempt', () => ({
+  reserveInvoicePaymentAttempt: vi.fn(),
+  saveInvoicePaymentProviderId: vi.fn().mockResolvedValue(true),
+  releaseInvoicePaymentLease: vi.fn().mockResolvedValue(true),
+  retireInvoicePaymentAttempt: vi.fn(),
 }))
 
 const { validatePortalToken } = await import('@/lib/portal')
 const { getStripe } = await import('@/lib/stripe')
-const { db } = await import('@/lib/db')
+const { reserveInvoicePaymentAttempt } = await import('@/lib/invoice-payment-attempt')
 const { createPortalCheckoutSession } = await import(
   '@/app/portal/[token]/invoices/[invoiceId]/payment-action'
 )
@@ -43,30 +42,19 @@ describe('public-pay (createPortalCheckoutSession) rate limit', () => {
       customerName: 'Jane Doe',
       organizationName: 'Acme HVAC',
     })
-    ;(db.organization.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
-      id: 'org-1',
-      stripeConnectedAccountId: 'acct_1',
-      stripeChargesEnabled: true,
-      platformFeePercent: 2.9,
-    })
-    ;(db.invoice.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
-      id: 'inv-1',
-      invoiceNumber: 'INV-1',
-      status: 'sent',
-      totalCents: 5000,
-      taxCents: 0,
-      customer: { email: null },
-      lineItems: [],
-      stripeCheckoutSessionId: null,
-    })
-    ;(db.invoice.update as ReturnType<typeof vi.fn>).mockResolvedValue({})
-    ;(db.payment.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null)
-    ;(db.payment.create as ReturnType<typeof vi.fn>).mockResolvedValue({})
+    vi.mocked(reserveInvoicePaymentAttempt).mockResolvedValue({
+      success: true,
+      invoice: { totalCents: 5000, outstandingCents: 5000 },
+      attempt: { id: 'attempt-1', invoiceId: 'inv-1', organizationId: 'org-1',
+        connectedAccountId: 'acct_1', amountCents: 5000, params: {}, providerId: null },
+    } as never)
 
     const sessionsCreate = vi.fn().mockResolvedValue({
       id: 'cs_test_1',
       url: 'https://checkout.example.com/cs/test',
       payment_intent: 'pi_test_1',
+      mode: 'payment', currency: 'usd', amount_total: 5000, status: 'open', payment_status: 'unpaid',
+      metadata: { invoiceId: 'inv-1', organizationId: 'org-1' },
     })
     ;(getStripe as ReturnType<typeof vi.fn>).mockReturnValue({
       checkout: { sessions: { create: sessionsCreate, retrieve: vi.fn() } },
@@ -107,4 +95,17 @@ describe('public-pay (createPortalCheckoutSession) rate limit', () => {
     const other = await createPortalCheckoutSession('token-B', 'inv-1')
     expect(other.success).toBe(true)
   })
+  it('uses the durable invoice attempt as the stable Stripe idempotency key', async () => {
+    await createPortalCheckoutSession('token-A', 'inv-1')
+    expect(getStripe().checkout.sessions.create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({idempotencyKey: 'invoice-payment:attempt-1', stripeAccount: 'acct_1'}))
+  })
+  it.each(['complete', 'unavailable'])('does not create another checkout when the previous session is %s', async state => {
+    vi.mocked(reserveInvoicePaymentAttempt).mockResolvedValue({ success: true, invoice: { totalCents: 5000, outstandingCents: 5000 }, attempt: { id: 'attempt-1', invoiceId: 'inv-1', organizationId: 'org-1', connectedAccountId: 'acct_1', amountCents: 5000, params: {}, providerId: 'cs_old' } } as never)
+    const stripe = getStripe()
+    if (state === 'complete') vi.mocked(stripe.checkout.sessions.retrieve).mockResolvedValue({status:'complete'} as never)
+    else vi.mocked(stripe.checkout.sessions.retrieve).mockRejectedValue(new Error('network failed'))
+    expect((await createPortalCheckoutSession('token-A','inv-1')).success).toBe(false)
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled()
+  })
+
 })

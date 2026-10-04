@@ -1,0 +1,27 @@
+[Unit]
+Description=FieldClose production scheduled task %i
+After=fieldclose-production.service
+Requires=fieldclose-production.service
+
+[Service]
+Type=oneshot
+User=fieldclose-prod
+Group=fieldclose-prod
+EnvironmentFile=/etc/fieldclose-production/scheduler.env
+RuntimeDirectory=fieldclose-scheduler-%i
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/bin/flock --nonblock --conflict-exit-code 75 /run/fieldclose-scheduler-%i/task.lock /usr/bin/node /usr/local/lib/fieldclose/run-scheduled.mjs %i
+Restart=no
+TimeoutStartSec=330
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+IPAddressDeny=any
+IPAddressAllow=localhost
+MemoryMax=128M
+TasksMax=32
+StandardOutput=journal
+StandardError=journal

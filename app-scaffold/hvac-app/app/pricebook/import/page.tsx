@@ -1,8 +1,8 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import ImportForm from './form'
 
 export default async function PriceBookImportPage() {
-  await requireActiveSubscription()
+  await requirePageCapability('manageBilling')
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">

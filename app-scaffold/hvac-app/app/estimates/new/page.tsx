@@ -1,11 +1,13 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
+import { getEstimateCatalog } from '@/lib/estimate-catalog'
 import { notFound, redirect } from 'next/navigation'
 import { EstimateForm } from './form'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
 export default async function NewEstimatePage({ searchParams }: { searchParams: Promise<{ jobId?: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requirePageCapability('editPricing')
+  const { organizationId } = context
   const { jobId } = await searchParams
 
   if (!jobId) {
@@ -17,11 +19,7 @@ export default async function NewEstimatePage({ searchParams }: { searchParams: 
       where: { id: jobId, organizationId },
       include: { customer: true },
     }),
-    db.inventoryItem.findMany({
-      where: { organizationId },
-      select: { id: true, name: true, description: true, category: true, sellPriceCents: true },
-      orderBy: { name: 'asc' },
-    }),
+    getEstimateCatalog(context),
   ])
 
   if (!job) {

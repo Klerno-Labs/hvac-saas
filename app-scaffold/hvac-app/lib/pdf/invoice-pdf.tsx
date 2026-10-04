@@ -1,3 +1,4 @@
+import { formatDateOnly } from '@/lib/format'
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 
 const s = StyleSheet.create({
@@ -16,7 +17,6 @@ const s = StyleSheet.create({
   totals: { marginTop: 8, alignItems: 'flex-end' },
   totalRow: { flexDirection: 'row', width: 200, justifyContent: 'space-between', paddingVertical: 3 },
   grandTotal: { fontSize: 14, fontWeight: 'bold', color: '#0f766e', borderTop: 1, borderColor: '#0f766e', paddingTop: 6, marginTop: 4 },
-  notes: { marginTop: 20, padding: 12, backgroundColor: '#f8fafc', fontSize: 10 },
   footer: { position: 'absolute', bottom: 30, left: 40, right: 40, textAlign: 'center', color: '#94a3b8', fontSize: 9 },
 })
 
@@ -38,7 +38,6 @@ type InvoicePdfProps = {
   taxCents: number
   totalCents: number
   outstandingCents: number
-  notes: string | null
 }
 
 export function InvoicePdf(p: InvoicePdfProps) {
@@ -70,7 +69,7 @@ export function InvoicePdf(p: InvoicePdfProps) {
             {p.dueDate ? (
               <>
                 <Text style={[s.label, { marginTop: 6 }]}>Due</Text>
-                <Text>{new Date(p.dueDate).toLocaleDateString()}</Text>
+                <Text>{formatDateOnly(p.dueDate)}</Text>
               </>
             ) : null}
           </View>
@@ -121,13 +120,6 @@ export function InvoicePdf(p: InvoicePdfProps) {
             </View>
           ) : null}
         </View>
-
-        {p.notes ? (
-          <View style={s.notes}>
-            <Text style={s.label}>Notes</Text>
-            <Text>{p.notes}</Text>
-          </View>
-        ) : null}
 
         <Text style={s.footer}>Thank you for your business.</Text>
       </Page>

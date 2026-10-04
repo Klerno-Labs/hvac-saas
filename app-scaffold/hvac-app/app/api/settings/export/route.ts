@@ -16,11 +16,12 @@ import {
 export const runtime = 'nodejs'
 
 const TAKE_CEILING = 50_000
+const PRIVATE_HEADERS = { 'Cache-Control': 'private, no-store' }
 
 export async function GET(req: Request) {
   const admin = await requireAdmin()
   if (!admin.authorized) {
-    return NextResponse.json({ error: admin.error }, { status: 403 })
+    return NextResponse.json({ error: admin.error }, { status: 403, headers: PRIVATE_HEADERS })
   }
   const { organizationId, userId, userEmail } = admin.context
 
@@ -32,34 +33,45 @@ export async function GET(req: Request) {
   if (!isExportEntity(entityParam)) {
     return NextResponse.json(
       { error: `Unknown entity. Valid: ${EXPORT_ENTITIES.join(', ')}` },
-      { status: 400 },
+      { status: 400, headers: PRIVATE_HEADERS },
     )
   }
   const entity: ExportEntity = entityParam
 
   if (format !== 'csv' && format !== 'json') {
-    return NextResponse.json({ error: 'format must be csv or json' }, { status: 400 })
+    return NextResponse.json({ error: 'format must be csv or json' }, { status: 400, headers: PRIVATE_HEADERS })
   }
 
   type FlatRow = Record<string, string | number | null>
-  let flat: FlatRow[]
+  let rows: Record<string, unknown>[]
+  let flatten: (row: Record<string, unknown>) => FlatRow
+  const query = { take: TAKE_CEILING + 1, orderBy: { id: 'asc' as const } }
 
   if (entity === 'customers') {
-    const rows = await db.customer.findMany({
+    rows = await db.customer.findMany({
       where: { organizationId, ...(includeDeleted ? {} : { deletedAt: null }) },
-      take: TAKE_CEILING,
+      ...query,
     })
-    flat = rows.map((r) => flattenCustomer(r as unknown as Record<string, unknown>))
+    flatten = flattenCustomer
   } else if (entity === 'jobs') {
-    const rows = await db.job.findMany({ where: { organizationId }, take: TAKE_CEILING })
-    flat = rows.map((r) => flattenJob(r as unknown as Record<string, unknown>))
+    rows = await db.job.findMany({ where: { organizationId }, ...query })
+    flatten = flattenJob
   } else if (entity === 'invoices') {
-    const rows = await db.invoice.findMany({ where: { organizationId }, take: TAKE_CEILING })
-    flat = rows.map((r) => flattenInvoice(r as unknown as Record<string, unknown>))
+    rows = await db.invoice.findMany({ where: { organizationId }, ...query })
+    flatten = flattenInvoice
   } else {
-    const rows = await db.payment.findMany({ where: { organizationId }, take: TAKE_CEILING })
-    flat = rows.map((r) => flattenPayment(r as unknown as Record<string, unknown>))
+    rows = await db.payment.findMany({ where: { organizationId }, ...query })
+    flatten = flattenPayment
   }
+
+  if (rows.length > TAKE_CEILING) {
+    return NextResponse.json({
+      error: `This export exceeds the ${TAKE_CEILING.toLocaleString('en-US')}-record limit. No partial file was created. Contact support for a complete export.`,
+      code: 'EXPORT_TOO_LARGE',
+      limit: TAKE_CEILING,
+    }, { status: 413, headers: PRIVATE_HEADERS })
+  }
+  const flat = rows.map(flatten)
 
   await logAudit({
     organizationId,
@@ -73,7 +85,7 @@ export async function GET(req: Request) {
   if (format === 'json') {
     return new NextResponse(JSON.stringify(flat), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...PRIVATE_HEADERS },
     })
   }
 
@@ -85,7 +97,8 @@ export async function GET(req: Request) {
   return new NextResponse(csv, {
     status: 200,
     headers: {
-      'Content-Type': 'text/csv',
+      ...PRIVATE_HEADERS,
+      'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
     },
   })

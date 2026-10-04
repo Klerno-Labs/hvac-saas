@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isPrivateRoute } from '@/lib/private-routes'
 
 /**
  * Production hardening middleware.
@@ -22,22 +23,12 @@ export function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Public, indexable pages — allow CDN caching so Google can crawl efficiently
-  const isPublicPage =
-    pathname === '/' ||
-    pathname === '/signup' ||
-    pathname === '/login' ||
-    pathname === '/forgot-password' ||
-    pathname === '/reset-password' ||
-    pathname === '/terms' ||
-    pathname === '/privacy' ||
-    pathname === '/refund-policy'
-
-  if (isPublicPage) {
-    // s-maxage lets Vercel's CDN cache the page; stale-while-revalidate serves
-    // fresh content on the next request. This overrides NextAuth's default
-    // no-store which was preventing Google from indexing the site.
-    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+  // Private app and token-bearing responses must never be shared or indexed.
+  // Public pages retain Next.js static caching; authorization stays in page/API guards.
+  if (isPrivateRoute(pathname)) {
+    response.headers.set('Cache-Control', 'private, no-store')
+    response.headers.set('Referrer-Policy', 'no-referrer')
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
   }
 
   // For API routes, ensure JSON content type on errors

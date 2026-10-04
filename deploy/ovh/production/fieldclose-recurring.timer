@@ -1,0 +1,11 @@
+[Unit]
+Description=FieldClose daily recurring work at 02:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 UTC
+AccuracySec=1s
+Persistent=false
+Unit=fieldclose-scheduled@recurring.service
+
+[Install]
+WantedBy=timers.target

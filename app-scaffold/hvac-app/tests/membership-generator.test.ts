@@ -45,3 +45,15 @@ describe('calculateNextDueDate', () => {
     expect(input.getTime()).toBe(original)
   })
 })
+
+describe('month-end visit scheduling', () => {
+  it('clamps January 31 to February instead of skipping a month', () => {
+    expect(calculateNextDueDate(new Date('2025-01-31T14:00:00Z'), 'monthly').toISOString()).toBe('2025-02-28T14:00:00.000Z')
+  })
+  it('preserves leap February when available', () => {
+    expect(calculateNextDueDate(new Date('2024-01-31T14:00:00Z'), 'monthly').toISOString()).toBe('2024-02-29T14:00:00.000Z')
+  })
+  it('clamps annual leap-day anniversaries', () => {
+    expect(calculateNextDueDate(new Date('2024-02-29T14:00:00Z'), 'annual').toISOString()).toBe('2025-02-28T14:00:00.000Z')
+  })
+})

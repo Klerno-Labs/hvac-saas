@@ -1,0 +1,167 @@
+{
+  "url": "https://fieldclose.app",
+  "verifiedAt": "2026-09-27T16:46:21.762Z",
+  "binding": {
+    "deploymentId": "dpl_BQRjQ3wwSJmmsutkpatewjRRTk97",
+    "revision": "139de1a57a64b6de0612399037e230d943ec6ca7",
+    "readyState": "READY",
+    "checkedAt": "2026-09-27T16:46:17.689Z"
+  },
+  "results": [
+    {
+      "path": "/",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "newDesign": true
+    },
+    {
+      "path": "/pricing",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/demo",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/faq",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/tools/paperwork-calculator",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/help",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/help/not-an-article",
+      "status": 404,
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "path": "/help/getting-started",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/sitemap.xml",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/setup",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true,
+      "privateCache": true
+    },
+    {
+      "path": "/settings/import",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true,
+      "privateCache": true
+    },
+    {
+      "path": "/pricebook/new",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true
+    },
+    {
+      "path": "/privacy",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "privateCache": true
+    },
+    {
+      "path": "/signup",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/terms",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/social-image",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/dashboard",
+      "status": 307,
+      "expected": 307,
+      "ok": true,
+      "redirectToLogin": true
+    },
+    {
+      "path": "/api/portal/invalid/photos/no-such-asset",
+      "status": 404,
+      "expected": 404,
+      "ok": true,
+      "privateCache": true
+    },
+    {
+      "path": "/api/photos/no-such-asset",
+      "status": 401,
+      "expected": 401,
+      "ok": true,
+      "privateCache": true
+    },
+    {
+      "path": "/api/stripe/webhook",
+      "status": 400,
+      "expected": 400,
+      "ok": true
+    },
+    {
+      "path": "/api/appointments/reminders",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "path": "/api/health",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "databaseHealthy": true
+    },
+    {
+      "path": "/api/collections/run",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    }
+  ]
+}
