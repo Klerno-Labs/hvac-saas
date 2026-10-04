@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findFirst: vi.fn(), create: vi.fn(), setCookie: vi.fn(), hash: vi.fn(), trackEvent: vi.fn() }))
+const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findFirst: vi.fn(), create: vi.fn(), setCookie: vi.fn(), hash: vi.fn(), trackEvent: vi.fn(), headers: vi.fn() }))
 vi.mock('@/lib/db', () => ({ db: { $transaction: mocks.transaction, user: { findFirst: mocks.findFirst, create: mocks.create } } }))
 vi.mock('@/lib/events', () => ({ trackEvent: mocks.trackEvent }))
-vi.mock('next/headers', () => ({ cookies: async () => ({ set: mocks.setCookie }) }))
+vi.mock('next/headers', () => ({ cookies: async () => ({ set: mocks.setCookie }), headers: mocks.headers }))
 vi.mock('bcryptjs', () => ({ default: { hash: mocks.hash } }))
 import { signup } from '@/app/signup/actions'
 
@@ -22,6 +22,7 @@ beforeEach(() => {
   mocks.findFirst.mockResolvedValue(null)
   mocks.create.mockResolvedValue({ id: 'user-1' })
   mocks.hash.mockResolvedValue('hashed-test-password')
+  mocks.headers.mockResolvedValue(new Headers())
 })
 
 describe('signup trade handoff', () => {
@@ -69,5 +70,40 @@ describe('signup trade handoff', () => {
     expect((await signup(form('electrical'))).success).toBe(false)
     expect(mocks.setCookie).not.toHaveBeenCalled()
     expect(mocks.create).not.toHaveBeenCalled()
+  })
+
+  it('attaches only validated coarse context to the successful signup event', async () => {
+    const input = form('hvac')
+    input.set('acquisition', JSON.stringify({ version: 1, landingPath: '/resources', source: 'search_google', capturedAt: Date.now() - 1000 }))
+    expect(await signup(input)).toEqual({ success: true })
+    expect(mocks.trackEvent).toHaveBeenCalledWith({ userId: 'user-1', eventName: 'user_signed_up', entityType: 'user', entityId: 'user-1', metadataJson: { acquisition: { version: 1, landingPath: '/resources', source: 'search_google' } } }, expect.any(Object))
+    expect(mocks.setCookie.mock.calls.map(([name]) => name)).toEqual(['fc_trade', 'fc_plan'])
+  })
+
+  it.each(['{', 'x'.repeat(513), JSON.stringify({ version: 1, landingPath: '/portal/secret', source: 'social', capturedAt: Date.now() }), JSON.stringify({ version: 1, landingPath: '/resources', source: 'social', capturedAt: Date.now(), email: 'private@example.test' })])('ignores malformed attribution without changing signup: %s', async acquisition => {
+    const input = form('plumbing'); input.set('acquisition', acquisition)
+    expect(await signup(input)).toEqual({ success: true })
+    expect(mocks.trackEvent.mock.calls[0][0]).not.toHaveProperty('metadataJson')
+  })
+
+  it.each(['dnt', 'sec-gpc'])('honors server privacy header %s even if a context is submitted', async header => {
+    mocks.headers.mockResolvedValue(new Headers({ [header]: '1' }))
+    const input = form('hvac'); input.set('acquisition', JSON.stringify({ version: 1, landingPath: '/', source: 'social', capturedAt: Date.now() - 1000 }))
+    expect(await signup(input)).toEqual({ success: true })
+    expect(mocks.trackEvent.mock.calls[0][0]).not.toHaveProperty('metadataJson')
+  })
+
+  it('does not fail signup when optional request context is unavailable', async () => {
+    mocks.headers.mockRejectedValue(new Error('Unavailable'))
+    const input = form('hvac'); input.set('acquisition', JSON.stringify({ version: 1, landingPath: '/', source: 'social', capturedAt: Date.now() - 1000 }))
+    expect(await signup(input)).toEqual({ success: true })
+    expect(mocks.trackEvent.mock.calls[0][0]).not.toHaveProperty('metadataJson')
+  })
+
+  it('does not record an attributed conversion for existing accounts', async () => {
+    mocks.findFirst.mockResolvedValue({ id: 'existing-user' })
+    const input = form('hvac'); input.set('acquisition', JSON.stringify({ version: 1, landingPath: '/', source: 'social', capturedAt: Date.now() - 1000 }))
+    expect((await signup(input)).success).toBe(false)
+    expect(mocks.trackEvent).not.toHaveBeenCalled()
   })
 })

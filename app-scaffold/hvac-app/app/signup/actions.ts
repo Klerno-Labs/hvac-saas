@@ -3,9 +3,10 @@
 import { db } from "@/lib/db";
 import { trackEvent } from "@/lib/events";
 import { signupSchema } from "@/lib/validations/auth";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { isTradeId } from "@/lib/trades";
+import { parseSignupAcquisition, type AcquisitionMetadata } from "@/lib/acquisition-attribution";
 
 type SignupResult = { success: true } | { success: false; error: string };
 
@@ -22,6 +23,18 @@ export async function signup(formData: FormData): Promise<SignupResult> {
   }
 
   const { name, email, password } = parsed.data;
+
+  // Optional, untrusted measurement. It must never change account creation or entitlements.
+  let acquisition: AcquisitionMetadata | null = null;
+  const acquisitionInput = formData.get("acquisition");
+  if (typeof acquisitionInput === "string" && acquisitionInput.length <= 512) {
+    try {
+      const requestHeaders = await headers();
+      if (requestHeaders.get("dnt") !== "1" && requestHeaders.get("sec-gpc") !== "1") {
+        acquisition = parseSignupAcquisition(acquisitionInput);
+      }
+    } catch { /* Ignore unavailable request context or malformed attribution. */ }
+  }
 
   // Persist referral code from form (passed via hidden input) into a cookie
   // that survives until onboarding completes
@@ -65,6 +78,7 @@ export async function signup(formData: FormData): Promise<SignupResult> {
           eventName: "user_signed_up",
           entityType: "user",
           entityId: created.id,
+          ...(acquisition ? { metadataJson: { acquisition } } : {}),
         },
         tx,
       );

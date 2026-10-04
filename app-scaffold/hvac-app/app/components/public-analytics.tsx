@@ -7,11 +7,13 @@ import {
   sanitizedPublicEventUrl,
 } from "@/lib/public-funnel";
 import { trackPublicFunnel } from "@/lib/track-public-funnel";
+import { captureBrowserAcquisition } from "@/lib/acquisition-attribution-browser";
 
 // Portal URLs are bearer credentials. Never transmit them to analytics.
 export function PublicAnalytics() {
   const pathname = usePathname();
   const isPublic = isPublicFunnelPath(pathname);
+  useEffect(() => { captureBrowserAcquisition(); }, [pathname]);
   useEffect(() => {
     if (!isPublic) return;
     function click(event: MouseEvent) {

@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <PublicHeader />
       <article className="max-w-3xl mx-auto px-4 py-16 prose prose-slate dark:prose-invert">
         <h1>Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: September 26, 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: October 4, 2026</p>
 
         <h2>1. Overview</h2>
         <p>
@@ -87,6 +87,9 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>8. Cookies</h2>
+        <p>
+          On selected public pages, we keep the first public landing page and a broad source category (such as search, social, another referral, or direct/unknown) in your browser tab&apos;s session storage for up to 30 minutes. We do not keep the referring URL, query parameters, search terms, campaign text, or form entries in this context. No visit is sent to a separate analytics service by this feature. If you create an account during that period, we save the landing page and source category with the account-creation event so we can understand which resources lead to signups and business setup. That saved information is linked to your account and follows the account-record retention described above. This browser context expires within 30 minutes, and successful signup clears it. We skip and clear this browser context when Do Not Track or Global Privacy Control is enabled. This is approximate attribution, not a record of your browsing history.
+        </p>
         <p>
           We use essential cookies for authentication (session token) and security (CSRF protection). We do not use third-party tracking cookies or advertising networks. On public product, pricing, tour, calculator and help pages, Vercel Analytics may collect page views and fixed interaction events, such as opening the tour or clicking signup. Our event payloads exclude form entries, help search text, customer records and URL queries or fragments. These events are disabled when the browser signals Do Not Track or Global Privacy Control.
         </p>

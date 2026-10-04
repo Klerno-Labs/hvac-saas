@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signup } from './actions'
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getTradeProfile, isTradeId } from '@/lib/trades'
+import { browserSignupAcquisition, clearBrowserAcquisition } from '@/lib/acquisition-attribution-browser'
 
 function SignupInner() {
   const router = useRouter()
@@ -22,6 +23,8 @@ function SignupInner() {
   const submitting = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [acquisition, setAcquisition] = useState('')
+  useEffect(() => { setAcquisition(browserSignupAcquisition()) }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -31,11 +34,15 @@ function SignupInner() {
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
+    const currentAcquisition = browserSignupAcquisition()
+    if (currentAcquisition) formData.set('acquisition', currentAcquisition)
+    else formData.delete('acquisition')
     let saved = false
     try {
       const result = await signup(formData)
 
       if (result.success) {
+        clearBrowserAcquisition()
         saved = true
         router.push(`/login?registered=true${invite ? `&invite=${invite}` : ''}`)
       } else {
@@ -72,6 +79,7 @@ function SignupInner() {
 
           {!invite && <p className="mb-4 text-sm text-muted-foreground">14-day {requestedPlan === 'pro' ? 'Pro' : 'Starter'} trial. No credit card required. A paid subscription starts only when you choose it in Billing.</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {acquisition && <input type="hidden" name="acquisition" value={acquisition} />}
             <input type="hidden" name="trade" value={tradeType} />
             <input type="hidden" name="plan" value={requestedPlan} />
             {ref && <input type="hidden" name="ref" value={ref} />}
