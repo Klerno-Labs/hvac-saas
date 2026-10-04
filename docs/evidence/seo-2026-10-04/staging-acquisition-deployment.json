@@ -1,0 +1,355 @@
+{
+  "revision": "3b95bf8d2181dd330c60cffc3ad8ea9f083e5dbc",
+  "recordedAt": "2026-10-04T20:44:48.003Z",
+  "scope": "OVH synthetic staging only; production and DNS unchanged",
+  "origin": "https://staging.fieldclose.app",
+  "priorEvidencePreserved": "staging-deployment.json",
+  "deployment": {
+    "activeRelease": "/srv/fieldclose/releases/3b95bf8",
+    "previousReleaseAvailableForRollback": "/srv/fieldclose/releases/375a8cd",
+    "olderRollbackRetained": "/srv/fieldclose/releases/aada925",
+    "service": "fieldclose",
+    "serviceActive": true,
+    "sourceArchiveSha256": "c12a3a46ed2a0e134f01b76a367dd1277f81b296a5624d6f7342b75101ba5180",
+    "buildId": "qbeggwx_zB0fQWjf7Vhnb",
+    "node": "24.21.0",
+    "npm": "11.9.0",
+    "freshNpmCiPassed": true,
+    "fullLinuxBuildPassed": true,
+    "devDependenciesPruned": true,
+    "productionOnlyStartupSmokePassed": true,
+    "hardenedLoopbackCanaryPassed": true,
+    "absentRuntimePackages": [
+      "typescript",
+      "shadcn",
+      "braces",
+      "micromatch"
+    ],
+    "productionAuditVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "ci": {
+    "url": "https://github.com/Klerno-Labs/hvac-saas/actions/runs/37232745117",
+    "revision": "3b95bf8d2181dd330c60cffc3ad8ea9f083e5dbc",
+    "status": "success",
+    "checks": [
+      "full unit suite",
+      "isolated PostgreSQL integration suite including acquisition report fixture",
+      "production build",
+      "dependency audit",
+      "production-only startup smoke"
+    ]
+  },
+  "runtimeBoundary": {
+    "checkedAt": "2026-10-04T20:41:29.752Z",
+    "release": "/srv/fieldclose/releases/3b95bf8",
+    "buildId": "qbeggwx_zB0fQWjf7Vhnb",
+    "syntheticDatabase": true,
+    "providerCredentialsAbsent": true,
+    "schedulerEnabled": false,
+    "deploymentEnvironment": "preview",
+    "outboundProviderGuard": true,
+    "appOrigin": "https://staging.fieldclose.app",
+    "authOrigin": "https://staging.fieldclose.app",
+    "previousReleaseRetained": true,
+    "basicAuthPreserved": true,
+    "noindexPreserved": true,
+    "databaseSchemaMutationsPerformed": false
+  },
+  "httpsVerification": {
+    "revision": "3b95bf8d2181dd330c60cffc3ad8ea9f083e5dbc",
+    "checkedAt": "2026-10-04T20:41:01.739Z",
+    "syntheticOnly": true,
+    "checks": [
+      {
+        "name": "Anonymous staging and health remain gated",
+        "passed": true
+      },
+      {
+        "name": "Gated synthetic database health",
+        "passed": true
+      },
+      {
+        "name": "Anonymous private page guard",
+        "passed": true
+      },
+      {
+        "name": "Existing synthetic credentials sign in over HTTPS",
+        "passed": true
+      },
+      {
+        "name": "Protected workspace pages remain accessible",
+        "passed": true
+      },
+      {
+        "name": "Unique staging sitemap contains 24 public URLs",
+        "passed": true
+      }
+    ],
+    "pages": [
+      {
+        "path": "/",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/pricing",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/pricing",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/faq",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/faq",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/demo",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/demo",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "nextCache": null,
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/terms",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/terms",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/privacy",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/privacy",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/refund-policy",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/refund-policy",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/resources",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/resources",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/hvac-estimating-software",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/hvac-estimating-software",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/hvac-invoicing-software",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/hvac-invoicing-software",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/resources/hvac-invoice-template",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/resources/hvac-invoice-template",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/resources/hvac-estimate-template",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/resources/hvac-estimate-template",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/tools/hvac-job-pricing-calculator",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/tools/hvac-job-pricing-calculator",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/resources/hvac-software-checklist",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/resources/hvac-software-checklist",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/tools/paperwork-calculator",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/tools/paperwork-calculator",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/getting-started",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/getting-started",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/team-and-imports",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/team-and-imports",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/estimates-and-approvals",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/estimates-and-approvals",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/invoices-and-payments",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/invoices-and-payments",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/subscription-and-billing",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/subscription-and-billing",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/field-work-and-offline",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/field-work-and-offline",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/account-and-password",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/account-and-password",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/help/exports-and-accounting",
+        "status": 200,
+        "canonical": "https://staging.fieldclose.app/help/exports-and-accounting",
+        "cacheControl": "s-maxage=31536000",
+        "nextCache": "HIT",
+        "robots": "noindex, nofollow, noarchive"
+      }
+    ],
+    "passed": true,
+    "sitemapPages": 24,
+    "cachedStaticPages": 23,
+    "dynamicPages": [
+      "/demo"
+    ],
+    "dynamicPageReason": "Demo intentionally reads query parameters and remains private/no-store.",
+    "existingSyntheticLoginOnly": true,
+    "authenticatedPrivatePagesChecked": 9,
+    "authenticatedPrivatePagesAllHttp200AndNoStore": true,
+    "anonymousStagingAndHealthHttp401": true,
+    "anonymousDashboardRedirectsToLogin": true,
+    "secureSessionCookieVerified": true
+  },
+  "acquisitionReport": {
+    "prunedRuntimeExecutionPassed": true,
+    "readOnly": true,
+    "summary": {
+      "scope": "all_tenants_operator_only",
+      "startInclusiveUtc": "2026-09-06T20:40:26.296Z",
+      "endExclusiveUtc": "2026-10-04T20:40:26.296Z",
+      "measurement": "activity_event_counts_not_visitors_or_conversion_rates",
+      "onboardingAttribution": "earliest_preceding_signup_including_before_report_window",
+      "unassignedMeaning": "legacy_missing_or_invalid_attribution",
+      "signupEvents": 0,
+      "onboardingEvents": 0,
+      "groups": []
+    }
+  },
+  "acquisitionReceipt": {
+    "checkedAt": "2026-10-04T20:43:32.197Z",
+    "revision": "3b95bf8d2181dd330c60cffc3ad8ea9f083e5dbc",
+    "syntheticOnly": true,
+    "httpSignupPassed": true,
+    "coarseMetadataOnly": true,
+    "readOnlyReportIncrementVerified": true,
+    "fixtureCleaned": true,
+    "reportBaselineRestored": true,
+    "providerCallsPerformed": false,
+    "baselineCounts": {
+      "signupEvents": 0,
+      "onboardingEvents": 0
+    },
+    "withFixtureCounts": {
+      "signupEvents": 1,
+      "onboardingEvents": 0
+    },
+    "passed": true
+  },
+  "production": {
+    "changed": false,
+    "dnsChanged": false,
+    "observation": {
+      "checkedAt": "2026-10-04T20:44:16.607Z",
+      "origin": "https://fieldclose.app",
+      "status": 200,
+      "server": "Vercel",
+      "title": "FieldClose — Less paperwork. More paid work."
+    }
+  },
+  "limitations": [
+    "Staging remains authenticated and noindex; the acquisition pages and measurement changes are not yet published to the public site.",
+    "Synthetic signup receipt used the deployed HTTPS server-action transport; browser storage/privacy behavior is covered by automated unit tests, not a new manual browser signup.",
+    "The empty acquisition report is a synthetic environment baseline, not evidence of production traffic or sales.",
+    "These checks validate this staging release and its attribution receipt; they are not a new exhaustive verification of every business workflow."
+  ]
+}
