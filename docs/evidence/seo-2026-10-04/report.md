@@ -24,7 +24,7 @@ Read from the existing verified `https://fieldclose.app/` Google Search Console 
 - 24 unique sitemap URLs (17 prior + 7 new), with no invented modification dates.
 - Complete per-page canonical, Open Graph, Twitter image/title metadata; truthful organization/site/software/offers and breadcrumb schemas. No invented reviews, ratings, traffic numbers or savings claims.
 - Public pages no longer query the authenticated shell; homepage, landing pages, templates, calculator, resources, help and pricing pre-render statically. Demo remains dynamic because it accepts trade/plan query parameters.
-- Authenticated sections keep session providers, navigation, trial banner, offline synchronization and existing access guards. No database/auth/payment semantics changed.
+- Authenticated sections keep session providers, navigation, trial banner and existing access guards. The browser-only offline synchronizer remains a singleton in the root layout, avoiding duplicate queue drains during section navigation while preserving static server rendering. No database/auth/payment semantics changed.
 - Private/API routes consistently use noindex and private/no-store. Public authentication forms can expose their noindex to crawlers.
 - New public routes enter the existing privacy-safe analytics allowlist. Unconfigured Vercel page-view script now requires explicit activation; default is off. Input values, private paths and token URLs are not sent by these tools.
 

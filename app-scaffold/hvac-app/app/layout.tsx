@@ -1,5 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { SWRegister } from '@/app/components/sw-register'
 import { PublicAnalytics } from '@/app/components/public-analytics'
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <PublicAnalytics />
+        <SWRegister />
       </body>
     </html>
   )

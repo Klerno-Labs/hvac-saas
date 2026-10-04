@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { Providers } from '@/app/providers'
 import { NavigationWrapper } from './navigation-wrapper'
 import { TrialBannerWrapper } from './trial-banner-wrapper'
-import { SWRegister } from './sw-register'
 
 /** Private workspace decoration only. Pages and actions keep their own access guards. */
 export function AuthenticatedLayout({ children }: { children: ReactNode }) {
@@ -11,6 +10,5 @@ export function AuthenticatedLayout({ children }: { children: ReactNode }) {
     <NavigationWrapper />
     <TrialBannerWrapper />
     <div id="main-content" tabIndex={-1}>{children}</div>
-    <SWRegister />
   </Providers>
 }
