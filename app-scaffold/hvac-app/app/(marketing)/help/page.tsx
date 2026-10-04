@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import { marketingMetadata } from '@/lib/marketing/seo'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { siteUrl } from '@/lib/marketing/site'
@@ -6,12 +6,7 @@ import { supportMailto } from '@/lib/support'
 import { HelpSearch } from './help-search'
 import styles from './help.module.css'
 
-export const metadata: Metadata = {
-  title: 'Help Center',
-  description: 'Find practical FieldClose guides for setup, customer imports, quotes, payments, field work, billing, and account access.',
-  alternates: { canonical: `${siteUrl}/help` },
-  openGraph: { title: 'FieldClose Help Center', description: 'Clear answers for the work in front of you.', url: `${siteUrl}/help` },
-}
+export const metadata = marketingMetadata({ title: "FieldClose Help Center", description: "Find practical FieldClose guides for setup, customer imports, quotes, payments, field work, billing, and account access.", path: '/help' })
 
 export default function HelpPage() {
   return <main id="marketing-content" tabIndex={-1} className={styles.page}>

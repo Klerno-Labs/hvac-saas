@@ -27,7 +27,7 @@ describe('integrated public website', () => {
   it('publishes the approved home with clearly labeled illustrative content', () => {
     const html = renderToStaticMarkup(React.createElement(HomePage))
     expect(html).toContain('Less paperwork.')
-    expect(html).toContain('More paid work.')
+    expect(html).toContain('<h1>HVAC software.<br/>Less paperwork.</h1>')
     expect(html).toContain('Example invoice')
     expect(html).toContain('id="marketing-content"')
     expect(html).not.toContain('Lost to slow invoicing')
@@ -45,7 +45,7 @@ describe('integrated public website', () => {
     expect(html).toContain('<details>')
     expect(html).toContain('<summary>')
     expect(html).toContain('Can customers approve an estimate online?')
-    expect(html).toContain('application/ld+json')
+    expect(html).not.toContain('FAQPage')
   })
 
   it('scopes every marketing style so navigating to jobs or billing cannot alter the operational UI', () => {

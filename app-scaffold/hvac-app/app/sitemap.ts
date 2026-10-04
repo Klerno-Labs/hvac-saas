@@ -1,47 +1,10 @@
 import type { MetadataRoute } from 'next'
 import { helpArticles } from '@/lib/help/articles'
+import { acquisitionPaths } from '@/lib/marketing/resources'
+import { siteUrl } from '@/lib/marketing/site'
 
-const SITE_URL = new URL(process.env.APP_URL || 'https://fieldclose.app').origin
-
+// Omit lastModified until a real editorial revision date is recorded.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date()
-  return [
-    ...['/demo', '/help', '/tools/paperwork-calculator', ...helpArticles.map(article => `/help/${article.slug}`)].map(path => ({url: `${SITE_URL}${path}`, changeFrequency: 'monthly' as const, priority: 0.7})),
-    {
-      url: `${SITE_URL}/`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 1.0,
-    },
-    {
-      url: `${SITE_URL}/pricing`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${SITE_URL}/faq`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${SITE_URL}/terms`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.4,
-    },
-    {
-      url: `${SITE_URL}/privacy`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.4,
-    },
-    {
-      url: `${SITE_URL}/refund-policy`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.4,
-    },
-  ]
+  const paths = ['/', '/pricing', '/faq', '/demo', '/help', '/terms', '/privacy', '/refund-policy', ...acquisitionPaths, ...helpArticles.map(article => '/help/' + article.slug)]
+  return [...new Set(paths)].map(path => ({ url: new URL(path, siteUrl).toString() }))
 }

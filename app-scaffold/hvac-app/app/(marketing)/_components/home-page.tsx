@@ -16,8 +16,8 @@ export function HomePageContent({ statsBar }: { statsBar?: React.ReactNode }) {
     <main id="marketing-content" tabIndex={-1}>
       <section className="hero shell">
         <div className="hero-copy">
-          <h1>Less paperwork.<br />More paid work.</h1>
-          <p className="hero-description">Get from estimate to paid without losing the details.<br className="desktop-break" /> Customers, jobs, estimates, and invoices together.</p>
+          <h1>{serviceTrade.name} software.<br />Less paperwork.</h1>
+          <p className="hero-description">For small residential service businesses. Get from estimate to paid without losing the details.<br className="desktop-break" /> Customers, jobs, estimates, and invoices together.</p>
           <div className="hero-actions"><Link href="/demo" className="button secondary">Try the product tour <ArrowRight size={20} aria-hidden="true" /></Link></div>
         </div>
         <div className="hero-aside">
@@ -55,6 +55,7 @@ export function HomePageContent({ statsBar }: { statsBar?: React.ReactNode }) {
         <div><p className="eyebrow">Built around the work</p><h2>Your office and your field crew.<br />On the same page.</h2></div>
         <ul>{[serviceTrade.recordLabel, 'Estimates, jobs, and invoices connected', 'Online customer approval and payment'].map(text => <li key={text}><CheckCircle2 size={20} aria-hidden="true" />{text}</li>)}</ul>
       </section>
+      <section className="section shell search-entry-section"><div className="section-heading"><div><p className="eyebrow">Built for the next job</p><h2>Clear estimates.<br />Complete invoices.</h2></div><p>See how FieldClose handles the work, or start with a free template you can use today.</p></div><div className="resource-grid"><Link className="resource-card" href="/hvac-estimating-software"><span className="eyebrow">Before the job</span><h3>HVAC estimating software <ArrowUpRight size={22} aria-hidden="true" /></h3><p>Build an itemized scope, share it for approval, and keep the accepted estimate connected to the job.</p></Link><Link className="resource-card" href="/hvac-invoicing-software"><span className="eyebrow">After the work</span><h3>HVAC invoicing software <ArrowUpRight size={22} aria-hidden="true" /></h3><p>Turn the estimate into a draft invoice, review the details, and give customers an online payment path.</p></Link><Link className="resource-card" href="/resources"><span className="eyebrow">Free resources</span><h3>Templates and calculators <ArrowUpRight size={22} aria-hidden="true" /></h3><p>Print an estimate or invoice, work through job pricing, and evaluate software on your own terms.</p></Link></div></section>
       <section className="plans-section"><div className="section shell"><div className="section-heading"><div><p className="eyebrow">Room to grow</p><h2>A plan for your shop.</h2></div><p>Start with the core workflow. Add team access and collections automation as your operation grows.</p></div><PlanCards /><p className="section-link"><Link href="/pricing">Compare plans and billing details <ArrowRight size={16} aria-hidden="true" /></Link></p></div></section>
       <section className="final-cta shell"><div><p className="eyebrow">Make the next job simpler</p><h2>Good work.<br />A clean finish.</h2></div><div><p>Try FieldClose with the way your shop actually runs.</p><a className="button" href={signupUrl}>Start free trial <ArrowUpRight size={20} aria-hidden="true" /></a></div></section>
     </main>

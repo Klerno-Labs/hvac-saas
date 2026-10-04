@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { getHelpArticle, getRelatedArticles, helpArticles } from '@/lib/help/articles'
-import { siteUrl } from '@/lib/marketing/site'
+import { marketingMetadata } from '@/lib/marketing/seo'
 import { supportEmail, supportMailto } from '@/lib/support'
 import styles from '../help.module.css'
 
@@ -15,12 +15,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const article = getHelpArticle((await params).slug)
   if (!article) return { title: 'Article not found', robots: { index: false, follow: false } }
-  return {
-    title: article.title,
-    description: article.summary,
-    alternates: { canonical: `${siteUrl}/help/${article.slug}` },
-    openGraph: { title: `${article.title} · FieldClose Help`, description: article.summary, type: 'article', url: `${siteUrl}/help/${article.slug}` },
-  }
+  return marketingMetadata({ title: article.title, description: article.summary, path: `/help/${article.slug}`, article: true })
 }
 
 export default async function HelpArticlePage({ params }: { params: Promise<{ slug: string }> }) {

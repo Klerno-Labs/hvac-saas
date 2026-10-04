@@ -3,6 +3,7 @@ import { SiteHeader, SiteFooter } from './_components/site-shell'
 import { serviceTrade } from '@/lib/marketing/trades'
 import { siteUrl } from '@/lib/marketing/site'
 import './marketing.css'
+import { jsonLd } from '@/lib/marketing/seo'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -26,6 +27,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     <a className="skip-link" href="#marketing-content">Skip to page content</a>
     <SiteHeader />
     {children}
-    <SiteFooter />
+    <SiteFooter /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd({ '@context': 'https://schema.org', '@graph': [{ '@type': 'Organization', '@id': siteUrl + '/#organization', name: 'FieldClose', legalName: 'Pegrio LLC', url: siteUrl }, { '@type': 'WebSite', '@id': siteUrl + '/#website', name: 'FieldClose', url: siteUrl, publisher: { '@id': siteUrl + '/#organization' } }] }) }} />
   </div>
 }

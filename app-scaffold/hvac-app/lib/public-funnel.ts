@@ -1,4 +1,6 @@
+import { acquisitionPaths } from './marketing/resources';
 export const PUBLIC_PAGES = [
+  ...acquisitionPaths,
   "/",
   "/pricing",
   "/faq",

@@ -1,13 +1,9 @@
+import { marketingMetadata } from '@/lib/marketing/seo';
 import Link from "next/link";
 import { siteUrl, signupUrl } from "@/lib/marketing/site";
 import PaperworkCalculator from "./calculator";
 import styles from "./calculator.module.css";
-export const metadata = {
-  title: "Paperwork time calculator for service businesses",
-  description:
-    "Estimate how much time your service business spends on job paperwork and set your own target for reducing it. Free calculator, no signup required.",
-  alternates: { canonical: `${siteUrl}/tools/paperwork-calculator` },
-};
+export const metadata = marketingMetadata({title: 'Paperwork Time Calculator for Service Businesses', description: 'Estimate your monthly admin workload from jobs per week and minutes per job. Explore a time-saving target using your own inputs. No account required.', path: '/tools/paperwork-calculator'});
 export default function CalculatorPage() {
   return (
     <main

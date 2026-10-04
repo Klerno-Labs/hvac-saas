@@ -1,12 +1,8 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Providers } from './providers'
-import { NavigationWrapper } from './components/navigation-wrapper'
-import { TrialBannerWrapper } from './components/trial-banner-wrapper'
 import { PublicAnalytics } from '@/app/components/public-analytics'
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { SWRegister } from './components/sw-register'
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -96,14 +92,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body>
-        <Providers>
-          <a className="app-skip" href="#main-content">Skip to content</a>
-          <NavigationWrapper />
-          <TrialBannerWrapper />
-          <div id="main-content" tabIndex={-1}>{children}</div>
-        </Providers>
+        {children}
         <PublicAnalytics />
-        <SWRegister />
       </body>
     </html>
   )

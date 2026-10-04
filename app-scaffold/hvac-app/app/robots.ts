@@ -1,13 +1,13 @@
 import type { MetadataRoute } from 'next'
 
-const SITE_URL = process.env.APP_URL || 'https://fieldclose.app'
+const SITE_URL = new URL(process.env.APP_URL || 'https://fieldclose.app').origin
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/pricing', '/faq', '/terms', '/privacy', '/refund-policy', '/demo', '/help', '/tools/paperwork-calculator'],
+        allow: '/',
         disallow: [
           '/dashboard',
           '/customers',
@@ -17,6 +17,7 @@ export default function robots(): MetadataRoute.Robots {
           '/reminders',
           '/reports',
           '/settings',
+          '/pricebook',
           '/onboarding',
           '/setup',
           '/field',
@@ -28,10 +29,6 @@ export default function robots(): MetadataRoute.Robots {
           '/reviews/',
           '/invite/',
           '/api/',
-          '/login',
-          '/signup',
-          '/forgot-password',
-          '/reset-password',
         ],
       },
     ],

@@ -113,7 +113,7 @@ describe('Help Center public rendering', () => {
     for (const article of helpArticles) {
       const params = Promise.resolve({ slug: article.slug })
       const meta = await generateMetadata({ params })
-      expect(meta.title).toBe(article.title)
+      expect(meta.title).toEqual({ absolute: `${article.title} | FieldClose` })
       expect(meta.alternates?.canonical).toBe(`https://fieldclose.app/help/${article.slug}`)
       const html = renderToStaticMarkup(await HelpArticlePage({ params }))
       expect(html).toContain('aria-label="On this page"')

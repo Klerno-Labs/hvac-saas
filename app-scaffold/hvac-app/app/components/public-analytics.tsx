@@ -27,7 +27,8 @@ export function PublicAnalytics() {
     document.addEventListener("click", click);
     return () => document.removeEventListener("click", click);
   }, [isPublic, pathname]);
-  if (!isPublic) return null;
+  // Avoid loading an unavailable paid-provider script on self-hosted/public pages.
+  if (!isPublic || process.env.NEXT_PUBLIC_ENABLE_WEB_ANALYTICS !== "true") return null;
   return (
     <Analytics
       beforeSend={(event) => {

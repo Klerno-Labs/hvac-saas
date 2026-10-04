@@ -1,15 +1,10 @@
-import type { Metadata } from "next";
+import { marketingMetadata } from '@/lib/marketing/seo'
 import { PlanCards } from "@/app/(marketing)/_components/plan-cards";
 import { FaqAccordion } from "../_components/faq-accordion";
 import { pricingFaqs, siteUrl, plans } from "@/lib/marketing/site";
 import { PlanChooser } from "../_components/plan-chooser";
 import { serviceTrade } from "@/lib/marketing/trades";
-export const metadata: Metadata = {
-  title: "Pricing",
-  description:
-    "Compare FieldClose Starter and Pro. Plans from $49 USD per month, with a 14-day trial.",
-  alternates: { canonical: `${siteUrl}/pricing` },
-};
+export const metadata = marketingMetadata({ title: "HVAC Software Pricing — Starter & Pro", description: "Compare FieldClose Starter and Pro. Plans from $49 USD per month, with a 14-day trial.", path: '/pricing' })
 export default function PricingPage() {
   return (
     <main id="marketing-content" tabIndex={-1}>

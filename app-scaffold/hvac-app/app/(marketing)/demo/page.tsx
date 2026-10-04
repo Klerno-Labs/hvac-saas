@@ -1,15 +1,10 @@
-import type { Metadata } from 'next'
+import { marketingMetadata } from '@/lib/marketing/seo'
 import { siteUrl } from '@/lib/marketing/site'
 import { serviceTrade } from '@/lib/marketing/trades'
 import { isTradeId } from '@/lib/trades'
 import { DemoTour } from './tour'
 
-export const metadata: Metadata = {
-  title: 'Interactive product tour',
-  description: 'Try a sample FieldClose workflow: schedule a job, price an estimate, preview customer approval, create an invoice, and simulate payment confirmation.',
-  alternates: { canonical: `${siteUrl}/demo` },
-  openGraph: { title: 'Try the FieldClose product tour', description: 'A hands-on sample of the job-to-payment workflow. No account required.', url: `${siteUrl}/demo` },
-}
+export const metadata = marketingMetadata({ title: "Interactive HVAC Software Demo", description: "Try a sample FieldClose workflow: schedule a job, price an estimate, preview customer approval, create an invoice, and simulate payment confirmation.", path: '/demo' })
 
 export default async function DemoPage({ searchParams }: { searchParams: Promise<{ trade?: string | string[]; plan?: string | string[] }> }) {
   const query = await searchParams

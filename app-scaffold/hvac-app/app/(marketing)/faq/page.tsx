@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import { marketingMetadata } from '@/lib/marketing/seo'
 import { FaqAccordion } from '../_components/faq-accordion';
 import { pricingFaqs, siteUrl, signupUrl } from '@/lib/marketing/site';
 import { supportEmail, supportMailto } from '@/lib/support';
@@ -9,7 +9,8 @@ const faqs = [
  {q: 'What should I prepare before getting started?', a: 'Have your business details and a sample customer or job ready. Set up your organization, try an estimate, and review your payment settings before using the app for real customer payments.'},
  ...pricingFaqs,
 ];
-export const metadata: Metadata = {title: 'Help & FAQ', description: 'Answers about FieldClose trials, plans, mobile use, customer approvals, and payments.', alternates: {canonical: `${siteUrl}/faq`}};
+export const metadata = marketingMetadata({ title: "FieldClose FAQ — Trials, Payments & Mobile Use", description: "Answers about FieldClose trials, plans, mobile use, customer approvals, and payments.", path: '/faq' })
+
 export default function FaqPage() {
- return <main id="marketing-content" tabIndex={-1}><section className="section shell narrow"><div className="page-heading"><p className="eyebrow">A little clarity</p><h1>Questions before<br />your first job?</h1><p>Here are the details that help you get started.</p></div><FaqAccordion faqs={faqs} /><div className="contact-strip"><div><h2>Still have a question?</h2><a href={supportMailto()}>{supportEmail}</a></div><a href={signupUrl} className="button">Start free trial</a></div></section><script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify({'@context':'https://schema.org','@type':'FAQPage',mainEntity:faqs.map(f=>({'@type':'Question',name:f.q,acceptedAnswer:{'@type':'Answer',text:f.a}}))}).replace(/</g,'\\u003c')}} /></main>;
+  return <main id="marketing-content" tabIndex={-1}><section className="section shell narrow"><div className="page-heading"><p className="eyebrow">A little clarity</p><h1>Questions before<br />your first job?</h1><p>Here are the details that help you get started.</p></div><FaqAccordion faqs={faqs} /><div className="contact-strip"><div><h2>Still have a question?</h2><a href={supportMailto()}>{supportEmail}</a></div><a href={signupUrl} className="button">Start free trial</a></div></section></main>
 }
