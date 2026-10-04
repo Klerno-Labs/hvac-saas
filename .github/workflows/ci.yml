@@ -57,3 +57,15 @@ jobs:
           TEST_DATABASE_URL: postgresql://fieldclose:fieldclose_ci_only@localhost:5432/fieldclose_test
 
       - run: npm audit --omit=dev --audit-level=high
+
+      - name: Validate production-only startup
+        run: |
+          npm prune --omit=dev --ignore-scripts
+          node scripts/smoke-production-runtime.cjs
+        env:
+          AUTH_SECRET: "ci-secret-not-real"
+          AUTH_URL: "http://127.0.0.1:3217"
+          APP_URL: "http://127.0.0.1:3217"
+          AUTH_TRUST_HOST: "true"
+          DEPLOYMENT_ENV: "preview"
+          SCHEDULED_TASKS_ENABLED: "false"
