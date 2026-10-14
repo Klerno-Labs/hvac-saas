@@ -2,6 +2,8 @@
 
 Prepared October 4, 2026. These are inactive templates. Installing files does not authorize starting scheduled work, changing DNS or transferring credentials. Preserve the existing synthetic staging service throughout production cutover.
 
+Latest state is in [the October 14 evidence record](../../../docs/evidence/ovh-cutover-2026-10-14/report.md): patched candidate `2bd9608` is installed inactive, Stripe configuration is securely staged, and Cloudflare authentication/photo-storage configuration remains pending. Use the fresh public deployment baseline recorded there. Optional fixed-target provider probes and their evidence limits are documented in [verify-providers.md](verify-providers.md).
+
 ## Current host and separation
 
 | Item | Existing synthetic staging | New production target |

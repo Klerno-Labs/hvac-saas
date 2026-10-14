@@ -1,0 +1,115 @@
+{
+  "checkedAt": "2026-10-14T18:32:48.372Z",
+  "publicCutoverComplete": false,
+  "stripe": {
+    "approvedRestrictedKeyCreated": true,
+    "scope": "Same permissions as existing FieldClose production runtime; original retained",
+    "identity": {
+      "checkedAt": "2026-10-14T18:23:46.704Z",
+      "httpStatus": 200,
+      "expectedAccount": true,
+      "chargesEnabled": true,
+      "payoutsEnabled": true,
+      "detailsSubmitted": true,
+      "mutations": false
+    },
+    "configurationReads": [
+      {
+        "id": "starter",
+        "httpStatus": 403
+      },
+      {
+        "id": "pro",
+        "httpStatus": 403
+      },
+      {
+        "id": "portal",
+        "httpStatus": 200,
+        "active": true,
+        "livemode": true,
+        "returnOrigin": "https://fieldclose.app",
+        "cancelEnabled": true,
+        "paymentMethodUpdateEnabled": true,
+        "priceUpdateEnabled": false
+      }
+    ],
+    "existingDistinctSigningSecretsRecovered": true,
+    "credentialsPrinted": false,
+    "realChargeMade": false
+  },
+  "email": {
+    "checkedAt": "2026-10-14T18:30:33.177Z",
+    "readOnly": true,
+    "httpStatus": 200,
+    "exactSenderDomainFound": true,
+    "domain": {
+      "httpStatus": 200,
+      "verified": true,
+      "sendingEnabled": true
+    },
+    "emailSent": false
+  },
+  "configuration": {
+    "pendingRuntimeInstalled": true,
+    "pendingPath": "/etc/fieldclose-production/app.env.pending",
+    "owner": "root",
+    "group": "fieldclose-prod",
+    "mode": "0640",
+    "activeRuntimeInstalled": false,
+    "scheduledTasksEnabled": false,
+    "missingSettings": [
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY"
+    ]
+  },
+  "publicBaseline": {
+    "deployment": {
+      "id": "dpl_2X39jxMLJHU3kEA95LgxoCyM69Si",
+      "url": "fieldclose-mvqjnvo2s-hatfield-legacy-trusts-projects.vercel.app",
+      "target": "production",
+      "readyState": "READY",
+      "createdAt": 1791674231838,
+      "alias": [
+        "fieldclose.app",
+        "fieldclose-two.vercel.app",
+        "www.fieldclose.app",
+        "fieldclose-hatfield-legacy-trusts-projects.vercel.app"
+      ],
+      "meta": {}
+    },
+    "cron": {
+      "enabledAt": 1776384632578,
+      "disabledAt": null,
+      "updatedAt": 1791674503535,
+      "deploymentId": "dpl_2X39jxMLJHU3kEA95LgxoCyM69Si",
+      "definitions": [
+        {
+          "host": "fieldclose-mvqjnvo2s-hatfield-legacy-trusts-projects.vercel.app",
+          "path": "/api/appointments/reminders",
+          "schedule": "0 15 * * *"
+        },
+        {
+          "host": "fieldclose-mvqjnvo2s-hatfield-legacy-trusts-projects.vercel.app",
+          "path": "/api/collections/run",
+          "schedule": "0 3 * * *"
+        },
+        {
+          "host": "fieldclose-mvqjnvo2s-hatfield-legacy-trusts-projects.vercel.app",
+          "path": "/api/recurring/generate",
+          "schedule": "0 2 * * *"
+        }
+      ]
+    },
+    "oldDeploymentFromOctober4NoLongerAssumedActive": true,
+    "sitemapPages": 17,
+    "healthStatus": 200
+  },
+  "cloudflare": {
+    "browserLoginRequired": true,
+    "existingWranglerAuthenticated": true,
+    "wranglerAccountMatchesStorage": true,
+    "wranglerAccountTokenCreationPermissionPresent": false
+  },
+  "paidSeoToolsPurchased": false,
+  "advertisingPurchased": false
+}

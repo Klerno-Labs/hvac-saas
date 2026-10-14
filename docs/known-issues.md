@@ -1,5 +1,11 @@
 # Known issues and release gates
 
+## October 14 hosting status
+
+The OVH cutover is incomplete. Patched candidate `2bd9608` passed fresh CI, a Linux production build and a zero-vulnerability runtime audit, and is installed inactive. Its approved Stripe key and existing provider settings are saved in protected pending configuration. Cloudflare's GitHub sign-in is required to create the approved private photo-storage credential; production activation, DNS/scheduler transition, public verification and the 24-URL sitemap submission remain pending. A fresh production backup restored with matching schema and data. See [the October 14 cutover record](evidence/ovh-cutover-2026-10-14/report.md).
+
+The actual public rollback baseline is now `dpl_2X39jxMLJHU3kEA95LgxoCyM69Si`, created October 10, with healthy database access and 17 sitemap URLs. Its Git revision is not exposed in deployment metadata. Deployment IDs and revision statements below are historical, not current-host claims. No paid SEO tools or advertising were purchased.
+
 Payment, deployment, recovery, email, reminder and photo status updated on September 27, 2026 (UTC); other rows retain their last observed evidence. Local implementation and a successful build do not establish production readiness. The current self-service work is described in [self-service-launch.md](self-service-launch.md); earlier checks remain historical evidence for their recorded revisions.
 
 ## September 27 everyday-workflow hardening

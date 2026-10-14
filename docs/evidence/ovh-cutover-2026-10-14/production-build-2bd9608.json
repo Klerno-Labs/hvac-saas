@@ -1,0 +1,121 @@
+{
+  "recordedAt": "2026-10-14T18:35:03.650Z",
+  "revision": "2bd9608f28ea38efc8bdac5298219ded8aa2f32d",
+  "scope": "Patched production-origin candidate preparation only; no production promotion",
+  "sourceArchiveSha256": "c0d6d673066567ad6ab7b93b4fa6343b92e1531fa5daef96d5f7f8989a52dca1",
+  "build": {
+    "node": "24.21.0",
+    "npm": "11.9.0",
+    "freshLinuxNpmCiPassed": true,
+    "optimizedBuildPassed": true,
+    "nodeHeapMiB": 3072,
+    "nicePriority": 10,
+    "buildRoot": "/home/ubuntu/fieldclose-production-builds/2bd9608",
+    "buildEnvironmentOutsideApp": true,
+    "buildSettingNames": [
+      "APP_URL",
+      "AUTH_URL",
+      "NEXTAUTH_URL",
+      "NEXT_PUBLIC_APP_URL",
+      "AUTH_TRUST_HOST",
+      "DEPLOYMENT_ENV",
+      "SCHEDULED_TASKS_ENABLED",
+      "NEXT_PUBLIC_ENABLE_WEB_ANALYTICS",
+      "NEXT_PUBLIC_ENABLE_FUNNEL_EVENTS",
+      "NEXT_TELEMETRY_DISABLED",
+      "NEXT_PUBLIC_SENTRY_DSN",
+      "NEXT_PUBLIC_SUPPORT_EMAIL"
+    ],
+    "productionSecretsTransferredByBuild": false,
+    "productionDatabaseOrProvidersContactedByBuild": false
+  },
+  "artifacts": {
+    "checkedAt": "2026-10-14T18:32:17.239Z",
+    "buildId": "swKRPLw0IFNDjybuKAQHG",
+    "productionOrigin": "https://fieldclose.app",
+    "sitemapUrls": 24,
+    "uniqueSitemapUrls": 24,
+    "staticHtmlCanonicalChecks": 23,
+    "dynamicDemoExcludedFromStaticHtmlChecks": true,
+    "stagingOriginAbsentFromCheckedHtml": true,
+    "fabricatedLastModifiedAbsent": true,
+    "passed": true
+  },
+  "runtime": {
+    "developmentDependenciesPruned": true,
+    "absentPackages": [
+      "typescript",
+      "shadcn",
+      "braces",
+      "micromatch"
+    ],
+    "generatedPrismaClientPresent": true,
+    "auditFile": "production-candidate-2bd9608-audit.json",
+    "productionAuditVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "nativeImage": {
+      "sharp": "0.35.5",
+      "librsvg": "2.63.2",
+      "syntheticSvgTo2x2PngPassed": true
+    },
+    "guardedSyntheticStartupSmokePassed": true,
+    "smokeEnvironment": "Existing synthetic staging environment with outbound provider guard; temporary loopback3217 process stopped after checks",
+    "smokeChecks": [
+      "public page rendering",
+      "private login noindex",
+      "anonymous dashboard redirect and private no-store",
+      "synthetic database health",
+      "no TypeScript or development-package reinstall"
+    ],
+    "productionProviderReadinessVerified": false
+  },
+  "candidate": {
+    "path": "/srv/fieldclose-production/releases/2bd9608",
+    "owner": "root:root",
+    "mode": "0755",
+    "onlyWritableAppDirectory": ".next/cache",
+    "cacheOwner": "fieldclose-prod:fieldclose-prod",
+    "cacheMode": "0700",
+    "releaseDotenvFilesAbsent": true,
+    "productionCurrentLinkPresent": false,
+    "productionServiceActive": false,
+    "productionServiceEnabled": false,
+    "productionRuntimeEnvironmentInstalled": false,
+    "productionTimersActive": false,
+    "productionTimersEnabled": false,
+    "stagingServiceActive": true,
+    "stagingRelease": "3b95bf8",
+    "stagingHealthHttpStatus": 200,
+    "stagingDatabaseStatus": "ok",
+    "productionAndSmokeListenersAbsent": true,
+    "nginxChanged": false,
+    "dnsChanged": false
+  },
+  "pendingRuntimeConfiguration": {
+    "path": "/etc/fieldclose-production/app.env.pending",
+    "exists": true,
+    "owner": "root:fieldclose-prod",
+    "mode": "0640",
+    "installedSeparatelyByParent": true,
+    "readOrUsedOrOverwrittenByBuild": false,
+    "activeRuntimeEnvAbsent": true
+  },
+  "supersedes": {
+    "candidate": "763b859",
+    "reason": "Fresh October14 audit identified nine vulnerabilities including two high severity; old candidate remains unpromoted",
+    "oldAuditPreserved": "production-runtime-audit.json"
+  },
+  "remaining": [
+    "Confirm final CI for pinned revision",
+    "Complete pending production provider configuration and verification",
+    "Verify production runtime and direct-origin HTTPS before cutover",
+    "Coordinate DNS and single-scheduler transition",
+    "Verify public release and submit sitemap"
+  ]
+}

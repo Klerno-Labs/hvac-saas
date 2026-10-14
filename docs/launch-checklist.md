@@ -1,5 +1,7 @@
 # FieldClose release checklist
 
+Latest hosting evidence: [October 14 OVH cutover record](evidence/ovh-cutover-2026-10-14/report.md). The patched candidate and fresh backup restoration pass their checks, but provider setup, production activation, domain/scheduler cutover and sitemap submission remain incomplete. The current public deployment is still on Vercel.
+
 Current local verification and remaining commercial/operating gates are recorded in [the September 27 hardening report](evidence/release-hardening-2026-09-27/report.md). Earlier evidence is retained in `readiness-2026-09-26.md`. The boxes below are production release gates, not claims that these services have been exercised.
 
 ## Deployment and recovery

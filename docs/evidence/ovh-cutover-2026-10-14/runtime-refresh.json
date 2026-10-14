@@ -1,0 +1,105 @@
+{
+  "checkedAt": "2026-10-14T18:23:05.872Z",
+  "scope": "Read-only refresh of prepared OVH cutover after ten days",
+  "hostChangesPerformed": false,
+  "credentialsTransferred": false,
+  "serviceChangesPerformed": false,
+  "dnsChangesPerformed": false,
+  "schedulerChangesPerformed": false,
+  "current": {
+    "node": "24.21.0",
+    "npm": "11.9.0",
+    "stagingService": "active/enabled",
+    "stagingRelease": "/srv/fieldclose/releases/3b95bf8",
+    "stagingBuildId": "qbeggwx_zB0fQWjf7Vhnb",
+    "stagingListener": "127.0.0.1:3000",
+    "syntheticDatabaseListener": "127.0.0.1:56487",
+    "stagingHealthHttpStatus": 200,
+    "stagingDatabaseStatus": "ok",
+    "stagingProviderCredentialsAbsent": true,
+    "stagingSchedulerPaused": true,
+    "stagingOutboundGuardPreserved": true,
+    "stagingBasicAuthPreserved": true,
+    "stagingNoindexPreserved": true,
+    "productionService": "inactive/disabled",
+    "productionTimers": "all three inactive/disabled",
+    "productionCurrentLinkPresent": false,
+    "productionRuntimeEnvPresent": false,
+    "productionSchedulerEnvPresent": false,
+    "nginxEnabledSites": [
+      "default"
+    ],
+    "nginxActive": true,
+    "certificateLineages": [
+      "staging.fieldclose.app"
+    ],
+    "stagingCertificateExpires": "2026-12-26T20:58:59Z",
+    "certificateRenewalTimer": "active/enabled",
+    "diskAvailableGiB": 45
+  },
+  "candidate": {
+    "path": "/srv/fieldclose-production/releases/763b859",
+    "buildId": "SdWfP5weW5oDcDEuHJvMJ",
+    "sitemapUrls": 24,
+    "staticProductionCanonicalChecks": 23,
+    "artifactsValid": true,
+    "unexpectedDevelopmentPackages": [],
+    "generatedPrismaClientPresent": true,
+    "nextConfigMjsPresent": true,
+    "nextConfigTsPresent": false,
+    "packageLockSha256": "627c51bc33dfdc3e3e9e9929319d6d629a21bd9b0f5e87a889f0d6dd6600b6fe",
+    "lockMatchesPreFixRepo": true,
+    "installedProductionUnitsAndHelpersMatchRepo": true,
+    "promotionBlockedByFreshAudit": true
+  },
+  "audit": {
+    "file": "production-runtime-audit.json",
+    "status": "failed_high_severity_gate",
+    "counts": {
+      "info": 0,
+      "low": 0,
+      "moderate": 7,
+      "high": 2,
+      "critical": 0,
+      "total": 9
+    },
+    "highPackages": [
+      "sharp",
+      "source-map-js"
+    ],
+    "relevantNextCachePoisoningAdvisories": [
+      "GHSA-4jqv-mc3x-m676",
+      "GHSA-mcj8-r9mp-w47p"
+    ],
+    "fixAssignedToDependencyAgent": true
+  },
+  "ci": {
+    "headSha": "3ee88494a32dba35e35f08f0c1ac3494e0bb1683",
+    "url": "https://github.com/Klerno-Labs/hvac-saas/actions/runs/37235309538",
+    "conclusion": "success",
+    "completedAt": "2026-10-04T21:17:51Z",
+    "note": "Historical CI success does not override the new October14 dependency audit."
+  },
+  "dns": {
+    "apexA": [
+      "64.29.17.65",
+      "216.198.79.65"
+    ],
+    "apexAaaa": [],
+    "wwwCname": "4e9c8f7206a39e01.vercel-dns-017.com",
+    "stagingA": [
+      "40.160.36.160"
+    ]
+  },
+  "publicObservation": {
+    "status": 200,
+    "server": "Vercel",
+    "title": "FieldClose — Less paperwork. More paid work."
+  },
+  "remaining": [
+    "Patch dependencies, test, and build a new pinned production candidate before promotion",
+    "Complete authorized provider credential setup",
+    "Refresh production data/provider evidence and backup as needed before cutover",
+    "Issue apex/www certificate; coordinate single-scheduler/DNS transition and public verification"
+  ]
+}
