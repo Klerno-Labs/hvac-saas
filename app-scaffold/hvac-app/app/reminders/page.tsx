@@ -1,4 +1,5 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { formatDateOnly, isDueDatePast } from '@/lib/format'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { ReminderStatusForm } from './status-form'
@@ -8,7 +9,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function RemindersPage() {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId, organization } = await requirePageCapability('manageJobs')
 
   const reminders = await db.reminder.findMany({
     where: { organizationId },
@@ -44,7 +45,7 @@ export default async function RemindersPage() {
               <h2 className="text-base font-semibold mb-3">Open ({openReminders.length})</h2>
               <div className="space-y-2">
                 {openReminders.map((rem) => (
-                  <ReminderCard key={rem.id} reminder={rem} />
+                  <ReminderCard key={rem.id} reminder={rem} timezone={organization.timezone} />
                 ))}
               </div>
             </div>
@@ -55,7 +56,7 @@ export default async function RemindersPage() {
               <h2 className="text-base font-semibold mb-3 text-muted-foreground">Resolved ({closedReminders.length})</h2>
               <div className="space-y-2">
                 {closedReminders.map((rem) => (
-                  <ReminderCard key={rem.id} reminder={rem} />
+                  <ReminderCard key={rem.id} reminder={rem} timezone={organization.timezone} />
                 ))}
               </div>
             </div>
@@ -80,9 +81,9 @@ type ReminderWithRelations = {
   invoice: { id: string; invoiceNumber: string } | null
 }
 
-function ReminderCard({ reminder }: { reminder: ReminderWithRelations }) {
+function ReminderCard({ reminder, timezone }: { reminder: ReminderWithRelations; timezone?: string | null }) {
   const isOpen = reminder.status === 'open'
-  const isOverdue = isOpen && reminder.dueAt && new Date(reminder.dueAt) < new Date()
+  const isOverdue = isOpen && reminder.dueAt && isDueDatePast(reminder.dueAt, new Date(), timezone)
 
   return (
     <Card className={cn(
@@ -102,7 +103,7 @@ function ReminderCard({ reminder }: { reminder: ReminderWithRelations }) {
             </div>
 
             <div className="flex gap-3 text-xs text-muted-foreground">
-              {reminder.dueAt && <span>Due: {new Date(reminder.dueAt).toLocaleDateString()}</span>}
+              {reminder.dueAt && <span>Due: {formatDateOnly(reminder.dueAt)}</span>}
               <span>{reminder.reminderType.replace(/_/g, ' ')}</span>
             </div>
 

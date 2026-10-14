@@ -1,0 +1,132 @@
+{
+  "executionHost": "OVH",
+  "runtimeRevision": "2bd9608f28ea38efc8bdac5298219ded8aa2f32d",
+  "environmentFile": "inactive pending configuration",
+  "exitCode": 1,
+  "results": {
+    "generatedAt": "2026-10-14T18:34:21.429Z",
+    "scope": "Configuration and read-only database evidence; no provider verification",
+    "gates": [
+      {
+        "id": "configuration.whitespace",
+        "critical": true,
+        "status": "pass",
+        "detail": "Checked configuration has no leading or trailing whitespace."
+      },
+      {
+        "id": "database.configuration",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Database URL is present; connectivity and migration state require --database."
+      },
+      {
+        "id": "authentication.configuration",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Authentication secret passes format checks and contains whitespace. Preserve the key verbatim; coordinate any intentional rotation because trimming changes the signing key and invalidates sessions. Deployed sign-in still requires verification."
+      },
+      {
+        "id": "public_origins",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Application and authentication origins agree; deployed DNS and callback behavior are unverified."
+      },
+      {
+        "id": "customer_payments.configuration",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Live-format credentials and a distinct Connect signing secret exist; provider account, endpoint scope, and live settlement are unverified."
+      },
+      {
+        "id": "subscription_billing.configuration",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Billing fields are present; verify live price amounts, currency, interval, endpoint scope, and portal configuration with the provider audit."
+      },
+      {
+        "id": "email.configuration",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Email configuration is present; sender verification, authorized receipt, bounce handling and delivery alerts are unverified."
+      },
+      {
+        "id": "photos.configuration",
+        "status": "fail",
+        "critical": true,
+        "detail": "All four private R2 storage settings are required."
+      },
+      {
+        "id": "scheduler.authentication",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Vercel scheduler token is configured; this report does not invoke authenticated task routes."
+      },
+      {
+        "id": "scheduler.execution",
+        "critical": true,
+        "status": "paused",
+        "detail": "Scheduled work is paused. Set exactly true only in a new deployment after release and delivery verification."
+      },
+      {
+        "id": "monitoring.configuration",
+        "status": "unverified",
+        "critical": true,
+        "detail": "Error monitoring has a destination; event ingestion, alert routing and an operational responder are unverified."
+      },
+      {
+        "id": "sms.configuration",
+        "critical": false,
+        "status": "disabled",
+        "detail": "SMS is optional. Configuration alone does not verify sender permissions, opt-out behavior, recipient authorization or delivery."
+      },
+      {
+        "id": "webhook.recovery",
+        "critical": true,
+        "status": "unverified",
+        "detail": "Stripe retries failed signed deliveries; no application replay worker is wired. Review both provider endpoint failure queues and assign recovery ownership. An empty local webhook table is not proof of successful delivery."
+      },
+      {
+        "id": "database.runtime",
+        "status": "pass",
+        "critical": true,
+        "detail": "The database accepted a read-only inspection transaction."
+      },
+      {
+        "id": "database.schema_columns",
+        "critical": true,
+        "status": "pass",
+        "detail": "All columns required by the generated client exist. This is a column-presence check, not a complete backup or restore test."
+      },
+      {
+        "id": "database.unique_constraints",
+        "critical": true,
+        "status": "pass",
+        "detail": "Required unique keys exist, including document and payment identities."
+      },
+      {
+        "id": "database.migrations",
+        "critical": true,
+        "status": "pass",
+        "detail": "Completed database migration names and checksums match this checkout."
+      },
+      {
+        "id": "webhook.stored_backlog",
+        "critical": true,
+        "status": "pass",
+        "detail": "Stored webhook rows: 0 failed, 0 dead-lettered, 0 unprocessed for over 15 minutes. Provider queues must also be checked."
+      },
+      {
+        "id": "collections.stored_backlog",
+        "critical": true,
+        "status": "pass",
+        "detail": "Open invoice delivery stages: 0 need outcome review, 0 have stale in-flight claims, 0 await retry or configuration. This report never retries them."
+      },
+      {
+        "id": "database.recovery",
+        "critical": true,
+        "status": "unverified",
+        "detail": "A recoverable production backup and tested restore procedure require separate evidence; this script cannot verify them."
+      }
+    ]
+  }
+}

@@ -3,12 +3,15 @@ import { PLANS, isSubscriptionActive } from '@/lib/billing'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { SubscribeButton } from './subscribe-button'
+import { SubscribeButton, ManageBillingButton } from './subscribe-button'
+import { supportEmail, supportMailto } from '@/lib/support'
+import { getStripeRuntimeAvailability } from '@/lib/stripe-runtime'
 
 export default async function BillingPage() {
-  const { organization, userId, user } = await requireAuth()
+  const { organization, role, user } = await requireAuth()
 
   const isActive = isSubscriptionActive(organization)
+  const paymentsAvailable = getStripeRuntimeAvailability().available
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
@@ -38,9 +41,11 @@ export default async function BillingPage() {
           )}
           {!organization.trialEndsAt && organization.subscriptionStatus === 'TRIALING' && (
             <p className="text-sm text-muted-foreground mt-2">
-              Free beta — no trial expiration set
+              Trial access is not configured. Contact <a href={supportMailto('FieldClose trial access')} className="underline">{supportEmail}</a> to activate your trial.
             </p>
           )}
+          {!paymentsAvailable && <p role="status" className="mt-3 text-sm text-muted-foreground">Subscriptions and online payments are temporarily unavailable. Your saved business records are unchanged. Contact <a href={supportMailto('FieldClose payment setup')} className="underline">{supportEmail}</a> for help.</p>}
+          {paymentsAvailable && role === 'owner' && organization.stripeCustomerId && <ManageBillingButton />}
         </CardContent>
       </Card>
 
@@ -62,10 +67,10 @@ export default async function BillingPage() {
                   </li>
                 ))}
               </ul>
-              {organization.plan.toLowerCase() === planId && isActive ? (
+              {organization.plan.toLowerCase() === planId && organization.subscriptionStatus === 'ACTIVE' ? (
                 <Badge variant="outline" className="w-full justify-center py-2">Current plan</Badge>
               ) : (
-                <SubscribeButton planId={planId} userEmail={user.email || ''} />
+                !paymentsAvailable ? <Badge variant="outline">Subscriptions unavailable</Badge> : role === 'owner' ? <SubscribeButton planId={planId} userEmail={user.email || ''} /> : <p className="text-sm text-muted-foreground">Ask your organization owner to manage billing.</p>
               )}
             </CardContent>
           </Card>

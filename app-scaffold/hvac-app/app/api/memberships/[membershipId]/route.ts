@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { pauseMembership, cancelMembership } from '@/lib/memberships'
 
 export const runtime = 'nodejs'
@@ -9,29 +8,24 @@ export async function PATCH(
   req: Request,
   ctx: { params: Promise<{ membershipId: string }> },
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const org = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-  if (!org) {
-    return NextResponse.json({ error: 'No organization' }, { status: 403 })
-  }
+  const access = await requireMutationAccess('manageCustomers')
+  if (!access.authorized) return NextResponse.json({ error: access.error }, { status: access.status })
+  const { organizationId } = access.context
 
   const { membershipId } = await ctx.params
-  const body = await req.json()
-  const { action } = body
+  let body: unknown
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  const action = body && typeof body === 'object' && 'action' in body ? body.action : null
 
   if (action === 'pause') {
-    await pauseMembership({ organizationId: org.organizationId, membershipId })
+    const result = await pauseMembership({ organizationId, membershipId })
+    if (!result.count) return NextResponse.json({ error: 'Membership not found' }, { status: 404 })
     return NextResponse.json({ success: true })
   }
 
   if (action === 'cancel') {
-    await cancelMembership({ organizationId: org.organizationId, membershipId })
+    const result = await cancelMembership({ organizationId, membershipId })
+    if (!result.count) return NextResponse.json({ error: 'Membership not found' }, { status: 404 })
     return NextResponse.json({ success: true })
   }
 

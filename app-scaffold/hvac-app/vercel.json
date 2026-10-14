@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci",
   "buildCommand": "prisma generate && next build",
   "framework": "nextjs",
   "crons": [
@@ -13,7 +14,7 @@
     },
     {
       "path": "/api/appointments/reminders",
-      "schedule": "0 * * * *"
+      "schedule": "0 15 * * *"
     }
   ]
 }

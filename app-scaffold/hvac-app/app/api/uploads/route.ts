@@ -1,15 +1,17 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requiresRemotePhotoStorage } from '@/lib/deployment-runtime'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
+import { MAX_PHOTO_BYTES, PHOTO_SIZE_LIMIT, PHOTO_CONTENT_TYPES } from '@/lib/photo-upload'
+import { localPhotoPath, photoObjectKey, r2PhotoConfig } from '@/lib/photo-storage'
+import { photoReadUrl } from '@/lib/photo-url'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const EXT_MAP: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
@@ -17,21 +19,9 @@ const EXT_MAP: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return NextResponse.json({ error: 'No organization membership' }, { status: 403 })
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return NextResponse.json({ error: access.error }, { status: access.status })
+  const { session, userId, organizationId, membership } = access.context
 
   let formData: FormData
   try {
@@ -46,7 +36,7 @@ export async function POST(request: NextRequest) {
   }
 
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
+    where: { id: jobId, ...jobAccessWhere(access.context) },
   })
   if (!job) {
     return NextResponse.json({ error: 'Job not found in your organization' }, { status: 404 })
@@ -57,16 +47,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 })
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!PHOTO_CONTENT_TYPES.includes(file.type)) {
     return NextResponse.json(
       { error: 'Invalid file type. Accepted: jpg, png, webp' },
       { status: 400 }
     )
   }
 
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > MAX_PHOTO_BYTES) {
     return NextResponse.json(
-      { error: 'File too large. Maximum size is 10 MB.' },
+      { error: `File too large. Maximum size is ${PHOTO_SIZE_LIMIT}.` },
       { status: 400 }
     )
   }
@@ -74,38 +64,45 @@ export async function POST(request: NextRequest) {
   const ext = EXT_MAP[file.type] || '.jpg'
   const uniqueName = `${crypto.randomUUID()}${ext}`
 
-  const hasR2Config = !!(
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    process.env.R2_BUCKET &&
-    process.env.R2_PUBLIC_BASE_URL
-  )
+  const storage = r2PhotoConfig()
+  const key = photoObjectKey(organizationId, jobId, uniqueName)
 
-  if (hasR2Config) {
+  if (!storage && requiresRemotePhotoStorage()) {
+    return NextResponse.json(
+      { error: 'Photo storage is not configured. Contact your administrator.' },
+      { status: 503 },
+    )
+  }
+
+  if (storage) {
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
-    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
 
     const r2Client = new S3Client({
       region: 'auto',
-      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint: `https://${storage.accountId}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: storage.accessKeyId,
+        secretAccessKey: storage.secretAccessKey,
       },
     })
 
-    const key = `uploads/${uniqueName}`
-
     const command = new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET,
+      Bucket: storage.bucket,
       Key: key,
       ContentType: file.type,
       ContentLength: file.size,
+      Body: Buffer.from(await file.arrayBuffer()),
     })
 
-    const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 300 })
-    const fileUrl = `${process.env.R2_PUBLIC_BASE_URL}/${key}`
+    try {
+      await r2Client.send(command)
+    } catch {
+      console.error('[uploads] Object storage upload failed')
+      return NextResponse.json({ error: 'Photo upload failed. Please try again.' }, { status: 503 })
+    } finally {
+      r2Client.destroy()
+    }
+    const fileUrl = `r2://${storage.bucket}/${key}`
 
     const asset = await db.proofOfWorkAsset.create({
       data: {
@@ -126,17 +123,18 @@ export async function POST(request: NextRequest) {
       metadataJson: { assetId: asset.id, fileType: file.type },
     })
 
-    return NextResponse.json({ presignedUrl, fileUrl, id: asset.id })
+    return NextResponse.json({ fileUrl: photoReadUrl({ id: asset.id, fileUrl }), id: asset.id })
   }
 
-  console.warn('R2 env vars not configured, falling back to local filesystem')
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+  console.warn('R2 env vars not configured, using private local development storage')
+  const destination = localPhotoPath(key)
+  const uploadsDir = path.dirname(destination)
   await mkdir(uploadsDir, { recursive: true })
 
   const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(path.join(uploadsDir, uniqueName), buffer)
+  await writeFile(destination, buffer)
 
-  const fileUrl = `/uploads/${uniqueName}`
+  const fileUrl = `local-private://photos/${key}`
 
   const asset = await db.proofOfWorkAsset.create({
     data: {
@@ -157,5 +155,5 @@ export async function POST(request: NextRequest) {
     metadataJson: { assetId: asset.id, fileType: file.type },
   })
 
-  return NextResponse.json({ id: asset.id, fileUrl })
+  return NextResponse.json({ id: asset.id, fileUrl: photoReadUrl({ id: asset.id, fileUrl }) })
 }

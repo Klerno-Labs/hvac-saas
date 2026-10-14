@@ -1,0 +1,300 @@
+{
+  "checkedAt": "2026-10-04T20:36:47.805Z",
+  "scope": "Local production build; not proof of public deployment",
+  "urls": 24,
+  "publicLinkPaths": 27,
+  "failures": [],
+  "broken": [],
+  "boundary": [
+    {
+      "path": "/dashboard",
+      "status": 307,
+      "robots": "noindex, nofollow",
+      "cache": "private, no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "robots": "noindex, nofollow",
+      "cache": "private, no-store"
+    },
+    {
+      "path": "/api/health",
+      "status": 503,
+      "robots": "noindex, nofollow",
+      "cache": "private, no-store"
+    },
+    {
+      "path": "/resources/not-real",
+      "status": 404,
+      "robots": null,
+      "cache": "private, no-cache, no-store, max-age=0, must-revalidate"
+    }
+  ],
+  "results": [
+    {
+      "path": "/",
+      "status": 200,
+      "canonical": "https://fieldclose.app",
+      "title": "HVAC Software for Small Service Businesses | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 2,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/pricing",
+      "status": 200,
+      "canonical": "https://fieldclose.app/pricing",
+      "title": "HVAC Software Pricing — Starter &amp; Pro | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/faq",
+      "status": 200,
+      "canonical": "https://fieldclose.app/faq",
+      "title": "FieldClose FAQ — Trials, Payments &amp; Mobile Use | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/demo",
+      "status": 200,
+      "canonical": "https://fieldclose.app/demo",
+      "title": "Interactive HVAC Software Demo | FieldClose",
+      "h1s": 1,
+      "cache": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help",
+      "title": "FieldClose Help Center | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/terms",
+      "status": 200,
+      "canonical": "https://fieldclose.app/terms",
+      "title": "Terms of Service · FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 0,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/og-image.png"
+    },
+    {
+      "path": "/privacy",
+      "status": 200,
+      "canonical": "https://fieldclose.app/privacy",
+      "title": "Privacy Policy · FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 0,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/og-image.png"
+    },
+    {
+      "path": "/refund-policy",
+      "status": 200,
+      "canonical": "https://fieldclose.app/refund-policy",
+      "title": "Refund Policy · FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 0,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/og-image.png"
+    },
+    {
+      "path": "/resources",
+      "status": 200,
+      "canonical": "https://fieldclose.app/resources",
+      "title": "Free HVAC Templates, Calculators &amp; Guides | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 3,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/hvac-estimating-software",
+      "status": 200,
+      "canonical": "https://fieldclose.app/hvac-estimating-software",
+      "title": "HVAC Estimating Software for Small Residential Shops | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/hvac-invoicing-software",
+      "status": 200,
+      "canonical": "https://fieldclose.app/hvac-invoicing-software",
+      "title": "HVAC Invoicing Software for Small Service Businesses | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/resources/hvac-invoice-template",
+      "status": 200,
+      "canonical": "https://fieldclose.app/resources/hvac-invoice-template",
+      "title": "Free HVAC Invoice Template — Print or Save PDF | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 2,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/resources/hvac-estimate-template",
+      "status": 200,
+      "canonical": "https://fieldclose.app/resources/hvac-estimate-template",
+      "title": "Free HVAC Estimate Template — Print or Save PDF | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 2,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/tools/hvac-job-pricing-calculator",
+      "status": 200,
+      "canonical": "https://fieldclose.app/tools/hvac-job-pricing-calculator",
+      "title": "Free HVAC Job Pricing Calculator: Margin &amp; Markup · FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 2,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/resources/hvac-software-checklist",
+      "status": 200,
+      "canonical": "https://fieldclose.app/resources/hvac-software-checklist",
+      "title": "HVAC Software Evaluation Checklist for Small Shops | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 2,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/tools/paperwork-calculator",
+      "status": 200,
+      "canonical": "https://fieldclose.app/tools/paperwork-calculator",
+      "title": "Paperwork Time Calculator for Service Businesses | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/getting-started",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/getting-started",
+      "title": "Set up your business and first job | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/team-and-imports",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/team-and-imports",
+      "title": "Invite your team and import customers | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/estimates-and-approvals",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/estimates-and-approvals",
+      "title": "Price an estimate and collect approval | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/invoices-and-payments",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/invoices-and-payments",
+      "title": "Send invoices and understand payment status | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/subscription-and-billing",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/subscription-and-billing",
+      "title": "Manage your plan, billing, or cancellation | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/field-work-and-offline",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/field-work-and-offline",
+      "title": "Use FieldClose on the job | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/account-and-password",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/account-and-password",
+      "title": "Sign in, reset a password, or get help | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    },
+    {
+      "path": "/help/exports-and-accounting",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/exports-and-accounting",
+      "title": "Export records for your accountant | FieldClose",
+      "h1s": 1,
+      "cache": "s-maxage=31536000",
+      "schemas": 1,
+      "validSchemas": true,
+      "ogImage": "https://fieldclose.app/social-image"
+    }
+  ]
+}

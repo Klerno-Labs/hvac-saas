@@ -1,0 +1,68 @@
+{
+  "executionHost": "OVH",
+  "runtimeRevision": "2bd9608f28ea38efc8bdac5298219ded8aa2f32d",
+  "environmentFile": "inactive pending configuration",
+  "exitCode": 1,
+  "results": {
+    "checkedAt": "2026-10-14T18:34:32.469Z",
+    "readOnly": true,
+    "certifiesLaunch": false,
+    "checks": [
+      {
+        "id": "app.origin",
+        "status": "passed",
+        "detail": "A canonical HTTPS app origin is configured."
+      },
+      {
+        "id": "stripe.webhook_secrets",
+        "status": "passed",
+        "detail": "Distinct signing-secret values are installed. Their match to the correct destinations still requires signed-delivery verification."
+      },
+      {
+        "id": "stripe.mode",
+        "status": "passed",
+        "detail": "Configured Stripe key has live mode."
+      },
+      {
+        "id": "stripe.account",
+        "status": "passed",
+        "detail": "Live account must have payments, payouts and submitted business details enabled."
+      },
+      {
+        "id": "stripe.price.starter",
+        "status": "unverified",
+        "detail": "Price read failed. Verify the price belongs to this account and the key can read it."
+      },
+      {
+        "id": "stripe.price.pro",
+        "status": "unverified",
+        "detail": "Price read failed. Verify the price belongs to this account and the key can read it."
+      },
+      {
+        "id": "stripe.webhook_candidates",
+        "status": "unverified",
+        "detail": "Webhook inventory could not be read with this key."
+      },
+      {
+        "id": "stripe.portal",
+        "status": "passed",
+        "detail": "Dedicated live portal must be active, return to FieldClose, and allow payment-method updates and cancellation. Price changes must remain disabled until entitlement reconciliation supports them. Review branding and legal links separately."
+      },
+      {
+        "id": "email.sender",
+        "status": "passed",
+        "detail": "Sender domain must be verified with sending enabled. No email was sent."
+      },
+      {
+        "id": "storage.bucket",
+        "status": "blocked",
+        "detail": "Private R2 storage credentials or bucket configuration are missing."
+      },
+      {
+        "id": "end_to_end",
+        "status": "unverified",
+        "detail": "Still required: recovered database and backup/restore proof, signed live payment and billing lifecycle, authorized email delivery, private photo upload/read/access denial, and operational alert receipt. This report sends no messages, payments, uploads or customer data."
+      }
+    ]
+  }
+}

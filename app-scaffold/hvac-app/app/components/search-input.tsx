@@ -17,6 +17,7 @@ export function SearchInput({ action, defaultValue = '', placeholder = 'Search..
       ))}
       <Input
         type="search"
+        aria-label={placeholder}
         name="q"
         defaultValue={defaultValue}
         placeholder={placeholder}

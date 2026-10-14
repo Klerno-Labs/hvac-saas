@@ -1,61 +1,58 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { getStripe } from '@/lib/stripe'
+import { captureException } from '@sentry/nextjs'
+import { isPlatformBillingEvent, verifyStripeWebhook } from '@/lib/stripe-webhook'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
+import { reconcileConfirmedPayment } from '@/lib/payment-reconciliation'
+import { POST as billingWebhook } from '@/app/api/billing/webhook/route'
 import { TERMINAL_PAYMENT_METHOD } from '@/lib/terminal'
 import Stripe from 'stripe'
 
 export async function POST(req: Request) {
+  const billingRequest = req.clone()
   const body = await req.text()
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
 
-  if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Missing webhook configuration' }, { status: 400 })
-  }
-
-  let event: Stripe.Event
-
-  try {
-    event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET)
-  } catch (error) {
-    console.error('Webhook signature verification failed:', error)
-    return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 })
+  const verification = verifyStripeWebhook(body, signature, ['platform', 'connect'])
+  if (!verification.verified) return NextResponse.json({ error: verification.error }, { status: verification.status })
+  const { event, scope } = verification
+  if (!verification.modeMatches) return NextResponse.json({ received: true, ignored: true })
+  if (scope === 'platform') {
+    // Preserve the original platform endpoint URL without allowing connected
+    // account subscription events to change this platform's subscriptions.
+    if (isPlatformBillingEvent(event.type)) return billingWebhook(billingRequest)
+    return NextResponse.json({ received: true, ignored: true })
   }
 
   try {
+    if (!await belongsToFieldClose(event)) return NextResponse.json({ received: true, ignored: true })
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
+      case 'checkout.session.async_payment_succeeded':
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, event.account, event.livemode)
         break
 
       case 'checkout.session.expired':
-        await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session)
+        await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session, event.account!)
         break
 
       case 'payment_intent.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.PaymentIntent)
+        await handlePaymentFailed(event.data.object as Stripe.PaymentIntent, event.account!)
         break
 
       case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent)
-        break
-
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await handleSubscriptionChange(event.data.object as Stripe.Subscription)
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent, event.account, event.livemode)
         break
 
       case 'account.updated':
-        await handleAccountUpdated(event.data.object as Stripe.Account)
+        await handleAccountUpdated(event.data.object as Stripe.Account, event.account!)
         break
 
       default:
-        // Unhandled event type — log but don't fail
-        console.log(`Unhandled webhook event type: ${event.type}`)
+        return NextResponse.json({ received: true, ignored: true })
     }
 
     await trackEvent({
@@ -65,187 +62,69 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
+    captureException(error)
     console.error(`Webhook processing error for ${event.type}:`, error)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const invoiceId = session.metadata?.invoiceId
-  if (!invoiceId) {
-    console.error('checkout.session.completed: missing invoiceId in metadata')
-    return
+/** Shared Connect destinations receive other products' events as well. Only
+ * local account/document references enter handlers; those handlers still reject
+ * wrong account/org identities and retry failures for our own records. */
+async function belongsToFieldClose(event: Stripe.Event): Promise<boolean> {
+  if (event.type === 'account.updated') {
+    const account = event.data.object as Stripe.Account
+    if (account.id !== event.account) throw new Error('Stripe account update scope mismatch')
+    return Boolean(await db.organization.findFirst({ where: { stripeConnectedAccountId: account.id }, select: { id: true } }))
   }
-
-  const invoice = await db.invoice.findUnique({ where: { id: invoiceId } })
-  if (!invoice) {
-    console.error(`checkout.session.completed: invoice ${invoiceId} not found`)
-    return
+  const checkoutEvent = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'checkout.session.expired'].includes(event.type)
+  if (!checkoutEvent && !['payment_intent.succeeded', 'payment_intent.payment_failed'].includes(event.type)) return false
+  const object = event.data.object as Stripe.Checkout.Session | Stripe.PaymentIntent
+  if (checkoutEvent && (object as Stripe.Checkout.Session).mode !== 'payment') return false
+  if (checkoutEvent && event.type !== 'checkout.session.expired' && (object as Stripe.Checkout.Session).payment_status !== 'paid') return false
+  if (event.type === 'payment_intent.succeeded' && object.metadata?.method !== TERMINAL_PAYMENT_METHOD) {
+    const saved = await db.payment.findUnique({ where: { stripePaymentIntent: object.id }, select: { method: true } })
+    if (saved?.method === TERMINAL_PAYMENT_METHOD) throw new Error('Missing Terminal payment method identity')
+    return false
   }
-
-  // Idempotency: skip if already paid
-  if (invoice.status === 'paid') {
-    return
-  }
-
-  const paymentIntentId = typeof session.payment_intent === 'string'
-    ? session.payment_intent
-    : session.payment_intent?.id || null
-
-  await db.$transaction(async (tx) => {
-    // Update invoice to paid
-    await tx.invoice.update({
-      where: { id: invoiceId },
-      data: {
-        status: 'paid',
-        paidAt: new Date(),
-        outstandingCents: 0,
-      },
-    })
-
-    // Stop collections: mark open attempts as skipped
-    await tx.collectionAttempt.updateMany({
-      where: { invoiceId, status: 'created' },
-      data: { status: 'skipped' },
-    })
-
-    // Update or create payment record
-    if (paymentIntentId) {
-      const existingPayment = await tx.payment.findUnique({
-        where: { stripePaymentIntent: paymentIntentId },
-      })
-
-      if (existingPayment) {
-        await tx.payment.update({
-          where: { id: existingPayment.id },
-          data: { status: 'succeeded', paidAt: new Date() },
-        })
-      } else {
-        await tx.payment.create({
-          data: {
-            organizationId: invoice.organizationId,
-            invoiceId: invoice.id,
-            stripePaymentIntent: paymentIntentId,
-            amountCents: session.amount_total || invoice.totalCents,
-            status: 'succeeded',
-            paidAt: new Date(),
-          },
-        })
-      }
-    }
-  })
-
-  await trackEvent({
-    organizationId: invoice.organizationId,
-    eventName: 'invoice_payment_confirmed',
-    entityType: 'invoice',
-    entityId: invoiceId,
-    metadataJson: { paymentIntentId, sessionId: session.id },
-  })
-
-  await trackEvent({
-    organizationId: invoice.organizationId,
-    eventName: 'collections_stopped_due_to_payment',
-    entityType: 'invoice',
-    entityId: invoiceId,
-  })
-
-  try {
-    await logAudit({
-      organizationId: invoice.organizationId,
-      actorEmail: 'stripe-webhook',
-      eventType: 'payment.recorded',
-      targetType: 'invoice',
-      targetId: invoiceId,
-      metadata: {
-        amountCents: session.amount_total || invoice.totalCents,
-        currency: session.currency || 'usd',
-        status: 'succeeded',
-        invoiceId,
-      },
-    })
-  } catch { /* best-effort */ }
-
-  // Fire-and-forget: emit `order.ingest` to Robert for satellite revenue
-  // attribution. Robert outages must never affect this webhook's 2xx reply
-  // to Stripe, so failures are swallowed and the fetch is not awaited.
-  const appUrl = process.env.APP_URL
-  const customerId =
-    typeof session.customer === 'string'
-      ? session.customer
-      : session.customer?.id ?? ''
-  if (appUrl && customerId) {
-    void fetch(`${appUrl}/api/internal/order-ingest`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        stripeInvoiceId: invoiceId,
-        customerId,
-        amountPaid: session.amount_total ?? invoice.totalCents,
-        currency: session.currency ?? 'usd',
-        planId: session.metadata?.planId ?? undefined,
-      }),
-      keepalive: true,
-    }).catch(() => null)
-  }
+  if (object.metadata?.invoiceId && await db.invoice.findUnique({ where: { id: object.metadata.invoiceId }, select: { id: true } })) return true
+  if (object.metadata?.organizationId && await db.organization.findFirst({ where: { id: object.metadata.organizationId }, select: { id: true } })) return true
+  // Missing metadata on a previously saved FieldClose session/intent is a
+  // processing error, not a foreign event that can be discarded silently.
+  if (checkoutEvent && await db.invoice.findFirst({ where: { stripeCheckoutSessionId: object.id }, select: { id: true } })) return true
+  const reference = checkoutEvent ? (object as Stripe.Checkout.Session).payment_intent : object.id
+  const intentId = typeof reference === 'string' ? reference : reference?.id
+  return Boolean(intentId && await db.payment.findUnique({ where: { stripePaymentIntent: intentId }, select: { id: true } }))
 }
 
-async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session, account: string | undefined, livemode: boolean) {
+  // ACH and other delayed methods can complete checkout before settling.
+  if (session.mode !== 'payment' || session.payment_status !== 'paid') return
   const invoiceId = session.metadata?.invoiceId
-  if (!invoiceId) return
+  const organizationId = session.metadata?.organizationId
+  const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+  if (!invoiceId || !organizationId || !paymentIntentId) throw new Error('Missing payment identity')
+  await reconcileConfirmedPayment({invoiceId, organizationId, connectedAccountId: account,
+    paymentIntentId, amountCents: session.amount_total ?? 0, currency: session.currency ?? '', method: 'checkout', livemode})
+}
 
-  const invoice = await db.invoice.findUnique({ where: { id: invoiceId } })
-  if (!invoice || invoice.status === 'paid') return
-
-  // Clear the checkout session reference so a new one can be created
-  await db.invoice.update({
-    where: { id: invoiceId },
-    data: { stripeCheckoutSessionId: null },
-  })
-
-  // Mark any pending payment as failed
+async function handleCheckoutExpired(session: Stripe.Checkout.Session, account: string) {
+  if (session.mode !== 'payment') return
   const paymentIntentId = typeof session.payment_intent === 'string'
     ? session.payment_intent
-    : session.payment_intent?.id || null
-
-  if (paymentIntentId) {
-    const payment = await db.payment.findUnique({
-      where: { stripePaymentIntent: paymentIntentId },
-    })
-    if (payment && payment.status === 'pending') {
-      await db.payment.update({
-        where: { id: payment.id },
-        data: { status: 'failed' },
-      })
-      try {
-        await logAudit({
-          organizationId: invoice.organizationId,
-          actorEmail: 'stripe-webhook',
-          eventType: 'payment.failed',
-          targetType: 'invoice',
-          targetId: invoiceId,
-          metadata: {
-            amountCents: session.amount_total || invoice.totalCents,
-            currency: session.currency || 'usd',
-            status: 'failed',
-            invoiceId,
-          },
-        })
-      } catch { /* best-effort */ }
-    }
-  }
-
-  await trackEvent({
-    organizationId: invoice.organizationId,
-    eventName: 'invoice_payment_failed',
-    entityType: 'invoice',
-    entityId: invoiceId,
-    metadataJson: { reason: 'checkout_expired', sessionId: session.id },
+    : session.payment_intent?.id
+  await recordPaymentFailure({
+    invoiceId: session.metadata?.invoiceId,
+    organizationId: session.metadata?.organizationId,
+    account,
+    paymentIntentId,
+    sessionId: session.id,
+    reason: 'checkout_expired',
   })
 }
 
-async function handleAccountUpdated(account: Stripe.Account) {
-  if (!account.id) return
+async function handleAccountUpdated(account: Stripe.Account, connectedAccountId: string) {
+  if (account.id !== connectedAccountId) throw new Error('Stripe account update scope mismatch')
 
   const org = await db.organization.findFirst({
     where: { stripeConnectedAccountId: account.id },
@@ -270,175 +149,72 @@ async function handleAccountUpdated(account: Stripe.Account) {
   }
 }
 
-async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
-  const invoiceId = paymentIntent.metadata?.invoiceId
-  if (!invoiceId) return
-
-  const invoice = await db.invoice.findUnique({ where: { id: invoiceId } })
-  if (!invoice || invoice.status === 'paid') return
-
-  // Mark the local payment record as failed
-  if (paymentIntent.id) {
-    const payment = await db.payment.findUnique({
-      where: { stripePaymentIntent: paymentIntent.id },
-    })
-    if (payment && payment.status === 'pending') {
-      await db.payment.update({
-        where: { id: payment.id },
-        data: { status: 'failed' },
-      })
-      try {
-        await logAudit({
-          organizationId: invoice.organizationId,
-          actorEmail: 'stripe-webhook',
-          eventType: 'payment.failed',
-          targetType: 'invoice',
-          targetId: invoiceId,
-          metadata: {
-            amountCents: paymentIntent.amount,
-            currency: paymentIntent.currency,
-            status: 'failed',
-            invoiceId,
-          },
-        })
-      } catch { /* best-effort */ }
-    }
-  }
-
-  await trackEvent({
-    organizationId: invoice.organizationId,
-    eventName: 'invoice_payment_failed',
-    entityType: 'invoice',
-    entityId: invoiceId,
-    metadataJson: { reason: 'payment_intent_failed', paymentIntentId: paymentIntent.id },
+async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent, account: string) {
+  await recordPaymentFailure({
+    invoiceId: paymentIntent.metadata?.invoiceId,
+    organizationId: paymentIntent.metadata?.organizationId,
+    account,
+    paymentIntentId: paymentIntent.id,
+    reason: 'payment_intent_failed',
   })
 }
 
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  // Only reconcile Terminal-collected payments here. Checkout-session payments
-  // are confirmed by handleCheckoutCompleted; leaving those untouched avoids
-  // changing the existing checkout flow.
+async function recordPaymentFailure(input: {
+  invoiceId?: string
+  organizationId?: string
+  account: string
+  paymentIntentId?: string
+  sessionId?: string
+  reason: 'checkout_expired' | 'payment_intent_failed'
+}) {
+  const { invoiceId, organizationId, account, paymentIntentId, sessionId, reason } = input
+  if (!invoiceId) throw new Error('Missing failed payment invoice')
+  if (!organizationId) throw new Error('Missing failed payment organization')
+  await db.$transaction(async tx => {
+    // Use the same invoice lock as settlement so late failures cannot overwrite
+    // a successful payment, and validate every identity before changing records.
+    await tx.$queryRaw`SELECT id FROM "Invoice" WHERE id = ${invoiceId} FOR UPDATE`
+    const invoice = await tx.invoice.findUnique({ where: { id: invoiceId }, include: { organization: true } })
+    if (!invoice || invoice.organizationId !== organizationId || invoice.organization.stripeConnectedAccountId !== account) {
+      throw new Error('Failed payment does not match invoice organization and Stripe account')
+    }
+    if (invoice.status === 'paid' || invoice.status === 'void' || invoice.status === 'draft') return
+    const payment = paymentIntentId
+      ? await tx.payment.findUnique({ where: { stripePaymentIntent: paymentIntentId } })
+      : null
+    if (payment && (payment.invoiceId !== invoiceId || payment.organizationId !== organizationId)) {
+      throw new Error('Failed payment intent is linked to another invoice')
+    }
+    const cleared = sessionId ? await tx.invoice.updateMany({
+      where: { id: invoiceId, organizationId, stripeCheckoutSessionId: sessionId, status: { not: 'paid' } },
+      data: { stripeCheckoutSessionId: null },
+    }) : { count: 0 }
+    const failed = payment ? await tx.payment.updateMany({
+      where: { id: payment.id, invoiceId, organizationId, status: 'pending' },
+      data: { status: 'failed' },
+    }) : { count: 0 }
+    if (failed.count) {
+      await logAudit({
+        organizationId, actorEmail: 'stripe-webhook', eventType: 'payment.failed',
+        targetType: 'invoice', targetId: invoiceId,
+        metadata: { amountCents: payment!.amountCents, currency: payment!.currency, status: 'failed', invoiceId },
+      }, tx)
+    }
+    if (cleared.count || failed.count) {
+      await trackEvent({
+        organizationId, eventName: 'invoice_payment_failed', entityType: 'invoice', entityId: invoiceId,
+        metadataJson: { reason, ...(sessionId ? { sessionId } : {}), ...(paymentIntentId ? { paymentIntentId } : {}) },
+      }, tx)
+    }
+  })
+}
+
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent, account: string | undefined, livemode: boolean) {
   if (paymentIntent.metadata?.method !== TERMINAL_PAYMENT_METHOD) return
-
-  const invoiceId = paymentIntent.metadata?.invoiceId
-  if (!invoiceId) {
-    console.error('payment_intent.succeeded: terminal PI missing invoiceId metadata')
-    return
-  }
-
-  const invoice = await db.invoice.findUnique({ where: { id: invoiceId } })
-  if (!invoice) return
-
-  // Idempotency: the capture server action may have already marked the invoice paid.
-  if (invoice.status === 'paid') return
-
-  await db.$transaction(async (tx) => {
-    await tx.invoice.update({
-      where: { id: invoiceId },
-      data: {
-        status: 'paid',
-        paidAt: new Date(),
-        outstandingCents: 0,
-      },
-    })
-
-    await tx.collectionAttempt.updateMany({
-      where: { invoiceId, status: 'created' },
-      data: { status: 'skipped' },
-    })
-
-    const existingPayment = await tx.payment.findUnique({
-      where: { stripePaymentIntent: paymentIntent.id },
-    })
-
-    if (existingPayment) {
-      await tx.payment.update({
-        where: { id: existingPayment.id },
-        data: { status: 'succeeded', paidAt: new Date() },
-      })
-    } else {
-      await tx.payment.create({
-        data: {
-          organizationId: invoice.organizationId,
-          invoiceId: invoice.id,
-          stripePaymentIntent: paymentIntent.id,
-          amountCents: paymentIntent.amount_received || invoice.totalCents,
-          method: TERMINAL_PAYMENT_METHOD,
-          status: 'succeeded',
-          paidAt: new Date(),
-        },
-      })
-    }
-  })
-
-  await trackEvent({
-    organizationId: invoice.organizationId,
-    eventName: 'invoice_payment_confirmed',
-    entityType: 'invoice',
-    entityId: invoiceId,
-    metadataJson: { paymentIntentId: paymentIntent.id, source: 'terminal_webhook' },
-  })
-
-  await trackEvent({
-    organizationId: invoice.organizationId,
-    eventName: 'collections_stopped_due_to_payment',
-    entityType: 'invoice',
-    entityId: invoiceId,
-  })
-
-  try {
-    await logAudit({
-      organizationId: invoice.organizationId,
-      actorEmail: 'stripe-webhook',
-      eventType: 'payment.recorded',
-      targetType: 'invoice',
-      targetId: invoiceId,
-      metadata: {
-        amountCents: paymentIntent.amount_received || invoice.totalCents,
-        currency: paymentIntent.currency,
-        status: 'succeeded',
-        invoiceId,
-      },
-    })
-  } catch { /* best-effort */ }
-}
-
-async function handleSubscriptionChange(subscription: Stripe.Subscription) {
-  const organizationId = subscription.metadata?.organizationId
-  if (!organizationId) return
-
-  const org = await db.organization.findUnique({ where: { id: organizationId } })
-  if (!org) return
-
-  const statusMap: Record<string, 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE'> = {
-    active: 'ACTIVE',
-    trialing: 'TRIALING',
-    past_due: 'PAST_DUE',
-    canceled: 'CANCELED',
-    unpaid: 'UNPAID',
-    incomplete: 'INCOMPLETE',
-  }
-
-  const newStatus = statusMap[subscription.status] || 'ACTIVE'
-  const planId = (subscription.metadata?.planId as 'FREE' | 'STARTER' | 'PRO') || org.plan
-
-  await db.organization.update({
-    where: { id: organizationId },
-    data: {
-      subscriptionStatus: newStatus,
-      plan: planId,
-      stripeSubscriptionId: subscription.id,
-      currentPeriodEnd: subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000)
-        : null,
-    },
-  })
-
-  await trackEvent({
-    organizationId,
-    eventName: 'subscription_updated',
-    entityType: 'organization',
-    entityId: organizationId,
-    metadataJson: { status: newStatus, plan: planId },
-  })
+  if (paymentIntent.status !== 'succeeded') return
+  const {invoiceId, organizationId} = paymentIntent.metadata
+  if (!invoiceId || !organizationId) throw new Error('Missing Terminal payment identity')
+  await reconcileConfirmedPayment({invoiceId, organizationId, connectedAccountId: account,
+    paymentIntentId: paymentIntent.id, amountCents: paymentIntent.amount_received,
+    currency: paymentIntent.currency, method: TERMINAL_PAYMENT_METHOD, livemode})
 }

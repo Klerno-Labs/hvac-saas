@@ -1,3 +1,5 @@
+import { startOfBusinessDayAsUtcDate } from '@/lib/format'
+import { jobAccessWhere } from '@/lib/mutation-access'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
@@ -11,33 +13,33 @@ export default async function CalendarPage({
 }: {
   searchParams: Promise<{ month?: string }>
 }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
   const params = await searchParams
 
   // Determine displayed month
-  const now = new Date()
-  let year = now.getFullYear()
-  let month = now.getMonth() // 0-indexed
+  const now = startOfBusinessDayAsUtcDate(new Date(), context.organization.timezone)
+  let year = now.getUTCFullYear()
+  let month = now.getUTCMonth() // 0-indexed
 
-  if (params.month) {
+  if (params.month && /^\d{4}-\d{2}$/.test(params.month)) {
     const [y, m] = params.month.split('-').map(Number)
-    if (y && m && m >= 1 && m <= 12) {
+    if (Number.isInteger(y) && y >= 1000 && y <= 9998 && m >= 1 && m <= 12) {
       year = y
       month = m - 1
     }
   }
 
   // First and last day of the month
-  const firstOfMonth = new Date(year, month, 1)
-  const lastOfMonth = new Date(year, month + 1, 0)
+  const firstOfMonth = new Date(Date.UTC(year, month, 1))
+  const lastOfMonth = new Date(Date.UTC(year, month + 1, 0))
 
   // Fetch jobs scheduled in this month
   const jobs = await db.job.findMany({
     where: {
-      organizationId,
+      ...jobAccessWhere(context),
       scheduledFor: {
         gte: firstOfMonth,
-        lte: new Date(year, month + 1, 0, 23, 59, 59, 999),
+        lt: new Date(Date.UTC(year, month + 1, 1)),
       },
     },
     select: {
@@ -46,22 +48,22 @@ export default async function CalendarPage({
       status: true,
       scheduledFor: true,
     },
-    orderBy: { scheduledFor: 'asc' },
+    orderBy: [{ scheduledFor: 'asc' }, { id: 'asc' }],
   })
 
   // Group jobs by day of month
   const jobsByDay: Record<number, typeof jobs> = {}
   for (const job of jobs) {
     if (job.scheduledFor) {
-      const day = new Date(job.scheduledFor).getDate()
+      const day = new Date(job.scheduledFor).getUTCDate()
       if (!jobsByDay[day]) jobsByDay[day] = []
       jobsByDay[day].push(job)
     }
   }
 
   // Build calendar grid
-  const startDayOfWeek = firstOfMonth.getDay() // 0=Sunday
-  const daysInMonth = lastOfMonth.getDate()
+  const startDayOfWeek = firstOfMonth.getUTCDay() // 0=Sunday
+  const daysInMonth = lastOfMonth.getUTCDate()
   const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7
 
   // Navigation
@@ -73,6 +75,7 @@ export default async function CalendarPage({
   const nextHref = `/calendar?month=${nextYear}-${String(nextMonth).padStart(2, '0')}`
 
   const monthLabel = firstOfMonth.toLocaleString('en-US', {
+    timeZone: 'UTC',
     month: 'long',
     year: 'numeric',
   })
@@ -81,7 +84,7 @@ export default async function CalendarPage({
 
   return (
     <main className="max-w-[1200px] mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap gap-4 items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Calendar</h1>
         <div className="flex items-center gap-2">
           <Link
@@ -123,9 +126,9 @@ export default async function CalendarPage({
               const isCurrentMonth = dayNum >= 1 && dayNum <= daysInMonth
               const isToday =
                 isCurrentMonth &&
-                dayNum === now.getDate() &&
-                month === now.getMonth() &&
-                year === now.getFullYear()
+                dayNum === now.getUTCDate() &&
+                month === now.getUTCMonth() &&
+                year === now.getUTCFullYear()
               const dayJobs = isCurrentMonth ? jobsByDay[dayNum] || [] : []
 
               return (
@@ -147,9 +150,10 @@ export default async function CalendarPage({
                         {dayNum}
                       </span>
                       <div className="mt-0.5 space-y-0.5">
-                        {dayJobs.map((job) => (
+                        {dayJobs.slice(0, 3).map((job) => (
                           <Link
                             key={job.id}
+                            prefetch={false}
                             href={`/jobs/${job.id}` as never}
                             className="no-underline block"
                           >
@@ -161,6 +165,11 @@ export default async function CalendarPage({
                             </Badge>
                           </Link>
                         ))}
+                        {dayJobs.length > 3 && (
+                          <Link prefetch={false} href={`/jobs?day=${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`} className="block text-xs font-medium underline py-1" aria-label={`View all ${dayJobs.length} jobs on ${monthLabel} ${dayNum}`}>
+                            +{dayJobs.length - 3} more
+                          </Link>
+                        )}
                       </div>
                     </>
                   )}

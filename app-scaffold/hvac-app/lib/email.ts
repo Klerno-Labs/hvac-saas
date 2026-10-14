@@ -1,5 +1,6 @@
+import { formatDateOnly } from '@/lib/format'
 import { Resend } from 'resend'
-import { renderEmail } from './email-template'
+import { renderEmail, escapeHtml } from './email-template'
 
 let _resend: Resend | null = null
 
@@ -13,17 +14,18 @@ function getResend(): Resend | null {
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'FieldClose <noreply@resend.dev>'
 
-type SendResult = { success: true; id: string } | { success: false; error: string }
+type SendResult = { success: true; id: string } | { success: false; error: string; retryable?: boolean }
 
 export async function sendEmail(params: {
   to: string
   subject: string
   html: string
+  idempotencyKey?: string
 }): Promise<SendResult> {
   const resend = getResend()
   if (!resend) {
-    console.log(`[email-skipped] No RESEND_API_KEY — would send to ${params.to}: ${params.subject}`)
-    return { success: false, error: 'Email delivery not configured (RESEND_API_KEY missing)' }
+    console.log('[email-skipped] Email delivery is not configured')
+    return { success: false, error: 'Email delivery not configured (RESEND_API_KEY missing)', retryable: true }
   }
 
   try {
@@ -32,17 +34,18 @@ export async function sendEmail(params: {
       to: params.to,
       subject: params.subject,
       html: params.html,
-    })
+    }, params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined)
 
     if (result.error) {
-      console.error('[email-error]', result.error)
-      return { success: false, error: result.error.message }
+      console.error('[email-error] Email provider rejected the request')
+      return { success: false, error: result.error.message, retryable: [400, 401, 403, 404, 422, 429].includes(result.error.statusCode ?? 0) }
     }
 
-    return { success: true, id: result.data?.id || '' }
-  } catch (error) {
-    console.error('[email-error]', error)
-    return { success: false, error: 'Failed to send email' }
+    return result.data?.id ? { success: true, id: result.data.id } : { success: false, error: 'Email acceptance could not be confirmed', retryable: false }
+  } catch {
+    // Never log provider payloads: they can contain addresses or private links.
+    console.error('[email-error] Email provider request failed')
+    return { success: false, error: 'Failed to send email', retryable: false }
   }
 }
 
@@ -51,15 +54,17 @@ export async function sendInvoiceEmail(params: {
   customerName: string
   invoiceNumber: string
   totalFormatted: string
+  outstandingCents: number
   orgName: string
   portalUrl?: string
   dueDate?: string
 }): Promise<SendResult> {
+  const paymentDue = params.outstandingCents > 0
   const body = `
-    <p>Hi ${params.customerName},</p>
-    <p><strong>${params.orgName}</strong> has sent you an invoice for <strong>${params.totalFormatted}</strong>.</p>
-    ${params.dueDate ? `<p style="color:#64748b;">Payment due: <strong>${params.dueDate}</strong></p>` : ''}
-    <p>You can view and pay this invoice securely online.</p>
+    <p>Hi ${escapeHtml(params.customerName)},</p>
+    <p><strong>${escapeHtml(params.orgName)}</strong> has sent you an invoice for <strong>${escapeHtml(params.totalFormatted)}</strong>.</p>
+    ${paymentDue && params.dueDate ? `<p style="color:#64748b;">Payment due: <strong>${escapeHtml(params.dueDate)}</strong></p>` : ''}
+    <p>${paymentDue ? 'You can view and pay this invoice securely online.' : 'No payment is due. You can view this invoice online for your records.'}</p>
   `
 
   return sendEmail({
@@ -69,7 +74,7 @@ export async function sendInvoiceEmail(params: {
       title: `Invoice #${params.invoiceNumber}`,
       preheader: `${params.totalFormatted} invoice from ${params.orgName}`,
       body,
-      cta: params.portalUrl ? { label: 'View & Pay Invoice', url: params.portalUrl } : undefined,
+      cta: params.portalUrl ? { label: paymentDue ? 'View & Pay Invoice' : 'View Invoice', url: params.portalUrl } : undefined,
       footer: `Questions? Contact ${params.orgName} directly.`,
     }),
   })
@@ -84,8 +89,8 @@ export async function sendEstimateEmail(params: {
   portalUrl?: string
 }): Promise<SendResult> {
   const body = `
-    <p>Hi ${params.customerName},</p>
-    <p><strong>${params.orgName}</strong> has prepared an estimate for you totaling <strong>${params.totalFormatted}</strong>.</p>
+    <p>Hi ${escapeHtml(params.customerName)},</p>
+    <p><strong>${escapeHtml(params.orgName)}</strong> has prepared an estimate for you totaling <strong>${escapeHtml(params.totalFormatted)}</strong>.</p>
     <p>Review the details and approve it online whenever you're ready.</p>
   `
 
@@ -111,6 +116,7 @@ export async function sendCollectionEmail(params: {
   portalUrl?: string
   dueDate?: string
   stage: 'overdue_1' | 'overdue_2' | 'final_notice'
+  idempotencyKey?: string
 }): Promise<SendResult> {
   const stageText = {
     overdue_1: { title: 'Friendly Payment Reminder', message: "This is a friendly reminder that your invoice is past due. If you've already paid, please disregard this notice." },
@@ -119,14 +125,15 @@ export async function sendCollectionEmail(params: {
   }[params.stage]
 
   const body = `
-    <p>Hi ${params.customerName},</p>
+    <p>Hi ${escapeHtml(params.customerName)},</p>
     <p>${stageText.message}</p>
-    <p><strong>Invoice #${params.invoiceNumber}</strong> — ${params.totalFormatted}${params.dueDate ? ` (was due ${params.dueDate})` : ''}</p>
+    <p><strong>Invoice #${escapeHtml(params.invoiceNumber)}</strong> — ${escapeHtml(params.totalFormatted)}${params.dueDate ? ` (was due ${escapeHtml(params.dueDate)})` : ''}</p>
   `
 
   return sendEmail({
     to: params.to,
     subject: `${stageText.title}: Invoice #${params.invoiceNumber} from ${params.orgName}`,
+    idempotencyKey: params.idempotencyKey,
     html: renderEmail({
       title: stageText.title,
       preheader: `Invoice #${params.invoiceNumber} — ${params.totalFormatted} outstanding`,
@@ -143,26 +150,19 @@ export async function sendAppointmentReminderEmail(params: {
   jobTitle: string
   orgName: string
   scheduledFor: Date
+  idempotencyKey?: string
 }): Promise<SendResult> {
-  const dateStr = params.scheduledFor.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
-  const timeStr = params.scheduledFor.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-
+  const dateStr = formatDateOnly(params.scheduledFor)
   const body = `
-    <p>Hi ${params.customerName},</p>
-    <p>This is a reminder that <strong>${params.orgName}</strong> has a scheduled appointment with you tomorrow.</p>
-    <p><strong>${params.jobTitle}</strong><br>${dateStr} at ${timeStr}</p>
+    <p>Hi ${escapeHtml(params.customerName)},</p>
+    <p>This is a reminder that <strong>${escapeHtml(params.orgName)}</strong> has an upcoming service visit with you.</p>
+    <p><strong>${escapeHtml(params.jobTitle)}</strong><br>${escapeHtml(dateStr)} · Arrival time to be confirmed</p>
     <p>If you need to reschedule, please contact us as soon as possible.</p>
   `
 
   return sendEmail({
     to: params.to,
+    idempotencyKey: params.idempotencyKey,
     subject: `Appointment reminder: ${params.jobTitle} on ${dateStr}`,
     html: renderEmail({
       title: 'Appointment Reminder',
@@ -200,8 +200,8 @@ export async function sendTeamInviteEmail(params: {
   signupUrl: string
 }): Promise<SendResult> {
   const body = `
-    <p>${params.inviterName} has invited you to join <strong>${params.orgName}</strong> on FieldClose.</p>
-    <p>FieldClose helps HVAC teams track jobs, send estimates, invoice customers, and get paid — all in one place.</p>
+    <p>${escapeHtml(params.inviterName)} has invited you to join <strong>${escapeHtml(params.orgName)}</strong> on FieldClose.</p>
+    <p>FieldClose helps service teams track jobs, send estimates, invoice customers, and get paid — all in one place.</p>
   `
 
   return sendEmail({

@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-04T20:59:44.719Z",
+  "scope": "public application schema only; provider-managed schemas are outside this backup",
+  "productionAccess": "repeatable-read read-only exported snapshot; TLS confirmed",
+  "archiveSha256": "4ae3cbe0763c75df2181dd9188f647d41171c396d4fb17eeb530b9d7c3f6dabd",
+  "archiveBytes": 111045,
+  "tableCount": 37,
+  "rowCount": 51,
+  "migrationRows": 10,
+  "schemaSha256": "ac382a9cf76559b877ab4b9e4fc2e308fee56879124b49972f869d47d2f353ad",
+  "restoredSchemaSha256": "ac382a9cf76559b877ab4b9e4fc2e308fee56879124b49972f869d47d2f353ad",
+  "schemaMatch": true,
+  "schemaNormalization": "Logical definitions and live column order compared; internal attribute-number gaps left by historical dropped columns excluded.",
+  "dataSha256": "383791751f59765a9c2d532b6f13ad4d3c0537897aefd9bc407dd3000a59f697",
+  "restoredDataSha256": "383791751f59765a9c2d532b6f13ad4d3c0537897aefd9bc407dd3000a59f697",
+  "tableCountsAndContentDigestsMatch": true,
+  "restoreTarget": "uniquely named local PostgreSQL database; no production credentials or records placed in OVH staging",
+  "backupPermissions": "directory 0700; archive and supporting files 0600",
+  "backupDirectory": "/Users/hatfield/.codex/backups/fieldclose/2026-10-04-a90f5887",
+  "restoreDatabaseRemoved": true,
+  "status": "passed"
+}

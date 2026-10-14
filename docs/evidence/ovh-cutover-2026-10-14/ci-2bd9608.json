@@ -1,0 +1,71 @@
+{
+  "revision": "2bd9608f28ea38efc8bdac5298219ded8aa2f32d",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/Klerno-Labs/hvac-saas/actions/runs/38615316859",
+  "jobs": [
+    {
+      "name": "build",
+      "conclusion": "success",
+      "completedAt": "2026-10-14T18:30:17Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate OVH production deployment guards",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx prisma generate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx prisma migrate deploy",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx tsc --noEmit",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm test -- --run --reporter=verbose",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:integration",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm audit --omit=dev --audit-level=high",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate production-only startup",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

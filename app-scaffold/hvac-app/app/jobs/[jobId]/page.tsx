@@ -1,3 +1,7 @@
+import { formatDateOnly } from '@/lib/format'
+import { photoReadUrl } from '@/lib/photo-url'
+import { canDo } from '@/lib/permissions'
+import { jobAccessWhere } from '@/lib/mutation-access'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
@@ -5,6 +9,7 @@ import Link from 'next/link'
 import { JobStatusForm } from './status-form'
 import { PartsUsedSection } from './parts-used'
 import { ReviewSection } from './review-section'
+import { getStripeRuntimeAvailability } from '@/lib/stripe-runtime'
 import { TerminalCollectSection } from './terminal-collect-section'
 import { getTerminalEligibility } from '@/lib/terminal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,21 +18,22 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
-  const { organizationId, organization } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
+  const { organizationId, organization } = context
   const { jobId } = await params
 
   const [job, inventoryItems, existingReview] = await Promise.all([
     db.job.findFirst({
-      where: { id: jobId, organizationId },
+      where: { id: jobId, ...jobAccessWhere(context) },
       include: {
         customer: true,
-        estimates: { orderBy: { createdAt: 'desc' } },
-        invoices: { orderBy: { createdAt: 'desc' } },
+        estimates: { where: canDo(context.role, 'editPricing') ? {} : { status: { not: 'draft' } }, orderBy: { createdAt: 'desc' } },
+        invoices: { where: canDo(context.role, 'editPricing') ? {} : { status: { not: 'draft' } }, orderBy: { createdAt: 'desc' } },
         assets: { orderBy: { createdAt: 'asc' } },
         signatures: { orderBy: { signedAt: 'desc' } },
         inventoryUsages: {
           orderBy: { createdAt: 'desc' },
-          include: { inventoryItem: true },
+          include: { inventoryItem: { select: { id: true, name: true, sku: true } } },
         },
       },
     }),
@@ -57,7 +63,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
       <Card className="mb-4">
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
-            <CardTitle className="text-2xl">{job.title}</CardTitle>
+            <h1 className="text-2xl font-semibold">{job.title}</h1>
             <p className="text-sm text-muted-foreground">
               Customer:{' '}
               <Link href={`/customers/${job.customerId}` as never} className="text-primary hover:underline">
@@ -71,7 +77,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">Scheduled</p>
-              <p className="text-sm font-medium">{job.scheduledFor ? new Date(job.scheduledFor).toLocaleDateString() : '—'}</p>
+              <p className="text-sm font-medium">{job.scheduledFor ? formatDateOnly(job.scheduledFor) : '—'}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Completed</p>
@@ -141,13 +147,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
               {job.assets.map((asset) => (
                 <a
                   key={asset.id}
-                  href={asset.fileUrl}
+                  href={photoReadUrl(asset)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="relative aspect-square rounded-lg overflow-hidden border bg-muted block"
                 >
                   <img
-                    src={asset.fileUrl}
+                    src={photoReadUrl(asset)}
                     alt="Proof of work"
                     className="object-cover w-full h-full hover:opacity-90 transition-opacity"
                   />
@@ -196,9 +202,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
       {/* Estimates section */}
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-semibold">Estimates</h2>
-        <Link href={`/estimates/new?jobId=${job.id}` as never} className={cn(buttonVariants({ size: 'sm' }), 'no-underline')}>
+        {canDo(context.role, 'editPricing') && <Link href={`/estimates/new?jobId=${job.id}` as never} className={cn(buttonVariants({ size: 'sm' }), 'no-underline')}>
           New estimate
-        </Link>
+        </Link>}
       </div>
 
       {job.estimates.length === 0 ? (
@@ -233,9 +239,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
       {/* Invoices section */}
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-semibold">Invoices</h2>
-        <Link href={`/invoices/new?jobId=${job.id}` as never} className={cn(buttonVariants({ size: 'sm' }), 'no-underline')}>
+        {canDo(context.role, 'editPricing') && <Link href={`/invoices/new?jobId=${job.id}` as never} className={cn(buttonVariants({ size: 'sm' }), 'no-underline')}>
           New invoice
-        </Link>
+        </Link>}
       </div>
 
       {job.invoices.length === 0 ? (
@@ -266,6 +272,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
 
       {/* In-field card payment (Stripe Terminal) */}
       <TerminalCollectSection
+        allowSimulation={getStripeRuntimeAvailability().mode === 'test'}
         eligible={terminalEligibility.eligible}
         ineligibleReason={terminalEligibility.reason}
         invoices={job.invoices.map((inv) => ({

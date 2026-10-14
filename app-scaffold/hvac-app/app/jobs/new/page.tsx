@@ -1,11 +1,11 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { NewJobForm } from './form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function NewJobPage({ searchParams }: { searchParams: Promise<{ customerId?: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('manageJobs')
   const { customerId } = await searchParams
 
   const customers = await db.customer.findMany({

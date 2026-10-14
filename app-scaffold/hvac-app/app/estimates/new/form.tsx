@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { PriceBookPicker } from '../_components/pricebook-picker'
-import { type PriceBookItem } from '@/lib/pricebook-to-lineitem'
+import { type EstimateCatalogItem, addEstimateLineItem } from '@/lib/pricebook-to-lineitem'
 
 type LineItem = {
   name: string
@@ -25,7 +25,7 @@ export function EstimateForm({
 }: {
   jobId: string
   jobTitle: string
-  priceBookItems: PriceBookItem[]
+  priceBookItems: EstimateCatalogItem[]
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -117,7 +117,7 @@ export function EstimateForm({
           <div>
             <strong className="text-sm">AI Draft Assist</strong>
             <p className="text-xs text-muted-foreground mt-1">
-              Generate a starting draft from job context. You can review and edit everything before saving.
+              Draft the scope from your job notes. Add your own prices or choose items from your price book before sending.
             </p>
           </div>
           <Button
@@ -132,19 +132,20 @@ export function EstimateForm({
         </div>
         {aiUsed && (
           <p className="text-xs text-emerald-600 mt-2">
-            Draft generated. Review and edit before saving.
+            Draft generated. Prices start at $0. Review the scope, quantities, and prices before saving.
           </p>
         )}
       </div>
 
       {error && (
-        <div className="text-destructive text-sm mb-4">{error}</div>
+        <div role="alert" className="text-destructive text-sm mb-4">{error}</div>
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div>
           <Label className="text-sm font-medium">Scope of work *</Label>
           <Textarea
+            aria-label="Scope of work"
             value={scopeOfWork}
             onChange={(e) => setScopeOfWork(e.target.value)}
             required
@@ -155,7 +156,7 @@ export function EstimateForm({
 
         <PriceBookPicker
           items={priceBookItems}
-          onPick={(li) => setLineItems([...lineItems, li])}
+          onPick={(li) => setLineItems(current => addEstimateLineItem(current, li))}
         />
 
         <div className="mt-2">
@@ -172,12 +173,14 @@ export function EstimateForm({
                 <div className="flex flex-col gap-2">
                   <Input
                     placeholder="Item name"
+                    aria-label={`Item name, line ${i + 1}`}
                     value={li.name}
                     onChange={(e) => updateLineItem(i, 'name', e.target.value)}
                     required
                   />
                   <Input
                     placeholder="Description (optional)"
+                    aria-label={`Item description, line ${i + 1}`}
                     value={li.description}
                     onChange={(e) => updateLineItem(i, 'description', e.target.value)}
                   />
@@ -187,7 +190,8 @@ export function EstimateForm({
                       <Input
                         type="number"
                         min={1}
-                        value={li.quantity}
+                        aria-label={`Quantity, line ${i + 1}`}
+                    value={li.quantity}
                         onChange={(e) => updateLineItem(i, 'quantity', parseInt(e.target.value) || 1)}
                         className="mt-1"
                       />
@@ -198,6 +202,7 @@ export function EstimateForm({
                         type="number"
                         min={0}
                         step="0.01"
+                        aria-label={`Unit price in dollars, line ${i + 1}`}
                         value={(li.unitPriceCents / 100).toFixed(2)}
                         onChange={(e) => updateLineItem(i, 'unitPriceCents', Math.round(parseFloat(e.target.value || '0') * 100))}
                         className="mt-1"
@@ -208,6 +213,7 @@ export function EstimateForm({
                       <Input
                         type="text"
                         readOnly
+                        aria-label={`Line total, line ${i + 1}`}
                         value={formatCents(li.quantity * li.unitPriceCents)}
                         className="mt-1 bg-muted"
                       />
@@ -220,6 +226,7 @@ export function EstimateForm({
                     onClick={() => removeLineItem(i)}
                     className="bg-transparent border-none text-destructive cursor-pointer text-lg px-1"
                     title="Remove item"
+                    aria-label={`Remove line ${i + 1}`}
                   >
                     &times;
                   </button>
@@ -236,6 +243,7 @@ export function EstimateForm({
               type="number"
               min={0}
               step="0.01"
+              aria-label="Tax in dollars"
               value={(taxCents / 100).toFixed(2)}
               onChange={(e) => setTaxCents(Math.round(parseFloat(e.target.value || '0') * 100))}
               className="mt-1"
@@ -250,6 +258,7 @@ export function EstimateForm({
         <div>
           <Label className="text-sm font-medium">Terms</Label>
           <Textarea
+            aria-label="Terms"
             value={terms}
             onChange={(e) => setTerms(e.target.value)}
             rows={2}
@@ -259,14 +268,17 @@ export function EstimateForm({
         </div>
 
         <div>
-          <Label className="text-sm font-medium">Notes</Label>
+          <Label htmlFor="estimate-internal-notes" className="text-sm font-medium">Internal notes</Label>
           <Textarea
+            id="estimate-internal-notes"
+            aria-describedby="estimate-internal-notes-hint"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            placeholder="Additional notes for the customer"
+            placeholder="Notes for your team"
             className="mt-1 resize-y"
           />
+          <p id="estimate-internal-notes-hint" className="mt-1 text-xs text-muted-foreground">For your team only. Not shown in customer emails, the portal, or PDFs.</p>
         </div>
 
         <div className="flex gap-3 mt-2">

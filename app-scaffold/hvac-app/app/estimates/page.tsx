@@ -1,4 +1,5 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { jobAccessWhere } from '@/lib/mutation-access'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,12 +14,13 @@ export default async function EstimatesPage({
 }: {
   searchParams: Promise<{ page?: string; q?: string }>
 }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requirePageCapability('editPricing')
+  const { organizationId } = context
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page || '1', 10) || 1)
   const q = params.q?.trim() || ''
 
-  const where: Record<string, unknown> = { organizationId }
+  const where: Record<string, unknown> = { organizationId, job: jobAccessWhere(context) }
 
   if (q) {
     where.OR = [

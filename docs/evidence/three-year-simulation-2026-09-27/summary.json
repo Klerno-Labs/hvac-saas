@@ -1,0 +1,1219 @@
+{
+  "applicationRevision": "139de1a57a64b6de0612399037e230d943ec6ca7",
+  "baselineApplicationRevision": "06b5b7b74caaf965115f60cf36884314c4c90935",
+  "baselineBuildId": "UodLfhdqqHcpsFC27GgOp",
+  "patchedBuildId": "rd0z4QYxctbsVwkRb9A1y",
+  "hardware": {
+    "processor": "Apple M4 Pro",
+    "memoryGiB": 24,
+    "database": "PostgreSQL 17.10",
+    "appPoolConnections": 20,
+    "sharedLocalAppDatabaseAndGenerator": true
+  },
+  "model": {
+    "start": "2023-09-27",
+    "end": "2026-09-26",
+    "companies": 10,
+    "employees": 100,
+    "technicians": 80,
+    "workdaysPerYear": 250,
+    "jobsPerTechnicianDay": 3
+  },
+  "seededRows": 1735850,
+  "historicalCounts": {
+    "user": 100,
+    "organizationMember": 100,
+    "customer": 20000,
+    "job": 180100,
+    "estimate": 180000,
+    "estimateLineItem": 180000,
+    "invoice": 162000,
+    "invoiceLineItem": 162000,
+    "payment": 149540,
+    "jobNote": 162000,
+    "activityEvent": 540000,
+    "organization": 10
+  },
+  "seededDatabaseMiB": 454.42237758636475,
+  "requests": {
+    "baseline": 42251,
+    "patched": 41271,
+    "total": 83522,
+    "patchedTimedLoadRequests": 39791
+  },
+  "baselineFindings": {
+    "financialRoleViolations": 90,
+    "expectedTechnicianRedirectsInitiallyMisclassified": 3495,
+    "otherUnexpectedFailures": 0
+  },
+  "patchedChecks": [
+    {
+      "name": "100 real employee credential sign-ins",
+      "passed": true
+    },
+    {
+      "name": "100 employees denied cross-company job reads and writes",
+      "passed": true
+    },
+    {
+      "name": "80 technicians denied another technician assigned job",
+      "passed": true
+    },
+    {
+      "name": "non-pricing roles denied financial analytics",
+      "passed": true
+    },
+    {
+      "name": "10 owner customer exports exact tenant and 1980 active customers",
+      "passed": true
+    },
+    {
+      "name": "100 invoices created through real authenticated server actions with unique numbers",
+      "passed": true
+    },
+    {
+      "name": "signed synthetic settlement: 100 payments, 5 concurrent duplicates each, no overcollection",
+      "passed": true
+    },
+    {
+      "name": "late failures do not reverse successful payments",
+      "passed": true
+    },
+    {
+      "name": "post-pressure: no historical balance corruption",
+      "passed": true
+    }
+  ],
+  "patchedServerErrorsOrTimeouts": 0,
+  "patchedUnexpectedResponses": 0,
+  "crossTenantMarkerLeaks": 0,
+  "historicalMonthlyChecks": 370,
+  "historicalMonthlyPassed": 370,
+  "historicalInvariantViolations": {
+    "invoice_number_collision": 0,
+    "invoice_math": 0,
+    "estimate_number_collision": 0,
+    "payment_tenant": 0,
+    "paid_ledger_mismatch": 0,
+    "estimate_tenant": 0,
+    "invoice_line_totals": 0,
+    "invoice_tenant": 0
+  },
+  "maintenance": {
+    "name": "36-month accelerated recurring engine",
+    "schedules": 100,
+    "overlappingRunsPerMonth": 4,
+    "idempotentReruns": 36,
+    "generatedJobs": 2190,
+    "passed": true
+  },
+  "phases": [
+    {
+      "name": "warmup",
+      "concurrency": 10,
+      "thinkMs": 250,
+      "durationSeconds": 10.243842833999999,
+      "requestsPerSecond": 35.63115970390922,
+      "requests": 365,
+      "passed": 365,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 25.31,
+      "p95Ms": 61.52,
+      "p99Ms": 77.26,
+      "maxMs": 89.52,
+      "routes": {
+        "write-notes": {
+          "requests": 36,
+          "passed": 36,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 15.21,
+          "p95Ms": 40.96,
+          "p99Ms": 41.02,
+          "maxMs": 41.02
+        },
+        "write-status": {
+          "requests": 36,
+          "passed": 36,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 8.93,
+          "p95Ms": 35.29,
+          "p99Ms": 41.16,
+          "maxMs": 41.16
+        },
+        "field": {
+          "requests": 66,
+          "passed": 66,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 24.03,
+          "p95Ms": 58.52,
+          "p99Ms": 69.74,
+          "maxMs": 69.74
+        },
+        "job-detail": {
+          "requests": 70,
+          "passed": 70,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 26.88,
+          "p95Ms": 59.58,
+          "p99Ms": 70.85,
+          "maxMs": 70.85
+        },
+        "jobs": {
+          "requests": 37,
+          "passed": 37,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 29.45,
+          "p95Ms": 61.17,
+          "p99Ms": 76.21,
+          "maxMs": 76.21
+        },
+        "job-search": {
+          "requests": 33,
+          "passed": 33,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 38.49,
+          "p95Ms": 63.81,
+          "p99Ms": 76.29,
+          "maxMs": 76.29
+        },
+        "job-deep-page": {
+          "requests": 35,
+          "passed": 35,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 32.49,
+          "p95Ms": 62.76,
+          "p99Ms": 76.58,
+          "maxMs": 76.58
+        },
+        "calendar": {
+          "requests": 36,
+          "passed": 36,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 31.1,
+          "p95Ms": 78.97,
+          "p99Ms": 89.52,
+          "maxMs": 89.52
+        },
+        "dashboard": {
+          "requests": 7,
+          "passed": 7,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 25.65,
+          "p95Ms": 32.25,
+          "p99Ms": 32.25,
+          "maxMs": 32.25
+        },
+        "analytics": {
+          "requests": 3,
+          "passed": 3,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 7.3,
+          "p95Ms": 9.96,
+          "p99Ms": 9.96,
+          "maxMs": 9.96
+        },
+        "reports": {
+          "requests": 3,
+          "passed": 3,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 22.97,
+          "p95Ms": 38.87,
+          "p99Ms": 38.87,
+          "maxMs": 38.87
+        },
+        "invoice-deep-page": {
+          "requests": 3,
+          "passed": 3,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 26.08,
+          "p95Ms": 29.94,
+          "p99Ms": 29.94,
+          "maxMs": 29.94
+        }
+      }
+    },
+    {
+      "name": "burst-10",
+      "concurrency": 10,
+      "thinkMs": 0,
+      "durationSeconds": 20.023741292,
+      "requestsPerSecond": 215.79383877309434,
+      "requests": 4321,
+      "passed": 4321,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 40.11,
+      "p95Ms": 77.34,
+      "p99Ms": 463.86,
+      "maxMs": 632.58,
+      "routes": {
+        "write-notes": {
+          "requests": 432,
+          "passed": 432,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 12.15,
+          "p95Ms": 22.3,
+          "p99Ms": 28.54,
+          "maxMs": 35.1
+        },
+        "write-status": {
+          "requests": 433,
+          "passed": 433,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 12.22,
+          "p95Ms": 21.79,
+          "p99Ms": 30.05,
+          "maxMs": 59.28
+        },
+        "field": {
+          "requests": 818,
+          "passed": 818,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 29.67,
+          "p95Ms": 45.48,
+          "p99Ms": 61.81,
+          "maxMs": 92.6
+        },
+        "job-detail": {
+          "requests": 842,
+          "passed": 842,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 37.03,
+          "p95Ms": 53.91,
+          "p99Ms": 81.47,
+          "maxMs": 103.45
+        },
+        "job-search": {
+          "requests": 410,
+          "passed": 410,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 62.21,
+          "p95Ms": 84.91,
+          "p99Ms": 104.54,
+          "maxMs": 120.12
+        },
+        "job-deep-page": {
+          "requests": 412,
+          "passed": 412,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 58.24,
+          "p95Ms": 79.24,
+          "p99Ms": 92.35,
+          "maxMs": 114.32
+        },
+        "calendar": {
+          "requests": 434,
+          "passed": 434,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 63.21,
+          "p95Ms": 513.94,
+          "p99Ms": 557.33,
+          "maxMs": 632.58
+        },
+        "jobs": {
+          "requests": 431,
+          "passed": 431,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 61.02,
+          "p95Ms": 82.61,
+          "p99Ms": 125.9,
+          "maxMs": 139.67
+        },
+        "dashboard": {
+          "requests": 43,
+          "passed": 43,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 54.98,
+          "p95Ms": 85.92,
+          "p99Ms": 102.39,
+          "maxMs": 102.39
+        },
+        "analytics": {
+          "requests": 22,
+          "passed": 22,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 15.53,
+          "p95Ms": 19.88,
+          "p99Ms": 21.86,
+          "maxMs": 21.86
+        },
+        "reports": {
+          "requests": 22,
+          "passed": 22,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 48.25,
+          "p95Ms": 57.26,
+          "p99Ms": 61.92,
+          "maxMs": 61.92
+        },
+        "invoice-deep-page": {
+          "requests": 22,
+          "passed": 22,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 73.63,
+          "p95Ms": 85.25,
+          "p99Ms": 139.16,
+          "maxMs": 139.16
+        }
+      }
+    },
+    {
+      "name": "burst-25",
+      "concurrency": 25,
+      "thinkMs": 0,
+      "durationSeconds": 20.02220529199999,
+      "requestsPerSecond": 219.90584632349407,
+      "requests": 4403,
+      "passed": 4403,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 90.47,
+      "p95Ms": 187.52,
+      "p99Ms": 1342.64,
+      "maxMs": 1447.86,
+      "routes": {
+        "write-notes": {
+          "requests": 440,
+          "passed": 440,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 26.79,
+          "p95Ms": 44.02,
+          "p99Ms": 52.64,
+          "maxMs": 78.85
+        },
+        "write-status": {
+          "requests": 443,
+          "passed": 443,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 28.85,
+          "p95Ms": 44.74,
+          "p99Ms": 66.84,
+          "maxMs": 139.43
+        },
+        "field": {
+          "requests": 831,
+          "passed": 831,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 69.38,
+          "p95Ms": 116.89,
+          "p99Ms": 149.08,
+          "maxMs": 184.87
+        },
+        "job-detail": {
+          "requests": 851,
+          "passed": 851,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 81.05,
+          "p95Ms": 127.59,
+          "p99Ms": 155.56,
+          "maxMs": 218.76
+        },
+        "calendar": {
+          "requests": 445,
+          "passed": 445,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 161.96,
+          "p95Ms": 1403.88,
+          "p99Ms": 1437.2,
+          "maxMs": 1447.86
+        },
+        "job-deep-page": {
+          "requests": 414,
+          "passed": 414,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 143.88,
+          "p95Ms": 192.29,
+          "p99Ms": 208.86,
+          "maxMs": 223.49
+        },
+        "job-search": {
+          "requests": 418,
+          "passed": 418,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 152.3,
+          "p95Ms": 202.72,
+          "p99Ms": 234.22,
+          "maxMs": 287.05
+        },
+        "jobs": {
+          "requests": 438,
+          "passed": 438,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 145.09,
+          "p95Ms": 194.47,
+          "p99Ms": 216.56,
+          "maxMs": 233.82
+        },
+        "dashboard": {
+          "requests": 51,
+          "passed": 51,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 106.13,
+          "p95Ms": 177.77,
+          "p99Ms": 191.24,
+          "maxMs": 191.24
+        },
+        "analytics": {
+          "requests": 24,
+          "passed": 24,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 31.29,
+          "p95Ms": 41.54,
+          "p99Ms": 45.5,
+          "maxMs": 45.5
+        },
+        "reports": {
+          "requests": 24,
+          "passed": 24,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 87.15,
+          "p95Ms": 108.66,
+          "p99Ms": 114.03,
+          "maxMs": 114.03
+        },
+        "invoice-deep-page": {
+          "requests": 24,
+          "passed": 24,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 167.74,
+          "p95Ms": 193.69,
+          "p99Ms": 196.2,
+          "maxMs": 196.2
+        }
+      }
+    },
+    {
+      "name": "burst-50",
+      "concurrency": 50,
+      "thinkMs": 0,
+      "durationSeconds": 20.136945000000008,
+      "requestsPerSecond": 225.75420452307927,
+      "requests": 4546,
+      "passed": 4546,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 174.56,
+      "p95Ms": 367.98,
+      "p99Ms": 621.75,
+      "maxMs": 2936,
+      "routes": {
+        "write-notes": {
+          "requests": 460,
+          "passed": 460,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 59.21,
+          "p95Ms": 105.57,
+          "p99Ms": 145.47,
+          "maxMs": 185.94
+        },
+        "write-status": {
+          "requests": 465,
+          "passed": 465,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 53.86,
+          "p95Ms": 100.11,
+          "p99Ms": 155.61,
+          "maxMs": 186.11
+        },
+        "field": {
+          "requests": 859,
+          "passed": 859,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 132.08,
+          "p95Ms": 205.5,
+          "p99Ms": 239.03,
+          "maxMs": 256.03
+        },
+        "job-detail": {
+          "requests": 883,
+          "passed": 883,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 160.48,
+          "p95Ms": 241.4,
+          "p99Ms": 279.2,
+          "maxMs": 292.81
+        },
+        "job-deep-page": {
+          "requests": 430,
+          "passed": 430,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 302.08,
+          "p95Ms": 374.71,
+          "p99Ms": 421.79,
+          "maxMs": 480.32
+        },
+        "job-search": {
+          "requests": 430,
+          "passed": 430,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 302.32,
+          "p95Ms": 390.72,
+          "p99Ms": 462.59,
+          "maxMs": 468.9
+        },
+        "jobs": {
+          "requests": 449,
+          "passed": 449,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 299.86,
+          "p95Ms": 392.88,
+          "p99Ms": 454.74,
+          "maxMs": 457.83
+        },
+        "calendar": {
+          "requests": 470,
+          "passed": 470,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 317.79,
+          "p95Ms": 2876,
+          "p99Ms": 2910.58,
+          "maxMs": 2936
+        },
+        "dashboard": {
+          "requests": 40,
+          "passed": 40,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 253.29,
+          "p95Ms": 345.23,
+          "p99Ms": 351.07,
+          "maxMs": 351.07
+        },
+        "analytics": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 56.3,
+          "p95Ms": 69.36,
+          "p99Ms": 69.87,
+          "maxMs": 69.87
+        },
+        "reports": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 176.46,
+          "p95Ms": 197.79,
+          "p99Ms": 199.64,
+          "maxMs": 199.64
+        },
+        "invoice-deep-page": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 325.55,
+          "p95Ms": 333.81,
+          "p99Ms": 334.69,
+          "maxMs": 334.69
+        }
+      }
+    },
+    {
+      "name": "burst-100",
+      "concurrency": 100,
+      "thinkMs": 0,
+      "durationSeconds": 20.06907770899999,
+      "requestsPerSecond": 220.98673712400452,
+      "requests": 4435,
+      "passed": 4435,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 354.68,
+      "p95Ms": 768.78,
+      "p99Ms": 939.45,
+      "maxMs": 6115.23,
+      "routes": {
+        "write-notes": {
+          "requests": 431,
+          "passed": 431,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 113.74,
+          "p95Ms": 193.33,
+          "p99Ms": 259.2,
+          "maxMs": 504.5
+        },
+        "write-status": {
+          "requests": 437,
+          "passed": 437,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 116.08,
+          "p95Ms": 197.37,
+          "p99Ms": 451.81,
+          "maxMs": 511.31
+        },
+        "field": {
+          "requests": 860,
+          "passed": 860,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 269.46,
+          "p95Ms": 396.32,
+          "p99Ms": 488.96,
+          "maxMs": 629.16
+        },
+        "job-detail": {
+          "requests": 877,
+          "passed": 877,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 330.21,
+          "p95Ms": 473.03,
+          "p99Ms": 598.32,
+          "maxMs": 668.27
+        },
+        "job-deep-page": {
+          "requests": 420,
+          "passed": 420,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 620.77,
+          "p95Ms": 798.87,
+          "p99Ms": 887.22,
+          "maxMs": 949.5
+        },
+        "job-search": {
+          "requests": 420,
+          "passed": 420,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 621.03,
+          "p95Ms": 771.69,
+          "p99Ms": 843.01,
+          "maxMs": 942.62
+        },
+        "jobs": {
+          "requests": 450,
+          "passed": 450,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 627.64,
+          "p95Ms": 820.5,
+          "p99Ms": 890.88,
+          "maxMs": 934.63
+        },
+        "calendar": {
+          "requests": 440,
+          "passed": 440,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 647.44,
+          "p95Ms": 5870.7,
+          "p99Ms": 6081.42,
+          "maxMs": 6115.23
+        },
+        "dashboard": {
+          "requests": 40,
+          "passed": 40,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 434.5,
+          "p95Ms": 663.68,
+          "p99Ms": 665.54,
+          "maxMs": 665.54
+        },
+        "analytics": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 119.6,
+          "p95Ms": 160.84,
+          "p99Ms": 194.73,
+          "maxMs": 194.73
+        },
+        "reports": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 363.72,
+          "p95Ms": 382.47,
+          "p99Ms": 406.48,
+          "maxMs": 406.48
+        },
+        "invoice-deep-page": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 656.29,
+          "p95Ms": 703.91,
+          "p99Ms": 704.41,
+          "maxMs": 704.41
+        }
+      }
+    },
+    {
+      "name": "burst-200",
+      "concurrency": 200,
+      "thinkMs": 0,
+      "durationSeconds": 20.135533624999997,
+      "requestsPerSecond": 229.64377732005605,
+      "requests": 4624,
+      "passed": 4624,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 687.78,
+      "p95Ms": 1435.6,
+      "p99Ms": 2364.46,
+      "maxMs": 11682.8,
+      "routes": {
+        "write-notes": {
+          "requests": 439,
+          "passed": 439,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 223.16,
+          "p95Ms": 341.73,
+          "p99Ms": 1157.88,
+          "maxMs": 1234.42
+        },
+        "write-status": {
+          "requests": 454,
+          "passed": 454,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 205.73,
+          "p95Ms": 367.85,
+          "p99Ms": 1189.13,
+          "maxMs": 1248.05
+        },
+        "field": {
+          "requests": 876,
+          "passed": 876,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 542.3,
+          "p95Ms": 786.33,
+          "p99Ms": 1024.34,
+          "maxMs": 1385.17
+        },
+        "job-detail": {
+          "requests": 929,
+          "passed": 929,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 629.52,
+          "p95Ms": 894.15,
+          "p99Ms": 1036.75,
+          "maxMs": 1475.32
+        },
+        "job-deep-page": {
+          "requests": 448,
+          "passed": 448,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1137.12,
+          "p95Ms": 1438.66,
+          "p99Ms": 1700.27,
+          "maxMs": 2103.73
+        },
+        "job-search": {
+          "requests": 460,
+          "passed": 460,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1230.1,
+          "p95Ms": 1443.73,
+          "p99Ms": 1674.72,
+          "maxMs": 2034.91
+        },
+        "jobs": {
+          "requests": 460,
+          "passed": 460,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1151.37,
+          "p95Ms": 1447.38,
+          "p99Ms": 1624.92,
+          "maxMs": 1983.42
+        },
+        "calendar": {
+          "requests": 458,
+          "passed": 458,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1268.92,
+          "p95Ms": 11408.19,
+          "p99Ms": 11572.08,
+          "maxMs": 11682.8
+        },
+        "dashboard": {
+          "requests": 40,
+          "passed": 40,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 790.66,
+          "p95Ms": 1207.78,
+          "p99Ms": 1230.58,
+          "maxMs": 1230.58
+        },
+        "analytics": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 235.18,
+          "p95Ms": 282.63,
+          "p99Ms": 300.3,
+          "maxMs": 300.3
+        },
+        "reports": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 668.95,
+          "p95Ms": 688.47,
+          "p99Ms": 688.69,
+          "maxMs": 688.69
+        },
+        "invoice-deep-page": {
+          "requests": 20,
+          "passed": 20,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 1252.32,
+          "p95Ms": 1322.79,
+          "p99Ms": 1359.34,
+          "maxMs": 1359.34
+        }
+      }
+    },
+    {
+      "name": "sustained-100",
+      "concurrency": 100,
+      "thinkMs": 500,
+      "durationSeconds": 120.693831917,
+      "requestsPerSecond": 135.5330238520328,
+      "requests": 16358,
+      "passed": 16358,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 233.44,
+      "p95Ms": 502.21,
+      "p99Ms": 593.37,
+      "maxMs": 796.25,
+      "routes": {
+        "write-notes": {
+          "requests": 1634,
+          "passed": 1634,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 124.93,
+          "p95Ms": 229.81,
+          "p99Ms": 270.26,
+          "maxMs": 337.39
+        },
+        "write-status": {
+          "requests": 1637,
+          "passed": 1637,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 17.34,
+          "p95Ms": 149.54,
+          "p99Ms": 215.39,
+          "maxMs": 240.14
+        },
+        "field": {
+          "requests": 2944,
+          "passed": 2944,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 222.82,
+          "p95Ms": 395.64,
+          "p99Ms": 519.85,
+          "maxMs": 562.95
+        },
+        "job-detail": {
+          "requests": 3110,
+          "passed": 3110,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 284.76,
+          "p95Ms": 457.09,
+          "p99Ms": 560.5,
+          "maxMs": 614.79
+        },
+        "jobs": {
+          "requests": 1634,
+          "passed": 1634,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 325.09,
+          "p95Ms": 567.77,
+          "p99Ms": 617.71,
+          "maxMs": 648.63
+        },
+        "job-deep-page": {
+          "requests": 1466,
+          "passed": 1466,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 336.19,
+          "p95Ms": 556.74,
+          "p99Ms": 641.63,
+          "maxMs": 651.1
+        },
+        "job-search": {
+          "requests": 1470,
+          "passed": 1470,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 365.24,
+          "p95Ms": 582.45,
+          "p99Ms": 646.95,
+          "maxMs": 651.21
+        },
+        "calendar": {
+          "requests": 1623,
+          "passed": 1623,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 185.65,
+          "p95Ms": 503.03,
+          "p99Ms": 701.93,
+          "maxMs": 796.25
+        },
+        "dashboard": {
+          "requests": 330,
+          "passed": 330,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 202.75,
+          "p95Ms": 429.28,
+          "p99Ms": 457.17,
+          "maxMs": 536.59
+        },
+        "analytics": {
+          "requests": 170,
+          "passed": 170,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 141.71,
+          "p95Ms": 219.66,
+          "p99Ms": 235.06,
+          "maxMs": 235.08
+        },
+        "reports": {
+          "requests": 170,
+          "passed": 170,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 51.61,
+          "p95Ms": 346.47,
+          "p99Ms": 414.78,
+          "maxMs": 479.72
+        },
+        "invoice-deep-page": {
+          "requests": 170,
+          "passed": 170,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 61.63,
+          "p95Ms": 254.35,
+          "p99Ms": 281.11,
+          "maxMs": 281.18
+        }
+      }
+    },
+    {
+      "name": "recovery-10",
+      "concurrency": 10,
+      "thinkMs": 250,
+      "durationSeconds": 20.19563316700002,
+      "requestsPerSecond": 36.59206888385839,
+      "requests": 739,
+      "passed": 739,
+      "failed": 0,
+      "errorRate": 0,
+      "p50Ms": 19.54,
+      "p95Ms": 45.89,
+      "p99Ms": 64.62,
+      "maxMs": 80.78,
+      "routes": {
+        "write-notes": {
+          "requests": 73,
+          "passed": 73,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 10.86,
+          "p95Ms": 25.47,
+          "p99Ms": 32.66,
+          "maxMs": 32.66
+        },
+        "write-status": {
+          "requests": 73,
+          "passed": 73,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 9.31,
+          "p95Ms": 23.23,
+          "p99Ms": 34.36,
+          "maxMs": 34.36
+        },
+        "field": {
+          "requests": 134,
+          "passed": 134,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 16.92,
+          "p95Ms": 39.65,
+          "p99Ms": 59.93,
+          "maxMs": 60.11
+        },
+        "job-detail": {
+          "requests": 142,
+          "passed": 142,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 18.42,
+          "p95Ms": 38.08,
+          "p99Ms": 49.91,
+          "maxMs": 52.84
+        },
+        "calendar": {
+          "requests": 74,
+          "passed": 74,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 20.51,
+          "p95Ms": 76.9,
+          "p99Ms": 80.78,
+          "maxMs": 80.78
+        },
+        "job-search": {
+          "requests": 67,
+          "passed": 67,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 25.57,
+          "p95Ms": 54.43,
+          "p99Ms": 64.21,
+          "maxMs": 64.21
+        },
+        "job-deep-page": {
+          "requests": 67,
+          "passed": 67,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 24.59,
+          "p95Ms": 48.42,
+          "p99Ms": 64.24,
+          "maxMs": 64.24
+        },
+        "jobs": {
+          "requests": 74,
+          "passed": 74,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 22.82,
+          "p95Ms": 43.68,
+          "p99Ms": 64.14,
+          "maxMs": 64.14
+        },
+        "dashboard": {
+          "requests": 14,
+          "passed": 14,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 22.03,
+          "p95Ms": 45.89,
+          "p99Ms": 45.89,
+          "maxMs": 45.89
+        },
+        "analytics": {
+          "requests": 7,
+          "passed": 7,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 7.95,
+          "p95Ms": 34.88,
+          "p99Ms": 34.88,
+          "maxMs": 34.88
+        },
+        "reports": {
+          "requests": 7,
+          "passed": 7,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 27.13,
+          "p95Ms": 48.94,
+          "p99Ms": 48.94,
+          "maxMs": 48.94
+        },
+        "invoice-deep-page": {
+          "requests": 7,
+          "passed": 7,
+          "failed": 0,
+          "errorRate": 0,
+          "p50Ms": 23.25,
+          "p95Ms": 44.51,
+          "p99Ms": 44.51,
+          "maxMs": 44.51
+        }
+      }
+    }
+  ],
+  "peakServerRssMiB": 1406.1875,
+  "sustainedServerRssFirst20sMedianMiB": 1385.7109375,
+  "sustainedServerRssLast20sMedianMiB": 1118.9140625,
+  "limits": [
+    "Bulk history is distinct from real HTTP workflow execution.",
+    "Payment events were locally generated and signed; no external processor request or real money.",
+    "Local shared-machine timings do not establish Vercel/Supabase capacity, network latency, cold starts or distributed rate limits.",
+    "Closed-loop traffic includes a two-minute sustained phase, not a multi-day soak or years of availability.",
+    "Historical photo bytes, browser rendering, external message delivery, physical readers and external-provider outages were not simulated.",
+    "The corrected technician journey and added synthetic maintenance rows make before/after performance comparisons directional, not controlled optimization evidence."
+  ]
+}

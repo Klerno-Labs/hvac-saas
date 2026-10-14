@@ -1,6 +1,7 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { nextDocumentNumber } from '@/lib/document-number'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { createInvoiceSchema } from '@/lib/validations/invoice'
@@ -17,21 +18,10 @@ export async function createInvoice(input: {
   dueDate?: string
   lineItems: { name: string; description?: string; quantity: number; unitPriceCents: number }[]
 }): Promise<CreateInvoiceResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
+  const access = await requireMutationAccess('editPricing')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { userId, organizationId } = access.context
 
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
 
   const parsed = createInvoiceSchema.safeParse(input)
   if (!parsed.success) {
@@ -62,11 +52,9 @@ export async function createInvoice(input: {
   const taxCents = data.taxCents
   const totalCents = subtotalCents + taxCents
 
-  // Generate invoice number
-  const count = await db.invoice.count({ where: { organizationId } })
-  const invoiceNumber = `INV-${String(count + 1).padStart(4, '0')}`
-
-  const invoice = await db.invoice.create({
+  const invoice = await db.$transaction(async tx => {
+    const invoiceNumber = await nextDocumentNumber(tx, organizationId, 'invoice')
+    return tx.invoice.create({
     data: {
       organizationId,
       jobId: data.jobId,
@@ -84,6 +72,7 @@ export async function createInvoice(input: {
         create: lineItemsWithTotals,
       },
     },
+  })
   })
 
   await trackEvent({

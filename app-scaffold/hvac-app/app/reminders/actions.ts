@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { REMINDER_STATUSES } from '@/lib/validations/reminder'
@@ -13,21 +13,9 @@ export async function updateReminderStatus(
   reminderId: string,
   status: string,
 ): Promise<ActionResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('manageJobs')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { userId, organizationId } = access.context
 
   if (!REMINDER_STATUSES.includes(status as typeof REMINDER_STATUSES[number])) {
     return { success: false, error: 'Invalid reminder status' }

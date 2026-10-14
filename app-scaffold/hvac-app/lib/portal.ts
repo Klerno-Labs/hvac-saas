@@ -13,17 +13,21 @@ type PortalContext = {
  * Returns null if the token is invalid, expired, or revoked.
  */
 export async function validatePortalToken(token: string): Promise<PortalContext | null> {
+  if (!/^[a-f0-9]{64}$/.test(token)) return null
   const portalToken = await db.portalToken.findUnique({
     where: { token },
     include: {
-      customer: { select: { id: true, firstName: true, lastName: true } },
+      customer: { select: { id: true, organizationId: true, deletedAt: true, firstName: true, lastName: true } },
       organization: { select: { id: true, name: true } },
     },
   })
 
   if (!portalToken) return null
   if (portalToken.revokedAt) return null
-  if (portalToken.expiresAt < new Date()) return null
+  if (portalToken.expiresAt <= new Date()) return null
+  // The schema has separate customer/org foreign keys. Do not grant access for
+  // a legacy inconsistent row or keep a deleted customer's capability active.
+  if (portalToken.customer.organizationId !== portalToken.organizationId || portalToken.customer.deletedAt) return null
 
   return {
     customerId: portalToken.customerId,
@@ -55,6 +59,8 @@ export async function getOrCreatePortalUrl(
   organizationId: string,
   customerId: string,
 ): Promise<string> {
+  const customer = await db.customer.findFirst({ where: { id: customerId, organizationId, deletedAt: null }, select: { id: true } })
+  if (!customer) throw new Error('Customer not found in your organization')
   const existing = await db.portalToken.findFirst({
     where: {
       organizationId,

@@ -1,4 +1,5 @@
-import { requireAuth } from '@/lib/session'
+import { randomBytes } from 'node:crypto'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -6,7 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { CopyReferralButton } from './copy-button'
 
 export default async function ReferralsPage() {
-  const { organization } = await requireAuth()
+  const { organization } = await requirePageCapability('manageBilling')
+  if (!organization.referralCode) {
+    await db.organization.updateMany({ where: { id: organization.id, referralCode: null }, data: { referralCode: randomBytes(16).toString('hex') } })
+    organization.referralCode = (await db.organization.findUniqueOrThrow({ where: { id: organization.id }, select: { referralCode: true } })).referralCode
+  }
 
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
   const referralLink = `${appUrl}/signup?ref=${organization.referralCode}`
@@ -24,13 +29,13 @@ export default async function ReferralsPage() {
           &larr; Back to settings
         </Link>
         <h1 className="text-2xl font-bold tracking-tight">Referrals</h1>
-        <p className="text-sm text-muted-foreground mt-1">Invite other HVAC shops. You both get a free month when they sign up.</p>
+        <p className="text-sm text-muted-foreground mt-1">Invite another service business to try FieldClose with a 44-day trial.</p>
       </div>
 
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Your referral link</CardTitle>
-          <CardDescription>Share this link. Both you and the new shop get 1 month free.</CardDescription>
+          <CardDescription>New businesses that complete setup through this link receive 30 extra trial days. Your subscription is unchanged.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -39,7 +44,7 @@ export default async function ReferralsPage() {
               readOnly
               value={referralLink}
               className="flex-1 px-3 py-2 border rounded-lg bg-muted text-sm font-mono"
-              onFocus={(e) => e.target.select()}
+              aria-label="Your referral link"
             />
             <CopyReferralButton link={referralLink} />
           </div>
@@ -57,10 +62,10 @@ export default async function ReferralsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Free months earned</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Extra trial days per referral</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{organization.referralCredits}</p>
+            <p className="text-3xl font-bold">30</p>
           </CardContent>
         </Card>
       </div>

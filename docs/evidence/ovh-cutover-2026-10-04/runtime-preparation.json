@@ -1,0 +1,139 @@
+{
+  "recordedAt": "2026-10-04T21:00:33.564Z",
+  "scope": "OVH runtime audit and explicitly authorized inactive production host preparation",
+  "productionChanged": false,
+  "dnsChanged": false,
+  "credentialsTransferred": false,
+  "timersEnabled": false,
+  "current": {
+    "service": "fieldclose.service",
+    "user": "fieldclose",
+    "active": true,
+    "release": "/srv/fieldclose/releases/3b95bf8",
+    "symlink": "/srv/fieldclose/current",
+    "listener": "127.0.0.1:3000",
+    "environment": "/etc/fieldclose/app.env",
+    "syntheticDatabaseListener": "127.0.0.1:56487",
+    "outboundGuard": "/etc/systemd/system/fieldclose.service.d/isolated-test.conf",
+    "nginxSite": "/etc/nginx/sites-enabled/default",
+    "stagingHost": "staging.fieldclose.app",
+    "basicAuth": true,
+    "noindex": true,
+    "tlsExpires": "2026-12-26T20:58:59Z"
+  },
+  "host": {
+    "ipv4": "40.160.36.160",
+    "ipv6Available": true,
+    "firewallIncomingPorts": [
+      22,
+      80,
+      443
+    ],
+    "loopbackOnlyAppAndDatabase": true,
+    "memoryKiB": 7937220,
+    "swapKiB": 0,
+    "fieldcloseTimersFound": 0,
+    "fieldcloseCrontabJobsFound": 0,
+    "localApplicationBackupJobsFound": 0,
+    "certificateRenewalTimerPresent": true,
+    "certificateReloadHookPresent": true
+  },
+  "planned": {
+    "service": "fieldclose-production.service",
+    "user": "fieldclose-prod",
+    "listener": "127.0.0.1:3001",
+    "symlink": "/srv/fieldclose-production/current",
+    "releases": "/srv/fieldclose-production/releases",
+    "environment": "/etc/fieldclose-production/app.env",
+    "schedulerEnvironment": "/etc/fieldclose-production/scheduler.env",
+    "helperDirectory": "/usr/local/lib/fieldclose",
+    "certificateDirectory": "/etc/letsencrypt/live/fieldclose.app",
+    "nginxSite": "/etc/nginx/sites-available/fieldclose-production",
+    "memoryMaxGiB": 4,
+    "nodeHeapMiB": 2048
+  },
+  "egress": {
+    "r2HasIpv4AndIpv6": true,
+    "nodeDnsResultOrder": "ipv4first",
+    "nodeFamilyAutoselection": false,
+    "unauthenticatedTlsProbeRemoteFamily": "IPv4",
+    "unauthenticatedTlsProbeSource": "40.160.36.160",
+    "unauthenticatedTlsProbeStatus": 400,
+    "credentialUsed": false,
+    "productionServicePinsDnsFlags": true
+  },
+  "scheduler": {
+    "preparedOnly": true,
+    "runnerTarget": "http://127.0.0.1:3001",
+    "dailyUtc": {
+      "recurring": "02:00",
+      "collections": "03:00",
+      "appointments": "15:00"
+    },
+    "persistentCatchup": false,
+    "automaticRetries": false,
+    "perTaskLock": true,
+    "requiresExactTrueFlag": true,
+    "rejectsPartialSuccess": true,
+    "secretArgumentsOrResponseBodiesLogged": false,
+    "oldVercelSchedulerRequiresVerifiedDisablement": true,
+    "missedRunMonitoringStillRequiresSetup": true
+  },
+  "validation": {
+    "localSafetyTestsPassed": 24,
+    "ubuntuSystemdUnitSyntaxPassed": true,
+    "nginxConfigRequiresCertificateBeforeValidation": true,
+    "ubuntuSafetyTestsPassed": 24,
+    "multilineSingleQuotedEnvironmentPreservesTrailingLf": true
+  },
+  "requiredBeforeCutover": [
+    "Fresh isolated backup/restore proof for existing production database",
+    "Approved live Stripe and existing private R2 configuration securely installed only into new production environment",
+    "Pinned separate Linux production-origin build and pruned runtime verification",
+    "Trusted apex/www certificate and direct-origin HTTPS verification before DNS changes",
+    "Current Vercel DNS and scheduler state captured for rollback; exactly one scheduler active",
+    "Public route/auth/provider/monitoring checks and sitemap submission only after successful public cutover"
+  ],
+  "rollback": "Stop OVH timers, inspect in-progress work, restore recorded public DNS and exactly one scheduler. Keep synthetic staging isolated; its releases are not production rollback candidates.",
+  "hostPreparation": {
+    "installed": true,
+    "nonLoginUser": "fieldclose-prod",
+    "protectedDirectory": "/etc/fieldclose-production",
+    "directoryOwner": "root",
+    "directoryGroup": "fieldclose-prod",
+    "directoryMode": "0750",
+    "runtimeEnvironmentFilePresent": false,
+    "schedulerEnvironmentFilePresent": false,
+    "nginxChanged": false,
+    "productionService": {
+      "installed": true,
+      "enabled": false,
+      "active": false
+    },
+    "timers": [
+      {
+        "name": "fieldclose-recurring.timer",
+        "installed": true,
+        "enabled": false,
+        "active": false
+      },
+      {
+        "name": "fieldclose-collections.timer",
+        "installed": true,
+        "enabled": false,
+        "active": false
+      },
+      {
+        "name": "fieldclose-appointments.timer",
+        "installed": true,
+        "enabled": false,
+        "active": false
+      }
+    ],
+    "schedulerServiceTemplateInstalled": true,
+    "systemdDaemonReloaded": true,
+    "stagingStillActive": true,
+    "stagingReleaseUnchanged": "3b95bf8",
+    "reviewedHelpersResyncedInactive": true
+  }
+}

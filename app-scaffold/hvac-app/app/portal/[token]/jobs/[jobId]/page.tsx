@@ -1,4 +1,5 @@
 import { validatePortalToken } from '@/lib/portal'
+import { photoReadUrl } from '@/lib/photo-url'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -117,13 +118,13 @@ export default async function PortalJobPage({ params }: { params: Promise<{ toke
                 {job.assets.map((asset) => (
                   <a
                     key={asset.id}
-                    href={asset.fileUrl}
+                    href={photoReadUrl(asset, token)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="relative aspect-square rounded-lg overflow-hidden border bg-muted block"
                   >
                     <img
-                      src={asset.fileUrl}
+                      src={photoReadUrl(asset, token)}
                       alt="Proof of work"
                       className="object-cover w-full h-full hover:opacity-90 transition-opacity"
                     />

@@ -1,35 +1,19 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
 import { createJobSchema } from '@/lib/validations/job'
-import { canDo } from '@/lib/permissions'
 
 type CreateJobResult =
   | { success: true; jobId: string }
   | { success: false; error: string }
 
 export async function createJob(formData: FormData): Promise<CreateJobResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-  if (!canDo(membership.role, 'manageJobs')) {
-    return { success: false, error: 'You do not have permission to create jobs' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('manageJobs')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, userId, organizationId } = access.context
 
   const raw = {
     customerId: formData.get('customerId'),

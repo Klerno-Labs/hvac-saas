@@ -30,8 +30,8 @@ export async function submitReview(token: string, formData: FormData) {
     return { error: 'This review has already been submitted.' }
   }
 
-  await db.customerReview.update({
-    where: { id: review.id },
+  const saved = await db.customerReview.updateMany({
+    where: { id: review.id, submittedAt: null },
     data: {
       rating: parsed.data.rating,
       comment: parsed.data.comment || null,
@@ -39,5 +39,6 @@ export async function submitReview(token: string, formData: FormData) {
     },
   })
 
+  if (saved.count !== 1) return { error: 'This review has already been submitted.' }
   return { success: true }
 }

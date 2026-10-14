@@ -28,6 +28,7 @@ export async function updateAccountingConfig(input: {
   }
 
   const data = parsed.data
+  if (data.accountingConnected) return {success: false, error: 'Accounting connections are not available yet'}
 
   await db.organization.update({
     where: { id: organizationId },
@@ -79,7 +80,10 @@ export async function triggerAccountingSync(): Promise<SyncResult> {
     return { success: false, error: 'Accounting integration is not connected' }
   }
 
-  const result = await runAccountingSync(organizationId, userId)
-
-  return { success: true, ...result }
+  try {
+    const result = await runAccountingSync(organizationId, userId)
+    return {success: true, ...result}
+  } catch {
+    return {success: false, error: 'Accounting sync is not available yet. Export records for your accountant.'}
+  }
 }

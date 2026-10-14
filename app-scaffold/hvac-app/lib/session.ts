@@ -1,3 +1,5 @@
+import { cache } from 'react'
+import { canDo, type Capability } from '@/lib/permissions'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { redirect } from 'next/navigation'
@@ -9,18 +11,9 @@ import { isSubscriptionActive } from '@/lib/billing'
  * Redirects to /onboarding if authenticated but no organization membership exists.
  */
 export async function requireAuth() {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    redirect('/login')
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-    include: { organization: true },
-  })
+  const context = await getOptionalSession()
+  if (!context) redirect('/login')
+  const { userId, user, membership } = context
 
   if (!membership) {
     redirect('/onboarding')
@@ -28,7 +21,7 @@ export async function requireAuth() {
 
   return {
     userId,
-    user: session.user,
+    user,
     organizationId: membership.organizationId,
     organization: membership.organization,
     role: membership.role,
@@ -59,7 +52,10 @@ export async function requireActiveSubscription() {
  * Does not redirect — useful for pages that show different content
  * based on auth state (e.g. landing page).
  */
-export async function getOptionalSession() {
+// React cache deduplicates only within a server render, never across requests.
+// The page guard and optional shell share reads without retaining stale roles or
+// password versions for the next request. Route handlers/actions still validate.
+export const getOptionalSession = cache(async function getOptionalSession() {
   const session = await auth()
   if (!session?.user?.id) return null
 
@@ -73,4 +69,11 @@ export async function getOptionalSession() {
     user: session.user,
     membership,
   }
+})
+
+/** Page guard for organization-wide tools containing customer or pricing data. */
+export async function requirePageCapability(capability: Capability) {
+  const context = await requireActiveSubscription()
+  if (!canDo(context.role, capability)) redirect('/field')
+  return context
 }

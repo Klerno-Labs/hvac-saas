@@ -19,7 +19,7 @@ export async function generatePortalLink(customerId: string): Promise<GenerateRe
   const { userId, organizationId } = adminResult.context
 
   const customer = await db.customer.findFirst({
-    where: { id: customerId, organizationId },
+    where: { id: customerId, organizationId, deletedAt: null },
   })
   if (!customer) {
     return { success: false, error: 'Customer not found in your organization' }

@@ -1,0 +1,75 @@
+{
+  "deployment": "https://fieldclose-hdjemx6v9-hatfield-legacy-trusts-projects.vercel.app",
+  "checkedAt": "2026-09-27T17:38:45.092Z",
+  "results": [
+    {
+      "path": "/terms",
+      "status": 200,
+      "canonical": "https://fieldclose.app/terms",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "path": "/refund-policy",
+      "status": 200,
+      "canonical": "https://fieldclose.app/refund-policy",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "path": "/privacy",
+      "status": 200,
+      "canonical": "https://fieldclose.app/privacy",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "path": "/forgot-password",
+      "status": 200,
+      "canonical": "https://fieldclose.app/forgot-password",
+      "correctCanonical": true,
+      "ok": true,
+      "noindex": true,
+      "headingPresent": true
+    },
+    {
+      "path": "/signup",
+      "status": 200,
+      "canonical": "https://fieldclose.app/signup",
+      "correctCanonical": true,
+      "ok": true,
+      "noindex": true,
+      "headingPresent": true
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "canonical": "https://fieldclose.app/login",
+      "correctCanonical": true,
+      "ok": true,
+      "noindex": true,
+      "headingPresent": true
+    },
+    {
+      "path": "/help/account-and-password",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/account-and-password",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "check": "deployment-protection",
+      "status": 302,
+      "requiresSignIn": true,
+      "ok": true
+    }
+  ]
+}

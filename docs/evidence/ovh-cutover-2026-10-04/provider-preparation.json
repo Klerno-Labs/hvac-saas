@@ -1,0 +1,95 @@
+{
+  "checkedAt": "2026-10-04T21:09:36.304Z",
+  "status": "prepared_not_cut_over",
+  "stripe": {
+    "accountId": "acct_1TMx2XPgFInaK96k",
+    "existingActiveEndpoints": [
+      {
+        "id": "we_1UKHWtPgFInaK96kqlGDb6mf",
+        "url": "https://fieldclose.app/api/billing/webhook",
+        "scope": "account",
+        "events": 5
+      },
+      {
+        "id": "we_1UKHWwPgFInaK96k49rieOJA",
+        "url": "https://fieldclose.app/api/stripe/webhook",
+        "scope": "connected_accounts",
+        "events": 6
+      }
+    ],
+    "signingSecretsRecoveredPrivately": true,
+    "runtimeCredentialCreated": false,
+    "realChargeMade": false
+  },
+  "storage": {
+    "bucket": "fieldclose-production-photos",
+    "dashboardPublicAccess": "disabled",
+    "customDomains": 0,
+    "publicDevelopmentUrl": "disabled",
+    "runtimeCredentialCreated": false,
+    "preparedCredentialScope": "Object Read & Write for this bucket only; source IPv4 40.160.36.160/32"
+  },
+  "configuration": {
+    "existingDecryptedSettingsRecovered": 20,
+    "missingSettings": [
+      "STRIPE_SECRET_KEY",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY"
+    ],
+    "recoveredSecretsCommitted": false
+  },
+  "oldScheduler": {
+    "disabled": false,
+    "baseline": {
+      "capturedAt": "2026-10-04T21:07:29.990Z",
+      "projectId": "prj_ULPb9pDQhNgjX1ejVndfqFfSDpKj",
+      "name": "fieldclose",
+      "crons": {
+        "enabledAt": 1776384632578,
+        "disabledAt": null,
+        "updatedAt": 1790530749748,
+        "deploymentId": "dpl_BnDL2LfVaGwGgwC1jQo67jACinzy",
+        "definitions": [
+          {
+            "host": "fieldclose-hdjemx6v9-hatfield-legacy-trusts-projects.vercel.app",
+            "path": "/api/appointments/reminders",
+            "schedule": "0 15 * * *"
+          },
+          {
+            "host": "fieldclose-hdjemx6v9-hatfield-legacy-trusts-projects.vercel.app",
+            "path": "/api/collections/run",
+            "schedule": "0 3 * * *"
+          },
+          {
+            "host": "fieldclose-hdjemx6v9-hatfield-legacy-trusts-projects.vercel.app",
+            "path": "/api/recurring/generate",
+            "schedule": "0 2 * * *"
+          }
+        ]
+      },
+      "productionDeploymentId": "dpl_BnDL2LfVaGwGgwC1jQo67jACinzy",
+      "productionAlias": [
+        "fieldclose-hatfield-legacy-trusts-projects.vercel.app"
+      ]
+    }
+  },
+  "searchConsole": {
+    "property": "https://fieldclose.app/",
+    "accessible": true,
+    "currentSitemap": "/sitemap.xml",
+    "lastRead": "2026-10-02",
+    "discoveredPages": 17,
+    "updatedSitemapSubmitted": false
+  },
+  "dns": {
+    "changed": false,
+    "observedA": [
+      "64.29.17.65",
+      "216.198.79.65"
+    ],
+    "observedAaaa": [],
+    "observedWwwCname": "4e9c8f7206a39e01.vercel-dns-017.com."
+  },
+  "paidSeoToolsPurchased": false,
+  "advertisingPurchased": false
+}

@@ -1,29 +1,17 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { randomBytes } from 'crypto'
 
 export async function requestReview(jobId: string) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { error: 'Not authenticated.' }
-  }
-
-  // Look up membership for org scoping
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-
-  if (!membership) {
-    return { error: 'No organization membership found.' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return { error: access.error }
+  const { organizationId } = access.context
 
   // Verify job belongs to org
   const job = await db.job.findFirst({
-    where: { id: jobId, organizationId },
+    where: { id: jobId, ...jobAccessWhere(access.context) },
     select: { id: true, customerId: true, status: true },
   })
 
@@ -35,28 +23,13 @@ export async function requestReview(jobId: string) {
     return { error: 'Job must be completed before requesting a review.' }
   }
 
-  // Check if review already exists
-  const existing = await db.customerReview.findUnique({
-    where: { jobId },
+  // Serialize against the parent job: empty-update upserts are not atomic on every Prisma path.
+  const review = await db.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM "Job" WHERE id = ${jobId} AND "organizationId" = ${organizationId} FOR UPDATE`
+    const existing = await tx.customerReview.findUnique({ where: { jobId } })
+    if (existing) return existing
+    return tx.customerReview.create({ data: { organizationId, jobId, customerId: job.customerId, rating: 0, token: randomBytes(32).toString('hex') } })
   })
-
-  if (existing) {
-    const appUrl = process.env.APP_URL || 'http://localhost:3000'
-    return { url: `${appUrl}/reviews/${existing.token}` }
-  }
-
-  // Create review with token
-  const token = randomBytes(32).toString('hex')
-  await db.customerReview.create({
-    data: {
-      organizationId,
-      jobId,
-      customerId: job.customerId,
-      rating: 0, // placeholder until submitted
-      token,
-    },
-  })
-
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
-  return { url: `${appUrl}/reviews/${token}` }
+  return { url: `${appUrl}/reviews/${review.token}` }
 }

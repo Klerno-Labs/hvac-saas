@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { requireMutationAccess } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { trackEvent } from '@/lib/events'
 import { logAudit } from '@/lib/audit'
@@ -11,21 +11,9 @@ type CreateCustomerResult =
   | { success: false; error: string }
 
 export async function createCustomer(formData: FormData): Promise<CreateCustomerResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'You must be logged in' }
-  }
-
-  const userId = session.user.id
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId },
-  })
-  if (!membership) {
-    return { success: false, error: 'You must belong to an organization' }
-  }
-
-  const organizationId = membership.organizationId
+  const access = await requireMutationAccess('manageCustomers')
+  if (!access.authorized) return { success: false, error: access.error }
+  const { session, userId, organizationId } = access.context
 
   const raw = {
     firstName: formData.get('firstName'),

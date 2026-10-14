@@ -1,12 +1,9 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Providers } from './providers'
-import { NavHeader } from './components/nav-header'
-import { TrialBannerWrapper } from './components/trial-banner-wrapper'
-import { Analytics } from '@vercel/analytics/react'
+import { SWRegister } from '@/app/components/sw-register'
+import { PublicAnalytics } from '@/app/components/public-analytics'
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { SWRegister } from './components/sw-register'
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -18,7 +15,7 @@ export const metadata: Metadata = {
     default: 'FieldClose — Get Paid Faster on Every HVAC Job',
     template: '%s · FieldClose',
   },
-  description: 'The quote-to-payment operating system for residential HVAC businesses. Send estimates, complete jobs, invoice customers, and collect payment — all in one workflow.',
+  description: 'FieldClose helps residential HVAC businesses manage customers, create estimates, send invoices, and collect payments in one quote-to-payment workflow.',
   applicationName: 'FieldClose',
   keywords: [
     'HVAC software',
@@ -76,7 +73,6 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
   },
-  alternates: { canonical: SITE_URL },
   category: 'business software',
   verification: {
     google: 'SRi7UiAJOXVpe8bFWXO4ufcDfSY6YtTht7GC-wcwoPk',
@@ -97,12 +93,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body>
-        <Providers>
-          <NavHeader />
-          <TrialBannerWrapper />
-          {children}
-        </Providers>
-        <Analytics />
+        {children}
+        <PublicAnalytics />
         <SWRegister />
       </body>
     </html>

@@ -104,7 +104,7 @@ const CUSTOMER_FIELDS: FieldDef[] = [
   { key: 'firstName', label: 'First name', required: true, aliases: ['first name', 'firstname', 'first', 'fname', 'given name', 'contact first name'] },
   { key: 'lastName', label: 'Last name', required: false, aliases: ['last name', 'lastname', 'last', 'lname', 'surname', 'contact last name'] },
   { key: 'companyName', label: 'Company', required: false, aliases: ['company', 'company name', 'business name', 'account name'] },
-  { key: 'email', label: 'Email', required: false, aliases: ['email', 'e-mail', 'email address', 'primary email', 'email address 1'] },
+  { key: 'email', label: 'Email', required: false, aliases: ['e-mail', 'e mail', 'email', 'e-mail', 'email address', 'primary email', 'email address 1'] },
   { key: 'phone', label: 'Phone', required: false, aliases: ['phone', 'phone number', 'mobile', 'cell', 'cell phone', 'primary phone', 'work phone', 'contact phone'] },
   { key: 'addressLine1', label: 'Address', required: false, aliases: ['address', 'address line 1', 'street', 'street address', 'address1', 'billing address'] },
   { key: 'addressLine2', label: 'Address 2', required: false, aliases: ['address line 2', 'address2', 'unit', 'apt', 'suite'] },

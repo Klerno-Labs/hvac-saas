@@ -1,0 +1,11 @@
+[Unit]
+Description=FieldClose daily collections at 03:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+AccuracySec=1s
+Persistent=false
+Unit=fieldclose-scheduled@collections.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,50 @@
+{
+  "productionMoved": false,
+  "recoveredSettingCount": 20,
+  "recoveredSettingNames": [
+    "APP_URL",
+    "AUTH_SECRET",
+    "AUTH_URL",
+    "COLLECTIONS_CRON_SECRET",
+    "CRON_SECRET",
+    "DATABASE_URL",
+    "EMAIL_FROM",
+    "NEXT_PUBLIC_SENTRY_DSN",
+    "NEXT_PUBLIC_SUPPORT_EMAIL",
+    "R2_ACCOUNT_ID",
+    "R2_BUCKET",
+    "RESEND_API_KEY",
+    "SCHEDULED_TASKS_ENABLED",
+    "SENTRY_DSN",
+    "STRIPE_BILLING_PORTAL_CONFIGURATION_ID",
+    "STRIPE_CONNECT_WEBHOOK_SECRET",
+    "STRIPE_PRO_PRICE_ID",
+    "STRIPE_PUBLISHABLE_KEY",
+    "STRIPE_STARTER_PRICE_ID",
+    "STRIPE_WEBHOOK_SECRET"
+  ],
+  "remainingSecrets": [
+    "STRIPE_SECRET_KEY",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY"
+  ],
+  "ovhDatabaseProbe": {
+    "reachable": true,
+    "encrypted": true
+  },
+  "currentVercelSchedulerEnabled": true,
+  "backupRestore": {
+    "success": true,
+    "tables": 37,
+    "migrations": 10,
+    "applicationRows": 41,
+    "schemaMatches": true,
+    "rowChecksumsMatch": true,
+    "archiveSha256": "b7bd1e7a34f8dc480c8f78446f61c03be710e7e37bbe69e86fa1fc37c6128680"
+  },
+  "blockedOn": [
+    "Approval for prepared restricted Stripe OVH key",
+    "Sign-in to Cloudflare account owning existing photo bucket"
+  ],
+  "cutoverRequirement": "Disable old Vercel scheduled execution before enabling OVH timers; setting is currently true."
+}

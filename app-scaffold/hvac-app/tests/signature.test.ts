@@ -4,13 +4,14 @@ import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { trackEvent } from '@/lib/events'
 
-vi.mock('@/lib/db')
-vi.mock('@/lib/auth')
-vi.mock('@/lib/events')
+vi.mock('@/lib/db', () => ({db: { organizationMember: {findFirst: vi.fn()}, job: {findFirst: vi.fn()}, jobSignature: {create: vi.fn()} }}))
+vi.mock('@/lib/auth', () => ({ auth: vi.fn() }))
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('@/lib/events', () => ({trackEvent: vi.fn()}))
 
 describe('saveJobSignature', () => {
   it('requires user authentication', async () => {
-    vi.mocked(auth).mockResolvedValue(null)
+    vi.mocked(auth).mockResolvedValue(null as never)
 
     const formData = new FormData()
     formData.append('signerName', 'John Doe')
@@ -44,7 +45,7 @@ describe('saveJobSignature', () => {
 
     vi.mocked(db.organizationMember.findFirst).mockResolvedValue({
       organizationId: 'org123',
-    } as any)
+     role: 'owner', organization: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null },} as any)
 
     vi.mocked(db.job.findFirst).mockResolvedValue({
       id: 'job123',
@@ -58,6 +59,7 @@ describe('saveJobSignature', () => {
     const result = await saveJobSignature('job123', formData)
 
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected invalid signature to be rejected')
     expect(result.error).toContain('required')
   })
 
@@ -68,7 +70,7 @@ describe('saveJobSignature', () => {
 
     vi.mocked(db.organizationMember.findFirst).mockResolvedValue({
       organizationId: 'org123',
-    } as any)
+     role: 'owner', organization: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null },} as any)
 
     vi.mocked(db.job.findFirst).mockResolvedValue({
       id: 'job123',
@@ -91,7 +93,7 @@ describe('saveJobSignature', () => {
 
     vi.mocked(db.organizationMember.findFirst).mockResolvedValue({
       organizationId: 'org123',
-    } as any)
+     role: 'owner', organization: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null },} as any)
 
     vi.mocked(db.job.findFirst).mockResolvedValue(null)
 
@@ -111,7 +113,7 @@ describe('saveJobSignature', () => {
 
     vi.mocked(db.organizationMember.findFirst).mockResolvedValue({
       organizationId: 'org123',
-    } as any)
+     role: 'owner', organization: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, readOnlyAt: null },} as any)
 
     vi.mocked(db.job.findFirst).mockResolvedValue({
       id: 'job123',
@@ -127,7 +129,7 @@ describe('saveJobSignature', () => {
       signedAt: new Date(),
     } as any)
 
-    vi.mocked(trackEvent).mockResolvedValue(undefined)
+    vi.mocked(trackEvent).mockResolvedValue({} as never)
 
     const formData = new FormData()
     formData.append('signerName', 'John Doe')

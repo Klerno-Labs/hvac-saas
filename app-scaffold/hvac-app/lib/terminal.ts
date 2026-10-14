@@ -34,12 +34,12 @@ type CollectableInvoice = {
 }
 
 export function resolveCollectAmountCents(invoice: CollectableInvoice): number | null {
-  if (invoice.status === 'paid' || invoice.status === 'void' || invoice.status === 'draft') {
-    return null
-  }
-  const amount = invoice.outstandingCents > 0 ? invoice.outstandingCents : invoice.totalCents
-  if (amount <= 0) return null
-  return amount
+  if (!['sent', 'overdue'].includes(invoice.status)) return null
+  // A zero balance is settled, even while a status update is still in flight.
+  // Never turn it back into the original invoice total.
+  if (!Number.isSafeInteger(invoice.outstandingCents) || !Number.isSafeInteger(invoice.totalCents) ||
+      invoice.outstandingCents <= 0 || invoice.totalCents <= 0 || invoice.outstandingCents > invoice.totalCents) return null
+  return invoice.outstandingCents
 }
 
 export function isInvoiceCollectable(invoice: CollectableInvoice): boolean {
@@ -55,6 +55,10 @@ type BuildParamsInput = {
 }
 
 export function buildTerminalPaymentIntentParams(input: BuildParamsInput): Stripe.PaymentIntentCreateParams {
+  if (!Number.isSafeInteger(input.amountCents) || input.amountCents <= 0 ||
+      !Number.isFinite(input.feePercent) || input.feePercent < 0 || input.feePercent > 100) {
+    throw new Error('Invalid payment amount or fee')
+  }
   const applicationFeeAmount = Math.round(input.amountCents * (input.feePercent / 100))
   return {
     amount: input.amountCents,
@@ -75,4 +79,19 @@ export function buildTerminalPaymentIntentParams(input: BuildParamsInput): Strip
 export function computeApplicationFeeCents(amountCents: number, feePercent: number): number {
   const fee = Math.round(amountCents * (feePercent / 100))
   return fee > 0 ? fee : 0
+}
+
+/** Validate provider truth before returning a reader secret or capturing funds. */
+export function matchesTerminalPaymentIntent(
+  intent: Stripe.PaymentIntent,
+  payment: { invoiceId: string; organizationId: string; amountCents: number },
+): boolean {
+  return intent.currency === 'usd' && intent.amount === payment.amountCents &&
+    intent.capture_method === 'manual' && intent.payment_method_types.length === 1 &&
+    intent.payment_method_types[0] === 'card_present' &&
+    intent.metadata.invoiceId === payment.invoiceId &&
+    intent.metadata.organizationId === payment.organizationId &&
+    intent.metadata.method === TERMINAL_PAYMENT_METHOD &&
+    (intent.status !== 'requires_capture' || intent.amount_capturable === payment.amountCents) &&
+    (intent.status !== 'succeeded' || intent.amount_received === payment.amountCents)
 }

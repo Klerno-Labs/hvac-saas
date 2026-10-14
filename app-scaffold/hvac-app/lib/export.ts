@@ -6,7 +6,7 @@ export function isExportEntity(s: string): s is ExportEntity {
 }
 
 /**
- * RFC-4180-safe CSV serialization.
+ * RFC-4180 CSV serialization with spreadsheet formula neutralization for text.
  * Empty rows → returns '' (no header row, since there are no keys to derive one from).
  * Line endings are CRLF per RFC-4180.
  */
@@ -20,7 +20,7 @@ export function toCsv(rows: Record<string, unknown>[]): string {
   }
   const keys = Array.from(keySet)
 
-  const lines: string[] = [keys.join(',')]
+  const lines: string[] = [keys.map(escapeField).join(',')]
   for (const row of rows) {
     lines.push(keys.map((k) => escapeField(row[k])).join(','))
   }
@@ -28,7 +28,11 @@ export function toCsv(rows: Record<string, unknown>[]): string {
 }
 
 function escapeField(val: unknown): string {
-  const s = val === null || val === undefined ? '' : String(val)
+  let s = val === null || val === undefined ? '' : String(val)
+  // CSV quotes protect structure, but spreadsheets still evaluate formulas.
+  // Neutralize text even when whitespace/control characters precede the
+  // formula. Actual numeric values (including negative amounts) stay numeric.
+  if (typeof val === 'string' && /^[\s\u0000-\u001f\u007f]*[=+\-@]/.test(s)) s = "'" + s
   if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
     return '"' + s.replace(/"/g, '""') + '"'
   }

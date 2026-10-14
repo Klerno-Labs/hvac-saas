@@ -32,6 +32,20 @@ describe('toCsv', () => {
   it('returns empty string for empty input', () => {
     expect(toCsv([])).toBe('')
   })
+
+  it.each(['=1+1', '+SUM(A1)', '-1+2', '@SUM(A1)', ' \t=1+1', '\r\n=1+1', '\u0000\u000b+1', '\u00a0@SUM(A1)'])('neutralizes spreadsheet formulas including control prefixes: %j', (value) => {
+    const encoded = toCsv([{ value }]).slice('value\r\n'.length)
+    const decoded = encoded.startsWith('"') ? encoded.slice(1, -1).replace(/""/g, '"') : encoded
+    expect(decoded).toBe("'" + value)
+  })
+
+  it('preserves real numeric amounts while treating numeric-looking strings as text', () => {
+    expect(toCsv([{ amountCents: -1500, zero: 0, positive: 12500, phone: '+15551234567', text: '-1500' }])).toBe("amountCents,zero,positive,phone,text\r\n-1500,0,12500,'+15551234567,'-1500")
+  })
+
+  it('also escapes CSV structure and formula prefixes in column headings', () => {
+    expect(toCsv([{ '=SUM(1,2)': 'safe' }])).toBe('"\'=SUM(1,2)"\r\nsafe')
+  })
 })
 
 describe('flattenCustomer', () => {

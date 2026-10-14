@@ -9,20 +9,22 @@ import { TeamSection } from './team-section'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { TradeSettingsSection } from './trade-settings'
 
 export default async function SettingsPage() {
-  const { organization, organizationId, userId } = await requireAuth()
+  const { organization, organizationId, userId, role } = await requireAuth()
+  const isOwner = role === 'owner'
 
   const [members, invites] = await Promise.all([
-    db.organizationMember.findMany({
+    isOwner ? db.organizationMember.findMany({
       where: { organizationId },
       include: { user: { select: { name: true, email: true } } },
-    }),
-    db.teamInvite.findMany({
+    }) : Promise.resolve([]),
+    isOwner ? db.teamInvite.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
       take: 20,
-    }),
+    }) : Promise.resolve([]),
   ])
 
   return (
@@ -32,7 +34,10 @@ export default async function SettingsPage() {
         <p className="text-sm text-muted-foreground">{organization.name}</p>
       </div>
 
-      <Card className="mb-6">
+      <TradeSettingsSection initialTradeType={organization.tradeType} canEdit={role === 'owner'} />
+
+      {isOwner ? <>
+      <Card id="team" className="mb-6 scroll-mt-24">
         <CardHeader>
           <CardTitle>Team</CardTitle>
           <CardDescription>Manage your organization members and invitations.</CardDescription>
@@ -42,12 +47,14 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
+      <section id="payments" className="scroll-mt-24">
       <StripeConnectSection
         accountId={organization.stripeConnectedAccountId}
         chargesEnabled={organization.stripeChargesEnabled}
         payoutsEnabled={organization.stripePayoutsEnabled}
         terminalEnabled={organization.stripeTerminalEnabled}
       />
+      </section>
 
       <CollectionsSettingsSection
         initialEnabled={organization.collectionsEnabled}
@@ -83,7 +90,7 @@ export default async function SettingsPage() {
           <div>
             <CardTitle>Referrals</CardTitle>
             <CardDescription>
-              Invite other shops and earn free months.
+              Give another service business 30 extra trial days.
             </CardDescription>
           </div>
           <Link href="/settings/referrals" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>
@@ -103,6 +110,12 @@ export default async function SettingsPage() {
           </Link>
         </CardContent>
       </Card>
+      </> : <Card>
+        <CardHeader>
+          <CardTitle>Workspace administration</CardTitle>
+          <CardDescription>Your business owner manages team invitations, online payments, billing, and integrations. Contact them to change these settings.</CardDescription>
+        </CardHeader>
+      </Card>}
     </main>
   )
 }

@@ -58,7 +58,9 @@ export async function GET() {
       : 'needs_configuration',
   }
 
-  const allOk = Object.values(checks).every((c) => c.status === 'ok' || c.status === 'configured')
+  // Optional integrations are reported separately and must not take a
+  // healthy application out of service before they have been configured.
+  const allOk = checks.database.status === 'ok' && checks.env.status === 'ok' && checks.auth.status === 'configured'
 
   return NextResponse.json({
     ok: allOk,
@@ -67,5 +69,5 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     checks,
     optionalConfigured: configuredOptional.length,
-  }, { status: allOk ? 200 : 503 })
+  }, { status: allOk ? 200 : 503, headers: { 'Cache-Control': 'no-store' } })
 }

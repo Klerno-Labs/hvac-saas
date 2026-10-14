@@ -1,19 +1,21 @@
 import { Metadata } from 'next'
-import { NavHeader } from '@/app/components/nav-header'
+import { PublicHeader } from '@/app/components/public-header'
+import { supportEmail, supportMailto } from '@/lib/support'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Terms of service for FieldClose, a Pegrio LLC product.',
+  description: 'Read the FieldClose terms of service, including account responsibilities, subscriptions, acceptable use, cancellation, and service availability.',
+  alternates: { canonical: '/terms' },
   robots: { index: true, follow: true },
 }
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background">
-      <NavHeader />
+      <PublicHeader />
       <article className="max-w-3xl mx-auto px-4 py-16 prose prose-slate dark:prose-invert">
         <h1>Terms of Service</h1>
-        <p className="text-sm text-muted-foreground">Last updated: July 22, 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: September 26, 2026</p>
 
         <h2>1. Acceptance of Terms</h2>
         <p>
@@ -22,7 +24,7 @@ export default function TermsPage() {
 
         <h2>2. Description of Service</h2>
         <p>
-          FieldClose is a quote-to-payment platform for residential HVAC businesses. The Service includes estimate creation, job tracking, invoicing, payment collection, customer management, and related features.
+          FieldClose is a quote-to-payment platform for service businesses. The Service includes estimate creation, job tracking, invoicing, payment collection, customer management, and related features.
         </p>
 
         <h2>3. Accounts &amp; Billing</h2>
@@ -32,7 +34,7 @@ export default function TermsPage() {
 
         <h2>4. Free Trial</h2>
         <p>
-          New accounts receive a 14-day free trial. No credit card is required to start a trial. At the end of the trial period, your account will be suspended unless you subscribe to a paid plan. No charges will be applied during the trial.
+          New accounts receive a 14-day free trial unless an eligible offer provides a longer period. No credit card is required to start a trial. When a trial expires, workspace features require a paid subscription. A trial does not automatically become a paid subscription; you choose whether to subscribe in Billing. If you choose to subscribe before the trial ends, review the charge shown at checkout before paying.
         </p>
 
         <h2>5. Acceptable Use</h2>
@@ -62,7 +64,7 @@ export default function TermsPage() {
 
         <h2>9. Termination</h2>
         <p>
-          You may cancel your subscription at any time from Settings. Upon cancellation, your account remains active until the end of the billing period, after which your data will be retained for 90 days then permanently deleted. We reserve the right to suspend accounts that violate these Terms.
+          You may manage cancellation from Settings → Billing. Review the effective cancellation date in the billing portal. Canceling a subscription does not automatically delete business records; see our <a href="/privacy">Privacy Policy</a> for deletion requests. We reserve the right to suspend accounts that violate these Terms.
         </p>
 
         <h2>10. Limitation of Liability</h2>
@@ -82,7 +84,7 @@ export default function TermsPage() {
 
         <h2>13. Contact</h2>
         <p>
-          Questions about these Terms? Email us at <a href="mailto:support@fieldclose.app">support@fieldclose.app</a>.
+          Questions about these Terms? Email us at <a href={supportMailto()}>{supportEmail}</a>.
         </p>
 
         <hr className="my-8" />

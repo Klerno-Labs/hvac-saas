@@ -35,15 +35,5 @@ export async function seedPlanLimits() {
   console.log('Plan limits seeded successfully')
 }
 
-async function main() {
-  await seedPlanLimits()
-}
 
-main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+export async function disconnectSeed() { await prisma.$disconnect() }

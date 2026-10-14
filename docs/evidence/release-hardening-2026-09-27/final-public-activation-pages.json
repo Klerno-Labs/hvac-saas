@@ -1,0 +1,82 @@
+{
+  "deployment": "https://fieldclose.app",
+  "checkedAt": "2026-09-27T17:39:30.376Z",
+  "binding": {
+    "deploymentId": "dpl_BnDL2LfVaGwGgwC1jQo67jACinzy",
+    "revision": "5f008b08af717b5bffc5cccecd3bff312afd01cb",
+    "readyState": "READY",
+    "checkedAt": "2026-09-27T17:39:30.376Z"
+  },
+  "results": [
+    {
+      "path": "/terms",
+      "status": 200,
+      "canonical": "https://fieldclose.app/terms",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "path": "/privacy",
+      "status": 200,
+      "canonical": "https://fieldclose.app/privacy",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "path": "/refund-policy",
+      "status": 200,
+      "canonical": "https://fieldclose.app/refund-policy",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "path": "/forgot-password",
+      "status": 200,
+      "canonical": "https://fieldclose.app/forgot-password",
+      "correctCanonical": true,
+      "ok": true,
+      "noindex": true,
+      "headingPresent": true
+    },
+    {
+      "path": "/signup",
+      "status": 200,
+      "canonical": "https://fieldclose.app/signup",
+      "correctCanonical": true,
+      "ok": true,
+      "noindex": true,
+      "headingPresent": true
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "canonical": "https://fieldclose.app/login",
+      "correctCanonical": true,
+      "ok": true,
+      "noindex": true,
+      "headingPresent": true
+    },
+    {
+      "path": "/help/account-and-password",
+      "status": 200,
+      "canonical": "https://fieldclose.app/help/account-and-password",
+      "correctCanonical": true,
+      "ok": true,
+      "designatedSupportLink": true,
+      "staleSupportAbsent": true
+    },
+    {
+      "check": "public-access-and-final-alias",
+      "deploymentId": "dpl_BnDL2LfVaGwGgwC1jQo67jACinzy",
+      "revision": "5f008b08af717b5bffc5cccecd3bff312afd01cb",
+      "publicRoot200": true,
+      "ok": true
+    }
+  ]
+}

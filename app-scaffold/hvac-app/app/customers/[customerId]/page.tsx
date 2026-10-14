@@ -1,3 +1,6 @@
+import { formatDateOnly } from '@/lib/format'
+import { customerAccessWhere, jobAccessWhere } from '@/lib/mutation-access'
+import { canDo } from '@/lib/permissions'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
@@ -10,13 +13,13 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ customerId: string }> }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
   const { customerId } = await params
 
   const customer = await db.customer.findFirst({
-    where: { id: customerId, organizationId, deletedAt: null },
+    where: { id: customerId, ...customerAccessWhere(context) },
     include: {
-      jobs: { orderBy: { createdAt: 'desc' }, take: 20 },
+      jobs: { where: jobAccessWhere(context), orderBy: { createdAt: 'desc' }, take: 20 },
       equipment: { orderBy: { createdAt: 'desc' } },
     },
   })
@@ -37,9 +40,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             <CardTitle className="text-2xl">{customer.firstName} {customer.lastName || ''}</CardTitle>
             {customer.companyName && <p className="text-sm text-muted-foreground">{customer.companyName}</p>}
           </div>
-          <Link href={`/customers/${customer.id}/edit` as never} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>
+          {canDo(context.role, 'manageCustomers') && <Link href={`/customers/${customer.id}/edit` as never} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>
             Edit
-          </Link>
+          </Link>}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -76,9 +79,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-semibold">Equipment</h2>
-        <Link href={`/customers/${customer.id}/equipment/new` as never} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>
+        {canDo(context.role, 'manageCustomers') && <Link href={`/customers/${customer.id}/equipment/new` as never} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}>
           + Add equipment
-        </Link>
+        </Link>}
       </div>
 
       {customer.equipment.length === 0 ? (
@@ -115,9 +118,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-semibold">Jobs</h2>
-        <Link href={`/jobs/new?customerId=${customer.id}` as never} className={cn(buttonVariants({ size: 'sm' }), 'no-underline')}>
+        {canDo(context.role, 'manageJobs') && <Link href={`/jobs/new?customerId=${customer.id}` as never} className={cn(buttonVariants({ size: 'sm' }), 'no-underline')}>
           New job
-        </Link>
+        </Link>}
       </div>
 
       {customer.jobs.length === 0 ? (
@@ -140,7 +143,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                   </div>
                   {job.scheduledFor && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Scheduled: {new Date(job.scheduledFor).toLocaleDateString()}
+                      Scheduled: {formatDateOnly(job.scheduledFor)}
                     </p>
                   )}
                 </CardContent>
@@ -150,16 +153,16 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
       )}
 
-      <Card className="mt-6">
+      {context.role === 'owner' && <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-lg">Customer portal</CardTitle>
         </CardHeader>
         <CardContent>
           <PortalLinkSection customerId={customer.id} />
         </CardContent>
-      </Card>
+      </Card>}
 
-      <Card className="mt-6 border-destructive/30">
+      {canDo(context.role, 'manageCustomers') && <Card className="mt-6 border-destructive/30">
         <CardHeader>
           <CardTitle className="text-lg">Danger zone</CardTitle>
         </CardHeader>
@@ -169,7 +172,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           </p>
           <DeleteCustomerButton customerId={customer.id} />
         </CardContent>
-      </Card>
+      </Card>}
     </main>
   )
 }

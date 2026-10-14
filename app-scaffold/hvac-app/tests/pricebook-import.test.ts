@@ -62,3 +62,17 @@ describe('parsePriceBookCsv', () => {
     expect(rows[0].flatPriceCents).toBe(5000)
   })
 })
+
+describe('import monetary and CSV boundaries', () => {
+  it.each(['12oops', 'Infinity', '21474836.48', '1e4'])('rejects unsafe price %s', price => {
+    expect(parsePriceBookCsv(`name,flatPrice\nTest,${price}`).errors).toHaveLength(1)
+  })
+  it('handles quoted multiline descriptions', () => {
+    const result = parsePriceBookCsv('name,flatPrice,description\nTest,10.00,"First line\nSecond line"')
+    expect(result.errors).toEqual([])
+    expect(result.rows[0].description).toBe('First line\nSecond line')
+  })
+  it.each(['name,cost\nTest,10', 'name,flatPrice,flatPrice\nTest,10,20', 'name,flatPrice\n"Test,10'])('rejects malformed headers or quotes', csv => {
+    expect(parsePriceBookCsv(csv).errors.length).toBeGreaterThan(0)
+  })
+})

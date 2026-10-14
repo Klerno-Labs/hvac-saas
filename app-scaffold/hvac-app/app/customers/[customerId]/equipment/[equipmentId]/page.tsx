@@ -1,3 +1,5 @@
+import { formatDateOnly } from '@/lib/format'
+import { customerAccessWhere, jobAccessWhere } from '@/lib/mutation-access'
 import { requireActiveSubscription } from '@/lib/session'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
@@ -11,14 +13,16 @@ export default async function EquipmentDetailPage({
 }: {
   params: Promise<{ customerId: string; equipmentId: string }>
 }) {
-  const { organizationId } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
+  const { organizationId } = context
   const { customerId, equipmentId } = await params
 
   const equipment = await db.equipment.findFirst({
-    where: { id: equipmentId, organizationId, customerId },
+    where: { id: equipmentId, organizationId, customerId, customer: customerAccessWhere(context) },
     include: {
       customer: { select: { id: true, firstName: true, lastName: true } },
       serviceRecords: {
+        where: { job: jobAccessWhere(context) },
         orderBy: { performedAt: 'desc' },
         take: 50,
         include: { job: { select: { id: true, title: true } } },
@@ -64,7 +68,7 @@ export default async function EquipmentDetailPage({
         </CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Spec label="Serial #" value={equipment.serial} />
-          <Spec label="Install date" value={equipment.installDate?.toLocaleDateString()} />
+          <Spec label="Install date" value={equipment.installDate ? formatDateOnly(equipment.installDate) : undefined} />
           <Spec label="Tonnage" value={equipment.tonnage ? `${equipment.tonnage}` : null} />
           <Spec label="SEER" value={equipment.seer ? `${equipment.seer}` : null} />
           <Spec label="BTU" value={equipment.btu ? `${equipment.btu.toLocaleString()}` : null} />

@@ -1,3 +1,6 @@
+import { jobAccessWhere } from '@/lib/mutation-access'
+import { canDo } from '@/lib/permissions'
+import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { auth } from '@/lib/auth'
@@ -18,6 +21,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
 
   let organizationId: string | null = null
   let customerIdFilter: string | null = null
+  let assignedJobFilter: Prisma.JobWhereInput | undefined
+  let canReadDrafts = false
 
   if (portalToken) {
     const ctxToken = await validatePortalToken(portalToken)
@@ -29,14 +34,18 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
     if (!session?.user?.id) return new NextResponse('Unauthorized', { status: 401 })
     const membership = await db.organizationMember.findFirst({ where: { userId: session.user.id } })
     if (!membership) return new NextResponse('Forbidden', { status: 403 })
+    if (!canDo(membership.role, 'fieldWork')) return new NextResponse('Forbidden', { status: 403 })
+    canReadDrafts = canDo(membership.role, 'editPricing')
     organizationId = membership.organizationId
+    assignedJobFilter = jobAccessWhere({ organizationId, userId: session.user.id, role: membership.role })
   }
 
   const estimate = await db.estimate.findFirst({
     where: {
       id: estimateId,
       organizationId,
-      ...(customerIdFilter ? { job: { customerId: customerIdFilter } } : {}),
+      ...(!canReadDrafts ? { status: { not: 'draft' } } : {}),
+      ...(customerIdFilter ? { status: { not: 'draft' }, job: { customerId: customerIdFilter } } : { job: assignedJobFilter }),
     },
     include: {
       job: { include: { customer: true } },
@@ -49,6 +58,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
 
   const customerName = [estimate.job.customer.firstName, estimate.job.customer.lastName].filter(Boolean).join(' ')
 
+  // Every PDF is a shareable customer document, including staff downloads.
+  // Keep internal notes out of the renderer's input.
   const buffer = await renderToBuffer(
     EstimatePdf({
       orgName: estimate.organization.name,
@@ -61,7 +72,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
       customerPhone: estimate.job.customer.phone,
       scopeOfWork: estimate.scopeOfWork,
       terms: estimate.terms,
-      notes: estimate.notes,
       lineItems: estimate.lineItems,
       subtotalCents: estimate.subtotalCents,
       taxCents: estimate.taxCents,
@@ -73,6 +83,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ estimateId:
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
+      'Cache-Control': 'private, no-store',
+      'Referrer-Policy': 'no-referrer',
       'Content-Disposition': `attachment; filename="estimate-${estimate.estimateNumber}.pdf"`,
     },
   })

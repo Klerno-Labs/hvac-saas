@@ -1,0 +1,42 @@
+.tool { margin: 48px 0 72px; }
+.toolbar, .actions, .documentHeading, .printActions { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.toolbar h2 { margin:8px 0 14px; }.toolbar p { max-width:580px; line-height:1.6; }.actions { flex-shrink:0; }
+.actions button,.add,.remove { padding:12px 16px; background:#fff; border:1px solid #b9bdb5; border-radius:4px; font:inherit; cursor:pointer; }
+.actions button:hover,.add:hover { background:#edf2d8; }.remove:disabled { opacity:.45; cursor:default; }
+.privacy { max-width:850px; font-size:14px; line-height:1.7; color:#565963; margin:22px 0; }
+.document { background:#fff; border:1px solid #ced1c8; padding:40px; box-shadow:0 8px 30px #15200b08; }
+.documentHeading { border-bottom:2px solid #151a11; padding-bottom:24px; margin-bottom:30px; }.documentHeading h3 { font-size:28px; margin:0; }.documentHeading>span { font-size:12px; letter-spacing:.06em; }
+.fields { display:grid; grid-template-columns:1fr 1fr; gap:20px 32px; }
+.field,.line label,.notes { display:flex; flex-direction:column; gap:9px; min-width:0; font-size:13px; font-weight:600; }
+.document input,.document textarea { width:100%; padding:12px; border:1px solid #b9bdb5; border-radius:3px; background:#fcfdf9; color:#151a11; font:400 16px/1.5 Arial,sans-serif; }
+.document input:focus-visible,.document textarea:focus-visible { outline:3px solid #648400; outline-offset:2px; }.document textarea { resize:vertical; }
+.lines { margin-top:32px; }.line { display:grid; grid-template-columns:minmax(160px,3fr) minmax(80px,.7fr) minmax(110px,1fr) minmax(110px,1fr) auto; align-items:end; gap:16px; padding:18px 0; border:0; border-top:1px solid #dedfd9; min-width:0; }.line legend { font-size:12px; padding-right:8px; color:#565963; }.amount { display:flex; flex-direction:column; gap:16px; padding-bottom:12px; font-size:13px; }.amount strong { overflow-wrap:anywhere; font-size:16px; }.remove { padding:12px 8px; font-size:12px; }
+.bottom { display:grid; grid-template-columns:1.5fr 1fr; gap:40px; margin-top:32px; }.totals dl { margin:20px 0 0; }.totals dl div { display:flex; justify-content:space-between; gap:12px; padding:10px 0; }.totals dd { margin:0; font-weight:600; overflow-wrap:anywhere; }.grandTotal { border-top:2px solid #151a11; margin-top:8px; font-size:22px; }.signature { font-size:15px; line-height:2; margin-top:36px; }.signature small { color:#565963; }
+.printValue { display:none; }.printActions { justify-content:flex-start; margin-top:24px; }.printActions p { font-size:14px; max-width:580px; line-height:1.65; }.printActions button { flex-shrink:0; cursor:pointer; }.error { color:#ab1717; font-weight:600; }
+.printRoot { display:none; }.document input[aria-invalid="true"] { border-color:#ab1717; }
+@media(max-width:900px) { .toolbar { align-items:flex-start; flex-direction:column; }.document { padding:24px; }.line { grid-template-columns:1fr 1fr; }.description { grid-column:1 / -1; }.remove { align-self:center; }.bottom { gap:24px; } }
+@media(max-width:600px) { .document { padding:18px; }.fields,.bottom { grid-template-columns:1fr; }.documentHeading { flex-wrap:wrap; }.printActions { align-items:flex-start; flex-direction:column; }.actions { flex-wrap:wrap; }.grandTotal { font-size:20px; } }
+@media print {
+  @page { margin:12mm; }
+  :global(body):has(> .printRoot) { margin:0!important; padding:0!important; background:white!important; color:black!important; }
+  :global(body):has(> .printRoot) > :not(.printRoot) { display:none!important; }
+  .printRoot { display:block!important; min-height:0!important; background:white!important; color:black!important; font:10pt/1.45 Arial,sans-serif; }
+  .printRoot .document { position:static; width:auto; border:0; box-shadow:none; padding:0; margin:0; background:white; font-size:10pt; }
+  .printRoot .document input,.printRoot .document textarea,.printRoot .remove,.printRoot .add { display:none!important; }
+  .printRoot .printValue { display:block; min-height:18px; font-weight:400; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .printRoot .documentHeading { padding-bottom:16px; margin-bottom:20px; break-after:avoid; }
+  .printRoot .documentHeading h3 { font-size:20pt; }
+  .printRoot .fields { grid-template-columns:1fr 1fr; gap:12px 24px; }
+  .printRoot .field { break-inside:avoid; }
+  .printRoot .line { grid-template-columns:minmax(0,3fr) minmax(0,.7fr) minmax(0,1.1fr) minmax(0,1.2fr); align-items:start; break-inside:avoid; page-break-inside:avoid; gap:12px; padding:14px 0; }
+  .printRoot .description { grid-column:auto; }
+  .printRoot .amount { padding-bottom:0; gap:9px; }
+  .printRoot .amount strong { font-size:10pt; }
+  .printRoot .bottom { display:block; margin-top:22px; }
+  .printRoot .notes { display:block; font-size:10pt; }
+  .printRoot .notes > span:first-child { display:block; margin-bottom:8px; break-after:avoid; }
+  .printRoot .notes .printValue { orphans:3; widows:3; }
+  .printRoot .totals { max-width:85mm; margin:22px 0 0 auto; break-inside:avoid; page-break-inside:avoid; }
+  .printRoot .documentHeading,.printRoot .signature { break-inside:avoid; }
+  .printRoot .signature { font-size:10pt; }
+}

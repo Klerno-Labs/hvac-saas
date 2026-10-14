@@ -1,5 +1,6 @@
+import { canDo } from '@/lib/permissions'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requireMutationAccess, jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { updateJobStatusSchema } from '@/lib/validations/job'
 import { recordProofOfWorkSchema } from '@/lib/validations/proof-of-work'
@@ -23,17 +24,9 @@ const jobNotesWriteSchema = z.object({
 const fieldWriteSchema = z.discriminatedUnion('type', [jobStatusWriteSchema, jobNotesWriteSchema])
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: session.user.id },
-  })
-  if (!membership) {
-    return NextResponse.json({ error: 'No organization' }, { status: 403 })
-  }
+  const access = await requireMutationAccess('fieldWork')
+  if (!access.authorized) return NextResponse.json({ error: access.error }, { status: access.status })
+  const { session, userId, organizationId, membership } = access.context
 
   let body: unknown
   try {
@@ -48,9 +41,8 @@ export async function POST(req: NextRequest) {
   }
 
   const write = parsed.data
-  const { organizationId } = membership
 
-  const job = await db.job.findFirst({ where: { id: write.jobId, organizationId } })
+  const job = await db.job.findFirst({ where: { id: write.jobId, ...jobAccessWhere(access.context) } })
   if (!job) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 })
   }
@@ -61,6 +53,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: statusParsed.error.errors[0].message }, { status: 400 })
     }
     const { status } = statusParsed.data
+    if (!canDo(access.context.role, 'manageJobs') && !['scheduled', 'in_progress', 'completed'].includes(status)) {
+      return NextResponse.json({ error: 'Only dispatch staff can book, cancel or reopen a job' }, { status: 403 })
+    }
     await db.job.update({
       where: { id: job.id },
       data: {

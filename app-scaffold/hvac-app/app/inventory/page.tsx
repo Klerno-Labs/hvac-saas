@@ -1,4 +1,4 @@
-import { requireActiveSubscription } from '@/lib/session'
+import { requirePageCapability } from '@/lib/session'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,7 +7,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function InventoryPage() {
-  const { organizationId } = await requireActiveSubscription()
+  const { organizationId } = await requirePageCapability('manageInventory')
 
   const items = await db.inventoryItem.findMany({
     where: { organizationId },

@@ -1,7 +1,10 @@
+import { formatDateOnly } from '@/lib/format'
 import { requireActiveSubscription } from '@/lib/session'
+import { jobAccessWhere } from '@/lib/mutation-access'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { canDo } from '@/lib/permissions'
 import { InvoiceStatusForm } from './status-form'
 import { InvoiceEditForm } from './edit-form'
 import { PayButton } from './pay-button'
@@ -12,13 +15,15 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ invoiceId: string }> }) {
-  const { organizationId, organization } = await requireActiveSubscription()
+  const context = await requireActiveSubscription()
+  const { organizationId, organization, role } = context
   const { invoiceId } = await params
 
   const invoice = await db.invoice.findFirst({
-    where: { id: invoiceId, organizationId },
+    where: { id: invoiceId, organizationId, job: jobAccessWhere(context), ...(!canDo(role, 'editPricing') ? { status: { not: 'draft' } } : {}) },
     include: {
       job: true,
+      sourceEstimate: { select: { id: true, estimateNumber: true, terms: true } },
       customer: true,
       lineItems: { orderBy: { sortOrder: 'asc' } },
       payments: { orderBy: { createdAt: 'desc' }, take: 5 },
@@ -30,7 +35,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     notFound()
   }
 
-  const isDraft = invoice.status === 'draft'
+  const canEditPricing = canDo(role, 'editPricing')
+  const isDraft = invoice.status === 'draft' && canEditPricing
   const canPay = invoice.status !== 'paid' && invoice.status !== 'void' && invoice.status !== 'draft'
   const stripeReady = organization.stripeChargesEnabled
   const showCollections = invoice.status !== 'draft' && invoice.status !== 'paid' && invoice.status !== 'void'
@@ -44,7 +50,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       <Card className="mb-4">
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
-            <CardTitle className="text-2xl">Invoice #{invoice.invoiceNumber}</CardTitle>
+            <h1 className="text-2xl font-semibold">Invoice #{invoice.invoiceNumber}</h1>
             <CardDescription>
               Job:{' '}
               <Link href={`/jobs/${invoice.jobId}` as never} className="text-primary hover:underline">
@@ -71,7 +77,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Outstanding</p>
-              <p className={`text-sm font-bold ${invoice.outstandingCents > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+              <p className={`text-sm font-bold ${invoice.outstandingCents > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
                 {formatCents(invoice.outstandingCents)}
               </p>
             </div>
@@ -80,7 +86,17 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           {invoice.dueDate && (
             <div>
               <p className="text-xs text-muted-foreground">Due date</p>
-              <p className="text-sm">{new Date(invoice.dueDate).toLocaleDateString()}</p>
+              <p className="text-sm">{formatDateOnly(invoice.dueDate)}</p>
+            </div>
+          )}
+
+          {invoice.sourceEstimate && (
+            <div>
+              <p className="text-xs text-muted-foreground">Approved estimate</p>
+              <Link href={`/estimates/${invoice.sourceEstimate.id}` as never} className="text-sm text-primary hover:underline">
+                {invoice.sourceEstimate.estimateNumber}
+              </Link>
+              {invoice.sourceEstimate.terms && <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{invoice.sourceEstimate.terms}</p>}
             </div>
           )}
 
@@ -122,7 +138,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
           {invoice.notes && (
             <div>
-              <p className="text-xs text-muted-foreground">Notes</p>
+              <p className="text-xs text-muted-foreground">Internal notes</p>
               <p className="text-sm">{invoice.notes}</p>
             </div>
           )}
@@ -182,7 +198,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </a>
         </CardHeader>
         <CardContent>
-          <InvoiceStatusForm invoiceId={invoice.id} currentStatus={invoice.status} />
+          {canEditPricing ? <InvoiceStatusForm invoiceId={invoice.id} currentStatus={invoice.status} /> : (
+            <p className="text-sm text-muted-foreground">An owner or office administrator can update this invoice.</p>
+          )}
         </CardContent>
       </Card>
 

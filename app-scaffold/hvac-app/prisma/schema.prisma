@@ -346,6 +346,7 @@ model Estimate {
   job                 Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
   lineItems           EstimateLineItem[]
   payments            Payment[]
+  invoice             Invoice?
   reminders           Reminder[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -374,6 +375,7 @@ model Invoice {
   jobId                    String
   customerId               String
   invoiceNumber            String
+  sourceEstimateId         String?           @unique
   status                   String            @default("draft")
   descriptionOfWork        String?
   notes                    String?
@@ -386,6 +388,7 @@ model Invoice {
   paidAt                   DateTime?
   stripeCheckoutSessionId  String?              @unique
   collectionsPaused        Boolean              @default(false)
+  sourceEstimate           Estimate?            @relation(fields: [sourceEstimateId], references: [id], onDelete: Restrict)
   organization             Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   job                      Job                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
   customer                 Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
